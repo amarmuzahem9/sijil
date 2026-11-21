@@ -28,8 +28,9 @@ scripts/e2e.sh                     # isolated stack, fresh DB, Playwright, then 
 ## Staging (real devices)
 
 ```bash
-# on the company server, with a server-only .env (APP_ENV=staging, SITE_ADDRESS=sijil.t3cftth.net)
-scripts/deploy-staging.sh          # base compose file only; waits for /api/health; runs seed-demo
+# on the company server (behind Nginx Proxy Manager), with a server-only .env
+# (APP_ENV=staging, NPM_NETWORK=<NPM's Docker network>) — full guide: deploy/staging.md
+bash scripts/deploy-staging.sh          # base + staging overlay, no host ports; health; seed-demo
 ```
 
 Run scenarios 3–11 below at `https://sijil.t3cftth.net`: the main admin from a computer, and the

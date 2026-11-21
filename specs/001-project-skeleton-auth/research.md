@@ -48,7 +48,11 @@ No open NEEDS CLARIFICATION items remain.
 - **Local development**: Caddy serves `https://localhost` with its internal CA. `COOKIE_SECURE`
   defaults to `true`.
 - **Real-phone testing (decision)**: early staging deployment on the company server at
-  `https://sijil.t3cftth.net` (server and domain are ready). Caddy obtains a real certificate, so
+  `https://sijil.t3cftth.net` (server and domain are ready). The server already runs Nginx Proxy
+  Manager in Docker on 80/443: NPM issues the Let's Encrypt certificate and forwards plain HTTP to
+  `sijil-web:80` over its Docker network (`docker-compose.staging.yml`); `sijil-web` routes
+  `/api` to `sijil-api`, and nothing publishes a host port (see `deploy/staging.md`). The
+  certificate is real, so
   sign-in, secure cookies, the service worker, and PWA installation behave exactly as in
   production. LAN testing over plain HTTP was rejected because service workers and PWA install
   need HTTPS. LAN HTTPS with Caddy's internal CA was rejected because it requires installing a

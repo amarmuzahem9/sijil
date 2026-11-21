@@ -1,20 +1,44 @@
-# Static file server for the built web app (behind the proxy container).
+# Built web app + /api routing, plain HTTP on :80.
+# - Locally / e2e: sits behind the `proxy` container (which adds HTTPS).
+# - Staging / production: this container (sijil-web) is the target of Nginx Proxy Manager,
+#   which terminates HTTPS. No host port is ever published.
+{
+	servers {
+		# Only NPM / the proxy container can reach this port (nothing is published), so the
+		# client IP in X-Forwarded-For is trusted and passed on to the API (per-IP sign-in limit).
+		trusted_proxies static private_ranges
+		client_ip_headers X-Forwarded-For
+	}
+}
+
 :80 {
-	root * /srv
 	encode zstd gzip
 
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "DENY"
+		Permissions-Policy "camera=(self), geolocation=(self), microphone=()"
+		-Server
 	}
 
-	@hashed path /assets/*
-	header @hashed Cache-Control "public, max-age=31536000, immutable"
+	handle /api/* {
+		reverse_proxy api:8000
+	}
 
-	# Must revalidate so app updates (and the service worker itself) are picked up.
-	@nocache path / /index.html /sw.js /registerSW.js /manifest.webmanifest
-	header @nocache Cache-Control "no-cache"
+	handle {
+		root * /srv
 
-	try_files {path} /index.html
-	file_server
+		@hashed path /assets/*
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+
+		# Must revalidate so app updates (and the service worker itself) are picked up.
+		@nocache path / /index.html /sw.js /registerSW.js /manifest.webmanifest
+		header @nocache Cache-Control "no-cache"
+
+		try_files {path} /index.html
+		file_server
+	}
 }

@@ -23,7 +23,7 @@ services:
     build:
       context: ./api
     restart: unless-stopped
-    env_file: .env
+    env_file: ${SIJIL_ENV_FILE:-.env}
     environment:
       APP_ENV: ${APP_ENV:-production}
     depends_on:

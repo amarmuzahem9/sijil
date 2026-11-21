@@ -149,6 +149,7 @@ scripts/
 docker-compose.yml              # db, api, web, proxy — production/staging definition, APP_ENV defaults to production
 docker-compose.override.yml     # dev only (auto-loaded locally): mounts, uvicorn --reload, vite HMR, APP_ENV=development
 docker-compose.e2e.yml          # e2e overlay: APP_ENV=test, tls internal, e2e Playwright service
+docker-compose.staging.yml      # server overlay: behind Nginx Proxy Manager, no host ports, sijil-web on NPM network
 .env.example
 README.md                       # Arabic: local run with docker compose up
 ```
@@ -185,7 +186,7 @@ In `staging` and `production`, the API refuses to start if `JWT_SECRET` or a pas
 |---|---|---|
 | development | `docker compose up` (override auto-loaded), `https://localhost` | Coding with hot reload |
 | test | `scripts/e2e.sh`: isolated project `sijil-e2e`, fresh volume every run | Playwright merge gate |
-| staging | `scripts/deploy-staging.sh` on the company server, `https://sijil.t3cftth.net`, base compose file only | Acceptance on a real computer and real phones; PWA install |
+| staging | `scripts/deploy-staging.sh` on the company server: base + `docker-compose.staging.yml`. Nginx Proxy Manager (Docker) owns 80/443 and the Let's Encrypt certificate and forwards to `http://sijil-web:80` on its Docker network; containers `sijil-web`, `sijil-api`, `sijil-db`; no host ports; the local `proxy` is not started | Acceptance on a real computer and real phones; PWA install |
 | production | Same server and domain after go-live (feature 014): `APP_ENV=production`, demo accounts deactivated | Real use |
 
 ## Complexity Tracking

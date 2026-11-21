@@ -1,0 +1,42 @@
+# Staging overlay for the company server, where Nginx Proxy Manager (NPM) runs in Docker, owns
+# 80/443 and issues the certificates. Used by scripts/deploy-staging.sh:
+#   docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d --build
+#
+# - Project name "sijil" (docker-compose.yml) and fixed container names: sijil-web, sijil-api,
+#   sijil-db.
+# - No service publishes any host port (80/443 belong to NPM; 3000, 8080, 5433 are taken; the
+#   database is never exposed).
+# - sijil-web serves the app and routes /api to sijil-api over plain HTTP on :80, and joins NPM's
+#   Docker network. NPM Proxy Host target: http://sijil-web:80
+# - The local `proxy` (Caddy with its own HTTPS) is not used here.
+services:
+  web:
+    container_name: sijil-web
+    ports: !reset []
+    networks:
+      - default
+      - npm
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  api:
+    container_name: sijil-api
+    ports: !reset []
+
+  db:
+    container_name: sijil-db
+    ports: !reset []
+
+  proxy:
+    # Local development / e2e only — never started on the server.
+    profiles: ["local-proxy"]
+    ports: !reset []
+
+networks:
+  npm:
+    external: true
+    # The name of NPM's Docker network on the server (see deploy/staging.md, step 2).
+    name: ${NPM_NETWORK:?Set NPM_NETWORK in .env to the Docker network of Nginx Proxy Manager}
