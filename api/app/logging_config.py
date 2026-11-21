@@ -7,10 +7,10 @@ import sys
 from datetime import UTC, datetime
 
 _SENSITIVE = r"(password|passwd|token|authorization|cookie|refresh|secret|otp)"
-# key=value, key: value, "key": "value", and Bearer tokens.
+# Bearer tokens first, then key=value, key: value, "key": "value".
 _PATTERNS = [
-    re.compile(rf"(?i)(\"?{_SENSITIVE}[\w-]*\"?\s*[:=]\s*)(\"[^\"]*\"|'[^']*'|[^\s,;}}]+)"),
     re.compile(r"(?i)(bearer\s+)[A-Za-z0-9._~+/=-]+"),
+    re.compile(rf"(?i)(\"?{_SENSITIVE}[\w-]*\"?\s*[:=]\s*)(\"[^\"]*\"|'[^']*'|[^\s,;}}]+)"),
 ]
 REDACTED = "[REDACTED]"
 

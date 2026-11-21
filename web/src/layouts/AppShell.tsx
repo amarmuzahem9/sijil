@@ -178,7 +178,13 @@ export function AppShell({ items, mobileNav, footerItems = [] }: AppShellProps) 
 
       <Box
         component="main"
-        sx={{ p: 2, pb: mobileNav === 'bottom' ? `${BOTTOM_BAR_HEIGHT + 24}px` : 2 }}
+        sx={{
+          p: 2,
+          pb:
+            mobileNav === 'bottom'
+              ? `calc(${BOTTOM_BAR_HEIGHT + 24}px + env(safe-area-inset-bottom))`
+              : 2,
+        }}
       >
         <Outlet />
       </Box>
@@ -189,7 +195,15 @@ export function AppShell({ items, mobileNav, footerItems = [] }: AppShellProps) 
           aria-label="القائمة السفلية"
           data-testid="bottom-nav"
           elevation={8}
-          sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: (t) => t.zIndex.appBar }}
+          sx={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: (t) => t.zIndex.appBar,
+            // iPhone home-indicator area when installed full-screen (viewport-fit=cover).
+            pb: 'env(safe-area-inset-bottom)',
+          }}
         >
           <BottomNavigation showLabels value={bottomIndex} sx={{ height: BOTTOM_BAR_HEIGHT }}>
             {bottomItems.map((item) => (

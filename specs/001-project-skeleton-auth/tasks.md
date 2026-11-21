@@ -176,15 +176,15 @@ confirm `/login`; set `is_active=false` and confirm the next action shows «ال
 
 ### Tests for User Story 3 (write first, must fail)
 
-- [ ] T068 [P] [US3] Integration tests in `api/tests/integration/test_sessions.py`: logout revokes only the current session (a second device's refresh still works) and clears the cookie, returning 204 even when already signed out; presenting a rotated refresh token returns 401 `session_revoked` and revokes that session (`reuse_detected`); an expired session is refused; after `is_active=false` the existing access token gets 403 `account_inactive` on the next request and refresh is refused; a refresh 29 days after last use (via `frozen_clock`) still works and slides `expires_at`; `deactivate_user_sessions(user_id, reason)` revokes every session of that user with the given `revoke_reason`
-- [ ] T069 [P] [US3] Playwright test `e2e/tests/session.spec.ts`: sign in, open a new browser page in the same context, and confirm still signed in; «تسجيل الخروج» returns to `/login`; pressing back does not show protected content
+- [X] T068 [P] [US3] Integration tests in `api/tests/integration/test_sessions.py`: logout revokes only the current session (a second device's refresh still works) and clears the cookie, returning 204 even when already signed out; presenting a rotated refresh token returns 401 `session_revoked` and revokes that session (`reuse_detected`); an expired session is refused; after `is_active=false` the existing access token gets 403 `account_inactive` on the next request and refresh is refused; a refresh 29 days after last use (via `frozen_clock`) still works and slides `expires_at`; `deactivate_user_sessions(user_id, reason)` revokes every session of that user with the given `revoke_reason`
+- [X] T069 [P] [US3] Playwright test `e2e/tests/session.spec.ts`: sign in, open a new browser page in the same context, and confirm still signed in; «تسجيل الخروج» returns to `/login`; pressing back does not show protected content
 
 ### Implementation for User Story 3
 
-- [ ] T070 [US3] Add reuse detection to `refresh()` in `api/app/services/auth_service.py`: on rotation store the old hash in data-model.md `sessions.previous_token_hash`; a match on it revokes the session with `sessions.revoke_reason` `reuse_detected`
-- [ ] T071 [US3] Implement `logout(refresh_token)` in `api/app/services/auth_service.py` (sets data-model.md `sessions.revoked_at` and `sessions.revoke_reason` `logout`) and `POST /api/auth/logout` in `api/app/api/auth.py` (always 204, clears the cookie)
-- [ ] T072 [US3] Add `deactivate_user_sessions(user_id, reason)` to `api/app/services/auth_service.py` (revokes all sessions; feature 002 calls it on deactivation and password reset). Its test is in T068
-- [ ] T073 [US3] Wire sign-out in `web/src/auth/AuthProvider.tsx` `logout()` (call the API, clear the in-memory token and the TanStack Query cache, navigate to `/login` with `replace`) and the «تسجيل الخروج» buttons in `web/src/pages/marketer/Account.tsx` and `web/src/pages/admin/Account.tsx`
+- [X] T070 [US3] Add reuse detection to `refresh()` in `api/app/services/auth_service.py`: on rotation store the old hash in data-model.md `sessions.previous_token_hash`; a match on it revokes the session with `sessions.revoke_reason` `reuse_detected`
+- [X] T071 [US3] Implement `logout(refresh_token)` in `api/app/services/auth_service.py` (sets data-model.md `sessions.revoked_at` and `sessions.revoke_reason` `logout`) and `POST /api/auth/logout` in `api/app/api/auth.py` (always 204, clears the cookie)
+- [X] T072 [US3] Add `deactivate_user_sessions(user_id, reason)` to `api/app/services/auth_service.py` (revokes all sessions; feature 002 calls it on deactivation and password reset). Its test is in T068
+- [X] T073 [US3] Wire sign-out in `web/src/auth/AuthProvider.tsx` `logout()` (call the API, clear the in-memory token and the TanStack Query cache, navigate to `/login` with `replace`) and the «تسجيل الخروج» buttons in `web/src/pages/marketer/Account.tsx` and `web/src/pages/admin/Account.tsx`
 
 **Checkpoint**: Sessions persist and end exactly as the spec requires.
 
@@ -200,14 +200,14 @@ remaining; after the lock period sign-in works.
 
 ### Tests for User Story 4 (write first, must fail)
 
-- [ ] T074 [P] [US4] Integration tests in `api/tests/integration/test_lockout.py`: the 5th wrong attempt sets `locked_until` = now + 15 min and writes audit `user.locked`; while locked, the correct password gets 423 `account_locked` with `retry_after_seconds` and a `Retry-After` header; with a frozen or advanced clock, sign-in succeeds after expiry; a success after 3 failures resets the counter; an invalid phone format does not change any counter; the per-IP limiter returns 429 `too_many_attempts` after `LOGIN_IP_LIMIT` attempts
-- [ ] T075 [P] [US4] Playwright test `e2e/tests/lockout.spec.ts`: desktop-chrome project only, using the dedicated lockout account `07700000002` from `seed-demo --e2e`: 5 wrong passwords, then the Arabic lock message with minutes appears even with the correct password
+- [X] T074 [P] [US4] Integration tests in `api/tests/integration/test_lockout.py`: the 5th wrong attempt sets `locked_until` = now + 15 min and writes audit `user.locked`; while locked, the correct password gets 423 `account_locked` with `retry_after_seconds` and a `Retry-After` header; with a frozen or advanced clock, sign-in succeeds after expiry; a success after 3 failures resets the counter; an invalid phone format does not change any counter; the per-IP limiter returns 429 `too_many_attempts` after `LOGIN_IP_LIMIT` attempts
+- [X] T075 [P] [US4] Playwright test `e2e/tests/lockout.spec.ts`: desktop-chrome project only, using the dedicated lockout account `07700000002` from `seed-demo --e2e`: 5 wrong passwords, then the Arabic lock message with minutes appears even with the correct password
 
 ### Implementation for User Story 4
 
-- [ ] T076 [US4] Add lockout to sign-in in `api/app/services/auth_service.py` per the data-model.md "Lockout state" diagram. Check data-model.md `users.locked_until` first and return 423 with the remaining minutes in Arabic. On a wrong password increment `users.failed_logins`; at `LOCKOUT_THRESHOLD`, set `users.locked_until` = now + `LOCKOUT_MINUTES`, reset the counter, and audit `user.locked`. All of this happens in the same row-locked transaction
-- [ ] T077 [P] [US4] Implement the per-IP sliding-window limiter in `api/app/core/ratelimit.py` (`LOGIN_IP_LIMIT` / `LOGIN_IP_WINDOW_MINUTES`, client IP from trusted `X-Forwarded-For`) and apply it to `POST /api/auth/login` in `api/app/api/auth.py` (429 `too_many_attempts`)
-- [ ] T078 [US4] Show the lock and 429 messages in `web/src/pages/Login.tsx` (server Arabic message; disable the submit button until `retry_after_seconds` elapses)
+- [X] T076 [US4] Add lockout to sign-in in `api/app/services/auth_service.py` per the data-model.md "Lockout state" diagram. Check data-model.md `users.locked_until` first and return 423 with the remaining minutes in Arabic. On a wrong password increment `users.failed_logins`; at `LOCKOUT_THRESHOLD`, set `users.locked_until` = now + `LOCKOUT_MINUTES`, reset the counter, and audit `user.locked`. All of this happens in the same row-locked transaction
+- [X] T077 [P] [US4] Implement the per-IP sliding-window limiter in `api/app/core/ratelimit.py` (`LOGIN_IP_LIMIT` / `LOGIN_IP_WINDOW_MINUTES`, client IP from trusted `X-Forwarded-For`) and apply it to `POST /api/auth/login` in `api/app/api/auth.py` (429 `too_many_attempts`)
+- [X] T078 [US4] Show the lock and 429 messages in `web/src/pages/Login.tsx` (server Arabic message; disable the submit button until `retry_after_seconds` elapses)
 
 **Checkpoint**: Password guessing is blocked per account and per IP.
 
@@ -224,13 +224,13 @@ from «حسابي» works.
 
 ### Tests for User Story 5 (write first, must fail)
 
-- [ ] T079 [P] [US5] Extend `api/tests/integration/test_change_password.py`: a flagged marketer gets 403 `password_change_required` on `/api/marketer/dashboard`; `weak_password`, `same_password`, and `wrong_current_password` cases; a voluntary change by an unflagged user works and revokes the other sessions; the audit row has no password or hash fields
-- [ ] T080 [P] [US5] Vitest test in `web/src/__tests__/guards.test.tsx`: `MustChangePasswordGate` redirects every route to `/change-password` while flagged; `RequireRole` sends a marketer from `/admin` to `/` and an admin from `/` to `/admin`
-- [ ] T081 [P] [US5] Playwright test `e2e/tests/forced-change.spec.ts` (pixel-7): pixel-7 project only: the flagged account `07700000003` from `seed-demo --e2e` is confined to `/change-password`, saves, and lands on the dashboard
+- [X] T079 [P] [US5] Extend `api/tests/integration/test_change_password.py`: a flagged marketer gets 403 `password_change_required` on `/api/marketer/dashboard`; `weak_password`, `same_password`, and `wrong_current_password` cases; a voluntary change by an unflagged user works and revokes the other sessions; the audit row has no password or hash fields
+- [X] T080 [P] [US5] Vitest test in `web/src/__tests__/guards.test.tsx`: `MustChangePasswordGate` redirects every route to `/change-password` while flagged; `RequireRole` sends a marketer from `/admin` to `/` and an admin from `/` to `/admin`
+- [X] T081 [P] [US5] Playwright test `e2e/tests/forced-change.spec.ts` (pixel-7): pixel-7 project only: the flagged account `07700000003` from `seed-demo --e2e` is confined to `/change-password`, saves, and lands on the dashboard
 
 ### Implementation for User Story 5
 
-- [ ] T082 [US5] Make `web/src/pages/ChangePassword.tsx` work in voluntary mode: reachable from both Account pages; show a back link when not forced; on success remain signed in on this device
+- [X] T082 [US5] Make `web/src/pages/ChangePassword.tsx` work in voluntary mode: reachable from both Account pages; show a back link when not forced; on success remain signed in on this device
 
 **Checkpoint**: Reset users cannot use the app until they set a new password.
 
@@ -245,13 +245,13 @@ name and opens standalone.
 
 ### Tests for User Story 6 (write first, must fail)
 
-- [ ] T083 [P] [US6] Playwright test `e2e/tests/pwa.spec.ts`: `/manifest.webmanifest` has `name` and `short_name` «سِجلّ», `lang: ar`, `dir: rtl`, `display: standalone`, and icons 192/512/maskable; `index.html` has `apple-touch-icon`, `apple-mobile-web-app-capable`, and the theme color; a service worker registers; requests to `/api/*` are not served from the SW cache
+- [X] T083 [P] [US6] Playwright test `e2e/tests/pwa.spec.ts`: `/manifest.webmanifest` has `name` and `short_name` «سِجلّ», `lang: ar`, `dir: rtl`, `display: standalone`, and icons 192/512/maskable; `index.html` has `apple-touch-icon`, `apple-mobile-web-app-capable`, and the theme color; a service worker registers; requests to `/api/*` are not served from the SW cache
 
 ### Implementation for User Story 6
 
-- [ ] T084 [P] [US6] Create the placeholder Sijil icons `web/public/icons/icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, and `apple-touch-icon.png` (180) plus `web/public/favicon.svg` (the letter «س» on the brand color)
-- [ ] T085 [US6] Configure `vite-plugin-pwa` in `web/vite.config.ts` per contracts/ui-routes.md "PWA manifest": `registerType: 'autoUpdate'`; Workbox precaches the app shell and fonts only, with `navigateFallbackDenylist: [/^\/api\//]` and no runtime caching for `/api/*`
-- [ ] T086 [US6] Add the iOS meta tags to `web/index.html` (`apple-touch-icon`, `apple-mobile-web-app-capable`, `apple-mobile-web-app-title` «سِجلّ», `theme-color`, viewport with `viewport-fit=cover`) and safe-area padding for the bottom bar in `web/src/layouts/MarketerLayout.tsx`
+- [X] T084 [P] [US6] Create the placeholder Sijil icons `web/public/icons/icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, and `apple-touch-icon.png` (180) plus `web/public/favicon.svg` (the letter «س» on the brand color)
+- [X] T085 [US6] Configure `vite-plugin-pwa` in `web/vite.config.ts` per contracts/ui-routes.md "PWA manifest": `registerType: 'autoUpdate'`; Workbox precaches the app shell and fonts only, with `navigateFallbackDenylist: [/^\/api\//]` and no runtime caching for `/api/*`
+- [X] T086 [US6] Add the iOS meta tags to `web/index.html` (`apple-touch-icon`, `apple-mobile-web-app-capable`, `apple-mobile-web-app-title` «سِجلّ», `theme-color`, viewport with `viewport-fit=cover`) and safe-area padding for the bottom bar in `web/src/layouts/MarketerLayout.tsx`
 
 **Checkpoint**: All six stories work independently.
 
@@ -259,12 +259,12 @@ name and opens standalone.
 
 ## Phase 10: Polish & Cross-Cutting Concerns
 
-- [ ] T087 [P] Write the Arabic `README.md`: what Sijil is; prerequisites; `cp .env.example .env`; `docker compose up --build`; `seed-demo`; how to run the tests (pytest, vitest, `scripts/e2e.sh`); how to deploy to staging (link to `deploy/staging.md`); how to trust the Caddy local certificate; how to open the app from a phone on the LAN
-- [ ] T088 [P] Add a log-safety test in `api/tests/integration/test_log_safety.py`: capture logs during login, a failed login, change-password, and bootstrap, and assert that no password, token, or cookie value appears
-- [ ] T089 [P] Add a test script `scripts/test-all.sh` (with a PowerShell equivalent `scripts/test-all.ps1`) that runs ruff, pytest, vitest, eslint, and the e2e run via `scripts/e2e.sh` and exits non-zero on any failure (the Principle VIII merge gate)
-- [ ] T090 Verify the web bundle size (app shell < 300 KB gzipped, excluding fonts) with `npm run build` and fix any oversized imports (e.g., MUI icons via per-icon imports)
-- [ ] T091 Run every scenario in [quickstart.md](./quickstart.md) against local `docker compose up`, then redeploy to staging with `scripts/deploy-staging.sh` and repeat scenarios 3–11 there (scenario 11, PWA install on a real Android and iPhone, needs US6); fix gaps
-- [ ] T092 Write the Arabic manual test steps for the owner (per CLAUDE.md) in `specs/001-project-skeleton-auth/manual-test-ar.md`, completing the file started in Phase 5: desktop admin first sign-in, phone marketer sign-in, and PWA installation on Android and iPhone at `https://sijil.t3cftth.net`
+- [X] T087 [P] Write the Arabic `README.md`: what Sijil is; prerequisites; `cp .env.example .env`; `docker compose up --build`; `seed-demo`; how to run the tests (pytest, vitest, `scripts/e2e.sh`); how to deploy to staging (link to `deploy/staging.md`); how to trust the Caddy local certificate; how to open the app from a phone on the LAN
+- [X] T088 [P] Add a log-safety test in `api/tests/integration/test_log_safety.py`: capture logs during login, a failed login, change-password, and bootstrap, and assert that no password, token, or cookie value appears
+- [X] T089 [P] Add a test script `scripts/test-all.sh` (with a PowerShell equivalent `scripts/test-all.ps1`) that runs ruff, pytest, vitest, eslint, and the e2e run via `scripts/e2e.sh` and exits non-zero on any failure (the Principle VIII merge gate)
+- [X] T090 Verify the web bundle size (app shell < 300 KB gzipped, excluding fonts) with `npm run build` and fix any oversized imports (e.g., MUI icons via per-icon imports)
+- [ ] T091 (local part done 2026-11-22; staging part waits for Phase 5) Run every scenario in [quickstart.md](./quickstart.md) against local `docker compose up`, then redeploy to staging with `scripts/deploy-staging.sh` and repeat scenarios 3–11 there (scenario 11, PWA install on a real Android and iPhone, needs US6); fix gaps
+- [X] T092 Write the Arabic manual test steps for the owner (per CLAUDE.md) in `specs/001-project-skeleton-auth/manual-test-ar.md`, completing the file started in Phase 5: desktop admin first sign-in, phone marketer sign-in, and PWA installation on Android and iPhone at `https://sijil.t3cftth.net`
 
 ---
 

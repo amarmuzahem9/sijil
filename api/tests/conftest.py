@@ -69,6 +69,15 @@ def db(engine) -> Iterator[Session]:
         connection.close()
 
 
+@pytest.fixture(autouse=True)
+def _reset_login_limiter() -> Iterator[None]:
+    from app.core.ratelimit import login_failures
+
+    login_failures.reset()
+    yield
+    login_failures.reset()
+
+
 @pytest.fixture
 def client(db) -> Iterator[TestClient]:
     app.dependency_overrides[get_db] = lambda: db

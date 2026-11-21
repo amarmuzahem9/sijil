@@ -1,10 +1,13 @@
 """/api/auth/* — contracts/api.md."""
 
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
 
 from app.api.deps import AuthContext, current_user_allow_password_change
 from app.config import get_settings
+from app.core.ratelimit import login_failures
 from app.db import get_db
 from app.errors import AppError, error_response
 from app.schemas.auth import ChangePasswordRequest, LoginRequest, TokenResponse
@@ -53,9 +56,37 @@ def _token_body(result: auth_service.AuthResult) -> TokenResponse:
 def login(
     body: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)
 ) -> TokenResponse:
-    result = auth_service.login(db, body.phone, body.password, request.headers.get("user-agent"))
+    settings = get_settings()
+    # request.client is the real client: uvicorn applies X-Forwarded-For only from trusted proxies.
+    client_ip = request.client.host if request.client else "unknown"
+    window = timedelta(minutes=settings.login_ip_window_minutes)
+    wait = login_failures.retry_after(client_ip, settings.login_ip_limit, window)
+    if wait is not None:
+        raise AppError(
+            "too_many_attempts",
+            429,
+            headers={"Retry-After": str(wait)},
+            extra={"retry_after_seconds": wait},
+        )
+    try:
+        result = auth_service.login(
+            db, body.phone, body.password, request.headers.get("user-agent")
+        )
+    except AppError as err:
+        if err.code in ("invalid_credentials", "account_locked"):
+            login_failures.record_failure(client_ip)
+        raise
     _set_refresh_cookie(response, result.refresh_token)
     return _token_body(result)
+
+
+@router.post("/logout", status_code=204)
+def logout(request: Request, db: Session = Depends(get_db)) -> Response:
+    """Ends only this device's session; always 204 (contracts/api.md)."""
+    auth_service.logout(db, request.cookies.get(REFRESH_COOKIE))
+    response = Response(status_code=204)
+    _clear_refresh_cookie(response)
+    return response
 
 
 @router.post("/refresh", response_model=TokenResponse)

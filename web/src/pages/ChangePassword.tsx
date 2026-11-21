@@ -7,7 +7,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../auth/AuthProvider';
 import { landingPath } from '../auth/roles';
@@ -112,10 +112,22 @@ export default function ChangePassword() {
           >
             حفظ
           </Button>
-          {forced && (
+          {forced ? (
             <Button variant="text" color="inherit" onClick={() => logout()}>
               تسجيل الخروج
             </Button>
+          ) : (
+            user && (
+              // Voluntary change from «حسابي»: allow going back without saving.
+              <Button
+                variant="text"
+                color="inherit"
+                component={RouterLink}
+                to={user.role === 'marketer' ? '/account' : '/admin/account'}
+              >
+                رجوع
+              </Button>
+            )
           )}
         </Box>
       </Paper>

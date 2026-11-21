@@ -69,7 +69,9 @@ def test_error_never_echoes_input(client) -> None:
     assert secret not in r.text and "07709999998" not in r.text
 
 
-def test_refresh_rotates_cookie(client, make_user) -> None:
+def test_refresh_rotates_cookie(client, make_user, frozen_clock) -> None:
+    from datetime import timedelta
+
     user = make_user()
     first = login(client, user.phone)
     old_token = first.cookies["sijil_refresh"]
@@ -79,6 +81,8 @@ def test_refresh_rotates_cookie(client, make_user) -> None:
     new_token = r.cookies["sijil_refresh"]
     assert new_token and new_token != old_token
 
+    # After the multi-tab grace window an already-rotated token is refused.
+    frozen_clock.advance(timedelta(minutes=1))
     client.cookies.clear()
     client.cookies.set("sijil_refresh", old_token)
     stale = client.post("/api/auth/refresh")

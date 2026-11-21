@@ -5,7 +5,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Paper from '@mui/material/Paper';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -23,6 +23,14 @@ export default function Login() {
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Lockout (423) / per-IP limit (429): keep the button disabled until the wait is over.
+  const [blockedUntil, setBlockedUntil] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (blockedUntil === null) return;
+    const timer = setTimeout(() => setBlockedUntil(null), Math.max(0, blockedUntil - Date.now()));
+    return () => clearTimeout(timer);
+  }, [blockedUntil]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -43,6 +51,8 @@ export default function Login() {
     } catch (err) {
       // Server messages are already Arabic and never echo the input.
       setError(err instanceof ApiError ? err.message : NETWORK_ERROR_MESSAGE);
+      const wait = err instanceof ApiError ? Number(err.extra.retry_after_seconds) : NaN;
+      if (Number.isFinite(wait) && wait > 0) setBlockedUntil(Date.now() + wait * 1000);
     } finally {
       setBusy(false);
     }
@@ -106,7 +116,7 @@ export default function Login() {
             type="submit"
             variant="contained"
             size="large"
-            disabled={busy}
+            disabled={busy || blockedUntil !== null}
             startIcon={busy ? <CircularProgress size={18} color="inherit" /> : undefined}
           >
             دخول

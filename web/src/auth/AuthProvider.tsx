@@ -94,10 +94,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      // Server-side session revocation endpoint arrives with US3; failures are ignored here.
+      // Revokes this device's session on the server and clears the refresh cookie.
       await apiFetch<void>('/api/auth/logout', { method: 'POST', auth: false });
     } catch {
-      /* ignore */
+      /* offline: the local state is still cleared; the cookie expires server-side later */
     }
     clear();
   }, [clear]);

@@ -18,8 +18,19 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [
-    { name: 'desktop-chrome', use: { ...devices['Desktop Chrome'] } },
-    { name: 'pixel-7', use: { ...devices['Pixel 7'] } },
+    // The e2e stack uses Caddy's internal CA. Chromium only registers service workers on a
+    // trusted certificate, and ignoreHTTPSErrors does not cover that — hence the launch flag.
+    {
+      name: 'desktop-chrome',
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: { args: ['--ignore-certificate-errors'] },
+      },
+    },
+    {
+      name: 'pixel-7',
+      use: { ...devices['Pixel 7'], launchOptions: { args: ['--ignore-certificate-errors'] } },
+    },
     { name: 'iphone-14', use: { ...devices['iPhone 14'] } },
   ],
 });

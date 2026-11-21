@@ -1,10 +1,50 @@
 /// <reference types="vitest/config" />
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
+import { VitePWA } from 'vite-plugin-pwa';
 
-// PWA (vite-plugin-pwa) is configured in feature 001 / US6.
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    // contracts/ui-routes.md "PWA manifest". Only the app shell is cached — never /api/*,
+    // so no account data is ever stored by the service worker (Principle II).
+    VitePWA({
+      registerType: 'autoUpdate',
+      injectRegister: 'script',
+      includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
+      manifest: {
+        name: 'سِجلّ',
+        short_name: 'سِجلّ',
+        description: 'تسجيل طلبات اشتراك الإنترنت — تكنولوجي للإنترنت',
+        lang: 'ar',
+        dir: 'rtl',
+        start_url: '/',
+        scope: '/',
+        display: 'standalone',
+        orientation: 'portrait',
+        theme_color: '#0f5fa8',
+        background_color: '#f4f6f9',
+        icons: [
+          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          {
+            src: '/icons/icon-512-maskable.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//],
+        runtimeCaching: [],
+        cleanupOutdatedCaches: true,
+      },
+      devOptions: { enabled: false },
+    }),
+  ],
   server: {
     host: '0.0.0.0',
     port: 5173,
