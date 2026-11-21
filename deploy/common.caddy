@@ -1,0 +1,21 @@
+# Shared site config: /api/* → api, everything else → web.
+# HSTS and the Content-Security-Policy are set by the web container (web/Caddyfile), so the dev
+# server (Vite HMR) is not affected by them.
+encode zstd gzip
+
+header {
+	X-Content-Type-Options "nosniff"
+	Referrer-Policy "strict-origin-when-cross-origin"
+	X-Frame-Options "DENY"
+	Permissions-Policy "camera=(self), geolocation=(self), microphone=()"
+	-Server
+}
+
+handle /api/* {
+	# Caddy sets X-Forwarded-For / X-Forwarded-Proto automatically.
+	reverse_proxy api:8000
+}
+
+handle {
+	reverse_proxy web:{$WEB_PORT:80}
+}

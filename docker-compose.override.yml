@@ -1,0 +1,27 @@
+# Development only — loaded automatically by `docker compose up` on a developer machine.
+# This is the ONLY place development mode is enabled. Never deploy with this file.
+services:
+  api:
+    build:
+      args:
+        INSTALL_DEV: "true"
+    environment:
+      APP_ENV: development
+      # Bind mounts from Windows/macOS don't deliver file events; poll instead.
+      WATCHFILES_FORCE_POLLING: "true"
+    volumes:
+      - ./api:/app
+    command: ["--reload"]
+
+  web:
+    build:
+      target: dev
+    environment:
+      VITE_POLL: "true"
+    volumes:
+      - ./web:/app
+      - /app/node_modules
+
+  proxy:
+    environment:
+      WEB_PORT: "5173"

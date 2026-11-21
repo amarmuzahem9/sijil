@@ -1,0 +1,5 @@
+# e2e only: the Playwright container reaches the stack at https://proxy.
+proxy {
+	tls internal
+	import /etc/caddy/common.caddy
+}

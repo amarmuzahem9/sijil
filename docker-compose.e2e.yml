@@ -1,0 +1,27 @@
+# e2e overlay — used only by scripts/e2e.sh (isolated project "sijil-e2e", fresh volumes).
+#   docker compose -p sijil-e2e -f docker-compose.yml -f docker-compose.e2e.yml ...
+services:
+  api:
+    environment:
+      APP_ENV: test
+
+  proxy:
+    ports: !reset []
+    volumes:
+      - ./deploy/Caddyfile.e2e:/etc/caddy/Caddyfile:ro
+      - ./deploy/common.caddy:/etc/caddy/common.caddy:ro
+
+  e2e:
+    build:
+      context: ./e2e
+    profiles: ["e2e"]
+    environment:
+      E2E_BASE_URL: https://proxy
+      SUPERADMIN_PHONE: ${SUPERADMIN_PHONE}
+      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD}
+      DEMO_MARKETER_PASSWORD: ${DEMO_MARKETER_PASSWORD}
+    volumes:
+      - ./e2e/playwright-report:/e2e/playwright-report
+      - ./e2e/test-results:/e2e/test-results
+    depends_on:
+      - proxy

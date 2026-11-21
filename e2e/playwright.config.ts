@@ -1,0 +1,25 @@
+import { defineConfig, devices } from '@playwright/test';
+
+// Runs inside the e2e container against the isolated stack started by scripts/e2e.sh.
+export default defineConfig({
+  testDir: './tests',
+  timeout: 60_000,
+  expect: { timeout: 10_000 },
+  fullyParallel: false,
+  retries: 0,
+  reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
+  outputDir: 'test-results',
+  use: {
+    baseURL: process.env.E2E_BASE_URL ?? 'https://proxy',
+    ignoreHTTPSErrors: true,
+    locale: 'ar-IQ',
+    timezoneId: 'Asia/Baghdad',
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+  },
+  projects: [
+    { name: 'desktop-chrome', use: { ...devices['Desktop Chrome'] } },
+    { name: 'pixel-7', use: { ...devices['Pixel 7'] } },
+    { name: 'iphone-14', use: { ...devices['iPhone 14'] } },
+  ],
+});

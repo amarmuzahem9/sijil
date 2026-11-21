@@ -1,0 +1,32 @@
+# Secrets — never commit real environment files
+.env
+.env.*
+!.env.example
+
+# Node / web
+node_modules/
+dist/
+build/
+coverage/
+*.log
+
+# Python / api
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.idea/
