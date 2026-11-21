@@ -82,7 +82,7 @@ The main admin passes every check.
 
 | action | Arabic label (viewer) | before | after |
 |---|---|---|---|
-| `user.created` | إنشاء حساب | — | `{name, phone, role, permissions, is_active, must_change_password}` |
+| `user.created` | إنشاء حساب (+ role, e.g. «إنشاء حساب (مسوّق)») | — | `{name, phone, role, permissions, is_active, must_change_password}` |
 | `user.updated` | تعديل بيانات حساب | changed of `{name, phone}` | changed of `{name, phone}` |
 | `user.permissions_changed` | تعديل الصلاحيات | `{permissions}` | `{permissions}` |
 | `user.deactivated` | إيقاف حساب | `{is_active: true}` | `{is_active: false}` |

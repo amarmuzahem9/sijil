@@ -27,7 +27,8 @@ Access follows the page map in [data-model.md](../data-model.md#permission--page
   - Buttons «حفظ» and «إلغاء»
 - The **«تعديل»** dialog has the same fields without the password field.
 - **«تصفير كلمة السر»** opens a dialog with one field, «كلمة السر المؤقتة الجديدة», and the
-  explanation «سيُطلب من الأدمن تغييرها عند الدخول، وستنتهي جلساته الحالية».
+  explanation «سيُطلب من الأدمن تغييرها عند الدخول، وستنتهي جلساته الحالية». This dialog is the
+  confirmation (spec FR-021); there is no second confirm step.
 - **«إيقاف»** asks for confirmation: «إيقاف حساب <الاسم>؟ سيُسجَّل خروجه فوراً ولن يستطيع
   الدخول». «إعادة تفعيل» needs no confirmation.
 

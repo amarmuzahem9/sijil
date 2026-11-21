@@ -166,8 +166,9 @@ with the right actor, target, time in Baghdad time, and no password data.
 
 1. **Given** any of: admin created, marketer created, account edited (name/phone), permissions
    changed, account deactivated, account reactivated, password reset, own password changed, **When**
-   it succeeds, **Then** exactly one audit entry is written with actor, target account, action,
-   time, and before/after of the changed fields.
+   it succeeds, **Then** exactly one audit entry is written **per kind of change** with actor,
+   target account, action, time, and before/after of the changed fields. A single save that changes
+   both details (name/phone) and permissions writes two entries: one for each kind.
 2. **Given** a refused action (no permission, duplicate phone, protected main admin), **Then** no
    account data changes.
 3. **Given** any audit entry, **Then** it never contains a password, temporary password, hash, or
@@ -283,7 +284,9 @@ with the right actor, target, time in Baghdad time, and no password data.
   shown in Baghdad time) and before/after values: admin created, marketer created, account edited
   (name/phone), permissions changed, account deactivated, account reactivated, password reset by an
   admin, password changed by the user, and the main admin's own name change. Passwords, hashes, and
-  tokens MUST never be recorded.
+  tokens MUST never be recorded. One entry is written per kind of change (details, permissions,
+  state, password); account creation is one entry that records the role, so the viewer shows
+  which kind of account was created.
 - **FR-019a**: The main admin (only) MUST have a read-only «سجل العمليات» page listing audit
   entries newest first, showing actor, time in Baghdad time, Arabic action label, target, and
   before/after values, filterable by date range (Baghdad days) and by actor. The page MUST be
@@ -296,7 +299,8 @@ with the right actor, target, time in Baghdad time, and no password data.
 
 - **FR-021**: All screens of this feature MUST be in Arabic, right-to-left, and usable on a phone
   screen as well as a computer. Lists show the account state with a clear label («فعّال» /
-  «موقوف»). Deactivation and password reset ask for confirmation before acting.
+  «موقوف»). Deactivation asks for confirmation before acting. For password reset, the dialog where
+  the new temporary password is entered, with its warning text, is the confirmation; no second step.
 
 ### Key Entities
 
@@ -323,8 +327,8 @@ with the right actor, target, time in Baghdad time, and no password data.
   signed-in device is refused in 100% of tests.
 - **SC-004**: 0 ways exist to deactivate the main admin or remove its permissions (all attempts
   refused in tests).
-- **SC-005**: Every successful account action in this feature produces exactly one audit entry, and
-  0 audit entries contain password data.
+- **SC-005**: Every successful account action in this feature produces exactly one audit entry per
+  kind of change, and 0 audit entries contain password data.
 - **SC-006**: An admin can add a new marketer in under 1 minute from a phone.
 - **SC-007**: A permission change made by the main admin is reflected in the affected admin's menu
   and access on their next page load, with no sign-out needed.

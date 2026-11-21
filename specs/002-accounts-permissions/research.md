@@ -56,9 +56,10 @@ design decisions, built on what feature 001 already provides.
 
 ## R5. Validation and uniqueness
 
-- **Decision**: Pydantic schemas trim the name and check its length (2–100). The phone goes
-  through `normalize_phone` (`invalid_phone`, 422). Temporary passwords must be at least 8
-  characters (`weak_password`). Permissions must be a subset of the six keys with no duplicates
+- **Decision**: Pydantic schemas check types only. `account_service` trims the name and checks
+  its length (2–100 → `invalid_name`, 422), so the specific Arabic message reaches the user instead
+  of the generic `validation_error`. The phone goes through `normalize_phone` (`invalid_phone`,
+  422). Temporary passwords must be at least 8 characters (`weak_password`, 422). Permissions must be a subset of the six keys with no duplicates
   and are stored in canonical order. Uniqueness: the service checks first, and the unique index
   on `users.phone` is the source of truth. `IntegrityError` maps to 409 `phone_taken` «رقم الهاتف
   مستخدم لحساب آخر».
@@ -70,7 +71,8 @@ design decisions, built on what feature 001 already provides.
 ## R6. Audit actions and the audit viewer
 
 - **Decision**: These actions are added. Each successful change writes one entry, and a PATCH that
-  changes both details and permissions writes two (`user.updated` + `user.permissions_changed`):
+  changes both details and permissions writes two (`user.updated` + `user.permissions_changed`).
+  The rule is one entry per kind of change (spec FR-019, SC-005):
 
   | action | before / after |
   |---|---|
