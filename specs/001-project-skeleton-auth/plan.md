@@ -93,14 +93,16 @@ api/
 ├── alembic.ini
 ├── migrations/versions/        # 0001_users_sessions_audit.py
 ├── app/
-│   ├── main.py                 # FastAPI app, routers, error handlers, log redaction
+│   ├── main.py                 # FastAPI app, routers
+│   ├── errors.py               # AppError + {code, message} handlers (Arabic messages)
+│   ├── logging_config.py       # JSON logs + redaction filter (not logging.py: stdlib clash)
 │   ├── config.py               # pydantic-settings (reads .env)
 │   ├── db.py                   # engine, session dependency
-│   ├── cli.py                  # bootstrap, seed-demo (dev only)
+│   ├── cli.py                  # bootstrap, seed-demo [--e2e] (refused in production)
 │   ├── core/
 │   │   ├── phone.py            # normalize_phone
 │   │   ├── security.py         # argon2, JWT, refresh-token hashing
-│   │   ├── timeutil.py         # UTC now, baghdad_month_bounds
+│   │   ├── timeutil.py         # utc_now (single clock, test-overridable), baghdad_month_bounds
 │   │   └── ratelimit.py        # per-IP sliding window
 │   ├── models/                 # user.py, session.py, audit.py
 │   ├── schemas/                # auth.py, user.py
@@ -119,6 +121,7 @@ api/
 
 web/
 ├── Dockerfile                  # build → caddy static (SPA fallback)
+├── Caddyfile                   # static file server config for the web container
 ├── package.json, vite.config.ts (vite-plugin-pwa), tsconfig.json
 ├── public/icons/               # 192, 512, maskable, apple-touch-icon
 └── src/
@@ -135,10 +138,17 @@ e2e/
 └── tests/                      # admin-first-login, marketer-mobile, lockout, roles, logout
 
 deploy/
-└── Caddyfile                   # /api/* → api:8000, else → web:80, security headers
+├── Caddyfile                   # /api/* → api:8000, else → web:80, security headers
+└── staging.md                  # Arabic staging deployment guide (sijil.t3cftth.net)
 
-docker-compose.yml              # db, api, web, proxy (+ e2e under profile "test")
-docker-compose.override.yml     # dev: mounts, uvicorn --reload, vite HMR
+scripts/
+├── e2e.sh / e2e.ps1            # isolated e2e stack: fresh volume → seed-demo --e2e → Playwright → down -v
+├── deploy-staging.sh           # on the server: pull → compose up (base file only) → health → seed-demo
+└── test-all.sh / test-all.ps1  # merge gate: ruff, pytest, vitest, eslint, e2e
+
+docker-compose.yml              # db, api, web, proxy — production/staging definition, APP_ENV defaults to production
+docker-compose.override.yml     # dev only (auto-loaded locally): mounts, uvicorn --reload, vite HMR, APP_ENV=development
+docker-compose.e2e.yml          # e2e overlay: APP_ENV=test, tls internal, e2e Playwright service
 .env.example
 README.md                       # Arabic: local run with docker compose up
 ```
@@ -151,7 +161,7 @@ just `web/`.
 
 | Variable | Purpose | Default / example |
 |---|---|---|
-| `APP_ENV` | `development` / `production` | `development` |
+| `APP_ENV` | `development` / `test` / `staging` / `production`. Compose defaults to `production`; only the override sets `development` | commented out in `.env.example` |
 | `SITE_ADDRESS` | Caddy site address | `localhost` (prod: `sijil.t3cftth.net`) |
 | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | db container | `sijil`, `sijil`, `change-me` |
 | `DATABASE_URL` | api → db | `postgresql+psycopg://sijil:change-me@db:5432/sijil` |
@@ -163,13 +173,24 @@ just `web/`.
 | `LOCKOUT_THRESHOLD` / `LOCKOUT_MINUTES` | | `5` / `15` |
 | `LOGIN_IP_LIMIT` / `LOGIN_IP_WINDOW_MINUTES` | | `20` / `15` |
 | `SUPERADMIN_PHONE`, `SUPERADMIN_NAME`, `SUPERADMIN_PASSWORD` | bootstrap (first start only) | synthetic examples |
+| `DEMO_MARKETER_PASSWORD` | password for `seed-demo` accounts (refused in production) | `change-me` |
 | `TRUSTED_PROXY_CIDRS` | X-Forwarded-For trust | compose network |
 
-The API refuses to start in `production` if `JWT_SECRET` or a password is still `change-me`.
+In `staging` and `production`, the API refuses to start if `JWT_SECRET` or a password is still
+`change-me`, or if `COOKIE_SECURE` is false.
+
+## Environments
+
+| Environment | How it runs | Purpose |
+|---|---|---|
+| development | `docker compose up` (override auto-loaded), `https://localhost` | Coding with hot reload |
+| test | `scripts/e2e.sh`: isolated project `sijil-e2e`, fresh volume every run | Playwright merge gate |
+| staging | `scripts/deploy-staging.sh` on the company server, `https://sijil.t3cftth.net`, base compose file only | Acceptance on a real computer and real phones; PWA install |
+| production | Same server and domain after go-live (feature 014): `APP_ENV=production`, demo accounts deactivated | Real use |
 
 ## Complexity Tracking
 
 | Item | Why Needed | Simpler Alternative Rejected Because |
 |---|---|---|
-| `e2e` compose service (profile `test`, not started by default) | Principle VIII requires Playwright e2e against the real stack, reproducibly | Running Playwright on each developer host needs browser installs; the four runtime services stay unchanged |
+| `e2e` service in a separate overlay `docker-compose.e2e.yml` | Principle VIII requires Playwright e2e against the real stack, reproducibly, from a fresh DB each run | Running Playwright on each developer host needs browser installs. The base `docker-compose.yml` keeps exactly the four constitution services |
 | `sessions` table | Per-device sign-out, rotation, and immediate revocation (FR-007/009/012) | Stateless refresh JWTs cannot be revoked per device without a deny-list table anyway |

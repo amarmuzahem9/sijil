@@ -46,8 +46,13 @@ No open NEEDS CLARIFICATION items remain.
   separate from Safari, so the user signs in once inside the installed app (documented in the
   quickstart).
 - **Local development**: Caddy serves `https://localhost` with its internal CA. `COOKIE_SECURE`
-  defaults to `true` and may be set to `false` only for plain-HTTP testing from a phone on the
-  LAN.
+  defaults to `true`.
+- **Real-phone testing (decision)**: early staging deployment on the company server at
+  `https://sijil.t3cftth.net` (server and domain are ready). Caddy obtains a real certificate, so
+  sign-in, secure cookies, the service worker, and PWA installation behave exactly as in
+  production. LAN testing over plain HTTP was rejected because service workers and PWA install
+  need HTTPS. LAN HTTPS with Caddy's internal CA was rejected because it requires installing a
+  root certificate on every test phone.
 
 ## R4. Password hashing
 
@@ -99,8 +104,13 @@ No open NEEDS CLARIFICATION items remain.
 
 ## R8. Dev-only test marketer
 
-- **Decision**: `python -m app.cli seed-demo` creates synthetic accounts («مسوّق تجريبي»,
-  `07700000001`) only when `APP_ENV != production`; it refuses to run otherwise. It is idempotent.
+- **Decision**: `python -m app.cli seed-demo` creates the synthetic account «مسوّق تجريبي»
+  `07700000001` (password from `DEMO_MARKETER_PASSWORD`). It runs in `development`, `test`, and
+  `staging` and refuses in `production`. It is idempotent. `--e2e` adds dedicated accounts so
+  tests that change state never share an account: «مسوّق قفل» `07700000002` (lockout test) and
+  «مسوّق تغيير» `07700000003` (`must_change_password = true`).
+- Before go-live (feature 014), the demo accounts on the server are deactivated (never deleted)
+  and `APP_ENV` becomes `production`.
 - **Rationale**: Account management UI is feature 002; acceptance needs a marketer now. Synthetic
   data only, per the constitution.
 
@@ -143,6 +153,10 @@ No open NEEDS CLARIFICATION items remain.
   ISO-8601 UTC. The web formats them with `Intl.DateTimeFormat('ar-IQ', { timeZone:
   'Asia/Baghdad' })`. A helper `baghdad_month_bounds()` is added now (unit-tested), ready for the
   feature 011 counter.
+- **Single clock**: `app.core.timeutil.utc_now()` is the only source of time for logic: lock
+  expiry, session expiry, token issue, and timestamps written by services. Tests override it with
+  a `frozen_clock` fixture. DB defaults (`now()`) are only a fallback for inserts and are never
+  compared against in logic, because `now()` is constant inside the per-test transaction.
 
 ## R12. Testing
 
@@ -151,6 +165,11 @@ No open NEEDS CLARIFICATION items remain.
   normalize_phone, lockout, password policy, and token logic. Integration tests cover every
   endpoint in [contracts/api.md](./contracts/api.md), including role refusals.
 - **Frontend**: Vitest + Testing Library for the phone helper and route guards.
+- **E2E isolation**: `scripts/e2e.sh` starts a separate compose project (`-p sijil-e2e`, base file
+  + `docker-compose.e2e.yml`) on a fresh DB volume. It runs bootstrap and `seed-demo --e2e`, then
+  Playwright, then always runs `down -v`. Tests that change state use their own account and a
+  single browser project: first sign-in and lockout run in desktop-chrome only, and forced change
+  in pixel-7 only.
 - **E2E**: Playwright in `e2e/` against the composed stack. It covers: super admin desktop sign-in
   with forced change; marketer on mobile viewport (Pixel 7 and iPhone 14 profiles) seeing the
   dashboard and bottom bar; lockout after 5 failures; marketer refused on `/admin`; sign-out.
@@ -170,4 +189,9 @@ No open NEEDS CLARIFICATION items remain.
     `Referrer-Policy`, and a CSP allowing self only).
   - `docker-compose.override.yml` (development): mounts source, `uvicorn --reload`, the Vite dev
     server with HMR behind the same proxy (WebSocket passthrough), and `APP_ENV=development`.
+    This is the only place development mode is enabled.
+  - The base `docker-compose.yml` is the production/staging definition. `APP_ENV` defaults to
+    `production`, and on the server it always runs alone:
+    `docker compose -f docker-compose.yml up -d`. Docker auto-loads the override file, so a plain
+    `docker compose up` on the server would run dev mode; the server command never omits `-f`.
 - Only `proxy` publishes ports (80/443). `db` and `api` stay on the internal network.

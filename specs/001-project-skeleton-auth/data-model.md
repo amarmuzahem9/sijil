@@ -1,6 +1,8 @@
 # Data Model: Project Skeleton & Sign-In (001)
 
-All timestamps are `timestamptz`, stored in UTC (Principle X). Rows in `users` and `audit_log` are
+All timestamps are `timestamptz`, stored in UTC (Principle X). Values used in logic (lock and
+session expiry, audit times) are written from the application clock `utc_now()`. Column defaults
+of `now()` are only a fallback and are never compared against (see research.md R11). Rows in `users` and `audit_log` are
 never physically deleted (Principle III).
 
 ## users
@@ -52,6 +54,7 @@ deactivation (FR-007, FR-012).
 | `id` | uuid PK | Embedded as `sid` in access tokens |
 | `user_id` | bigint FK → users.id, not null | index |
 | `refresh_token_hash` | text, not null, unique | SHA-256 hex of the current refresh token |
+| `previous_token_hash` | text, null, index | Hash of the token replaced by the last rotation; presenting it again = reuse → revoke session |
 | `created_at` | timestamptz, not null | |
 | `last_used_at` | timestamptz, not null | Updated on each refresh |
 | `expires_at` | timestamptz, not null | `last_used_at + 30 days` (sliding) |
