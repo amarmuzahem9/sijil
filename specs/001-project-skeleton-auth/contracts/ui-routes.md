@@ -1,5 +1,9 @@
 # UI Contract: Routes & Screens (001)
 
+> **Superseded in part by feature 002.** Admin route access now follows the permission map in
+> [specs/002-accounts-permissions/contracts/ui-routes.md](../../002-accounts-permissions/contracts/ui-routes.md):
+> each `/admin/*` page is visible only with its permission, and «حسابي» is read-only.
+
 All screens use `dir="rtl"`, `lang="ar"`, Cairo font, and Arabic text only.
 
 | Path | Access | Screen |

@@ -9,4 +9,3 @@ export const AdminSettings = () => <ComingSoon title="الإعدادات" />;
 export const AdminReports = () => <ComingSoon title="التقارير والتصدير" />;
 export const AdminImport = () => <ComingSoon title="الاستيراد" />;
 export const AdminBackup = () => <ComingSoon title="النسخ الاحتياطي" />;
-export const AdminAudit = () => <ComingSoon title="سجل العمليات" />;

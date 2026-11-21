@@ -62,6 +62,39 @@ def test_no_secrets_in_logs(client, db, make_user, caplog, capsys) -> None:
         assert secret not in everything
 
 
+def test_temporary_passwords_never_logged(client, make_user, caplog, capsys) -> None:
+    """Feature 002: temporary passwords typed by admins never reach the logs."""
+    caplog.set_level(logging.DEBUG)
+    h = auth_header(login(client, make_user("super_admin").phone))
+    temp_create, temp_reset = "Log-Temp-Create-1", "Log-Temp-Reset-2"
+    created = client.post(
+        "/api/admin/marketers",
+        headers=h,
+        json={"name": "مسوّق السجل", "phone": "07705550123", "temporary_password": temp_create},
+    ).json()
+    client.post(
+        f"/api/admin/marketers/{created['id']}/reset-password",
+        headers=h,
+        json={"temporary_password": temp_reset},
+    )
+    client.post(  # rejected body: the validation error must not echo the value either
+        "/api/admin/marketers",
+        headers=h,
+        json={"name": "س", "phone": "07705550124", "temporary_password": "Log-Bad-3"},
+    )
+
+    printed = capsys.readouterr()
+    everything = (
+        "\n".join(r.getMessage() for r in caplog.records)
+        + _formatted(list(caplog.records))
+        + printed.out
+        + printed.err
+    )
+    for secret in (temp_create, temp_reset, "Log-Bad-3"):
+        assert secret not in everything
+    assert "Log-Temp" not in redact('{"temporary_password": "Log-Temp-9"}')
+
+
 def test_redaction_filter() -> None:
     assert "s3cr3t" not in redact('password="s3cr3t" user=1')
     assert "abc.def.ghi" not in redact("Authorization: Bearer abc.def.ghi")

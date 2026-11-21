@@ -5,14 +5,15 @@ from datetime import timedelta
 from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
 
-from app.api.deps import AuthContext, current_user_allow_password_change
+from app.api.deps import AuthContext, current_user, current_user_allow_password_change
 from app.config import get_settings
 from app.core.ratelimit import login_failures
 from app.db import get_db
 from app.errors import AppError, error_response
+from app.schemas.accounts import NameUpdate
 from app.schemas.auth import ChangePasswordRequest, LoginRequest, TokenResponse
 from app.schemas.user import UserOut
-from app.services import auth_service
+from app.services import account_service, auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -104,6 +105,17 @@ def refresh(request: Request, response: Response, db: Session = Depends(get_db))
 @router.get("/me", response_model=UserOut)
 def me(ctx: AuthContext = Depends(current_user_allow_password_change)) -> UserOut:
     return UserOut.model_validate(ctx.user)
+
+
+@router.patch("/me", response_model=UserOut)
+def update_me(
+    body: NameUpdate, ctx: AuthContext = Depends(current_user), db: Session = Depends(get_db)
+) -> UserOut:
+    """Only the main admin may rename themselves; nobody edits their own phone (system.md §3.5)."""
+    if ctx.user.role != "super_admin":
+        raise AppError("forbidden", 403)
+    user = account_service.update_account(db, ctx.user, ctx.user, name=body.name)
+    return UserOut.model_validate(user)
 
 
 @router.post("/change-password", response_model=TokenResponse)

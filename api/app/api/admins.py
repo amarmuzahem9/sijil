@@ -8,7 +8,13 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import AuthContext, require_roles
 from app.db import get_db
-from app.schemas.accounts import AccountList, AccountOut, AdminCreate
+from app.schemas.accounts import (
+    AccountList,
+    AccountOut,
+    AdminCreate,
+    AdminUpdate,
+    ResetPasswordBody,
+)
 from app.services import account_service
 
 router = APIRouter(prefix="/admin/admins", tags=["admins"])
@@ -39,4 +45,44 @@ def create_admin(
     return AccountOut.model_validate(user)
 
 
-# PATCH / deactivate / reactivate / reset-password for admins arrive with US3 (T031).
+@router.patch("/{user_id}", response_model=AccountOut)
+def update_admin(
+    user_id: int,
+    body: AdminUpdate,
+    ctx: AuthContext = Depends(_main_admin),
+    db: Session = Depends(get_db),
+) -> AccountOut:
+    target = account_service.get_target(db, user_id, "admin")
+    account_service.ensure_not_protected(target)
+    user = account_service.update_account(
+        db, ctx.user, target, name=body.name, phone=body.phone, permissions=body.permissions
+    )
+    return AccountOut.model_validate(user)
+
+
+@router.post("/{user_id}/deactivate", response_model=AccountOut)
+def deactivate_admin(
+    user_id: int, ctx: AuthContext = Depends(_main_admin), db: Session = Depends(get_db)
+) -> AccountOut:
+    target = account_service.get_target(db, user_id, "admin")
+    return AccountOut.model_validate(account_service.set_active(db, ctx.user, target, False))
+
+
+@router.post("/{user_id}/reactivate", response_model=AccountOut)
+def reactivate_admin(
+    user_id: int, ctx: AuthContext = Depends(_main_admin), db: Session = Depends(get_db)
+) -> AccountOut:
+    target = account_service.get_target(db, user_id, "admin")
+    return AccountOut.model_validate(account_service.set_active(db, ctx.user, target, True))
+
+
+@router.post("/{user_id}/reset-password", response_model=AccountOut)
+def reset_admin_password(
+    user_id: int,
+    body: ResetPasswordBody,
+    ctx: AuthContext = Depends(_main_admin),
+    db: Session = Depends(get_db),
+) -> AccountOut:
+    target = account_service.get_target(db, user_id, "admin")
+    user = account_service.reset_password(db, ctx.user, target, body.temporary_password)
+    return AccountOut.model_validate(user)

@@ -176,20 +176,20 @@ its own.
 
 ### Tests for User Story 3
 
-- [ ] T029 [P] [US3] Integration tests in `api/tests/integration/test_admins_manage.py`:
+- [X] T029 [P] [US3] Integration tests in `api/tests/integration/test_admins_manage.py`:
   - PATCH permissions → the admin's existing token is evaluated with the new list on the next request; `user.permissions_changed` audit with before/after
   - PATCH name and permissions together → two audit entries
   - deactivate, reactivate, and reset, as in US2 but for admins
   - every action targeting the super_admin id → 404, with no data change (SC-004)
   - an admin with `marketers` calling these → 403
-- [ ] T030 [P] [US3] Playwright `e2e/tests/permission-change.spec.ts` (quickstart B, G):
+- [X] T030 [P] [US3] Playwright `e2e/tests/permission-change.spec.ts` (quickstart B, G):
   - toggle الإعدادات for the signed-in admin; the menu updates on navigation without signing out
   - the main-admin row has no actions
 
 ### Implementation for User Story 3
 
-- [ ] T031 [US3] Add to `api/app/api/admins.py`: `PATCH /admin/admins/{id}` and `POST /admin/admins/{id}/deactivate|reactivate|reset-password` with `require_roles("super_admin")`. They use `account_service.get_target(role="admin")` and call `ensure_not_protected` before every change
-- [ ] T032 [US3] Add the actions to `web/src/pages/admin/Admins.tsx`:
+- [X] T031 [US3] Add to `api/app/api/admins.py`: `PATCH /admin/admins/{id}` and `POST /admin/admins/{id}/deactivate|reactivate|reset-password` with `require_roles("super_admin")`. They use `account_service.get_target(role="admin")` and call `ensure_not_protected` before every change
+- [X] T032 [US3] Add the actions to `web/src/pages/admin/Admins.tsx`:
   - «تعديل»: `AccountDialog` without the password field, with `PermissionSwitches`
   - «تصفير كلمة السر» with the explanation text
   - «إيقاف» with `ConfirmDialog`, and «إعادة تفعيل»
@@ -207,16 +207,16 @@ its own.
 
 ### Tests for User Story 4
 
-- [ ] T033 [P] [US4] Integration tests in `api/tests/integration/test_me_name.py`:
+- [X] T033 [P] [US4] Integration tests in `api/tests/integration/test_me_name.py`:
   - `PATCH /api/auth/me {name}` as super_admin → 200 with a `user.updated` audit entry (actor = target)
   - as an admin or a marketer → 403
   - a body with `phone` → 422; a name outside 2–100 → 422
-- [ ] T034 [P] [US4] Vitest `web/src/__tests__/account-panel.test.tsx`: the name and phone have no editable input for marketer and admin; the «تعديل الاسم» button shows only for super_admin
+- [X] T034 [P] [US4] Vitest `web/src/__tests__/account-panel.test.tsx`: the name and phone have no editable input for marketer and admin; the «تعديل الاسم» button shows only for super_admin
 
 ### Implementation for User Story 4
 
-- [ ] T035 [US4] Add `PATCH /me` to `api/app/api/auth.py`, using `NameUpdate` and `account_service.update_account(name=...)` and allowed only for `super_admin` (research.md R7, data-model.md › `users.name`)
-- [ ] T036 [US4] Update `web/src/pages/AccountPanel.tsx` (contracts/ui-routes.md › "حسابي"):
+- [X] T035 [US4] Add `PATCH /me` to `api/app/api/auth.py`, using `NameUpdate` and `account_service.update_account(name=...)` and allowed only for `super_admin` (research.md R7, data-model.md › `users.name`)
+- [X] T036 [US4] Update `web/src/pages/AccountPanel.tsx` (contracts/ui-routes.md › "حسابي"):
   - fields read-only
   - for super_admin, an «تعديل الاسم» dialog that invalidates `['me']` after saving so the top bar updates
   - keep «تغيير كلمة السر» and «تسجيل الخروج»
@@ -233,21 +233,21 @@ its own.
 
 ### Tests for User Story 5
 
-- [ ] T037 [P] [US5] Integration tests in `api/tests/integration/test_audit_viewer.py`:
+- [X] T037 [P] [US5] Integration tests in `api/tests/integration/test_audit_viewer.py`:
   - `GET /api/admin/audit`: newest first, keyset `before_id`/`has_more`/`next_before_id`, `limit` max 100
   - the `from`/`to` Baghdad-day boundaries: an entry at 23:30 Baghdad belongs to that day
   - `actor_id` (including `system`); actor and target names joined
   - `GET /api/admin/audit/actors`
   - an admin with all permissions and a marketer → 403
   - no write or delete route exists (405 or 404)
-- [ ] T038 [P] [US5] Test in `api/tests/integration/test_audit_completeness.py` (SC-005): run every action of FR-019 once and assert exactly one matching entry per kind of change (a combined name+permissions PATCH → two entries). Scan all `before`/`after` JSON for the temporary passwords used and for the keys `password`, `hash`, and `token`
+- [X] T038 [P] [US5] Test in `api/tests/integration/test_audit_completeness.py` (SC-005): run every action of FR-019 once and assert exactly one matching entry per kind of change (a combined name+permissions PATCH → two entries). Scan all `before`/`after` JSON for the temporary passwords used and for the keys `password`, `hash`, and `token`
 
 ### Implementation for User Story 5
 
-- [ ] T039 [P] [US5] Create `api/app/schemas/audit.py` (`AuditEntryOut`, `AuditPage`, `ActorOut`) and `api/app/services/audit_query.py`: a filtered keyset query using `baghdad_day_bounds` and the actor index, joining actor and target users
-- [ ] T040 [US5] Create the router `api/app/api/audit.py`: `GET /admin/audit` and `GET /admin/audit/actors` with `require_roles("super_admin")`. Register it in `api/app/main.py`. Depends on T039
-- [ ] T041 [P] [US5] Add typed calls in `web/src/lib/audit.ts`
-- [ ] T042 [US5] Create the page `web/src/pages/admin/Audit.tsx`, replacing the `AdminAudit` placeholder (contracts/ui-routes.md › "/admin/audit"):
+- [X] T039 [P] [US5] Create `api/app/schemas/audit.py` (`AuditEntryOut`, `AuditPage`, `ActorOut`) and `api/app/services/audit_query.py`: a filtered keyset query using `baghdad_day_bounds` and the actor index, joining actor and target users
+- [X] T040 [US5] Create the router `api/app/api/audit.py`: `GET /admin/audit` and `GET /admin/audit/actors` with `require_roles("super_admin")`. Register it in `api/app/main.py`. Depends on T039
+- [X] T041 [P] [US5] Add typed calls in `web/src/lib/audit.ts`
+- [X] T042 [US5] Create the page `web/src/pages/admin/Audit.tsx`, replacing the `AdminAudit` placeholder (contracts/ui-routes.md › "/admin/audit"):
   - the filters من تاريخ / إلى تاريخ / المنفّذ (plus «النظام») and «مسح الفلاتر»
   - entries with `formatBaghdad`, the Arabic labels from `web/src/lib/labels.ts`, and قبل/بعد lists (permissions shown by label, booleans as نعم/لا)
   - for `user.created`, show the role next to the label, e.g. «إنشاء حساب (مسوّق)» / «إنشاء حساب (أدمن)» (fix I3)
@@ -259,10 +259,20 @@ its own.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T043 [P] Update `README.md` (the feature list) and `specs/001-project-skeleton-auth/contracts/ui-routes.md` with a note that the admin route access is replaced by `specs/002-accounts-permissions/contracts/ui-routes.md`
-- [ ] T044 [P] Check that the log redaction filter in `api/app/logging_config.py` covers `temporary_password`. Add a case to `api/tests/integration/test_log_safety.py`
-- [ ] T045 Run `scripts/test-all.sh` (ruff, pytest, eslint, typecheck, vitest, e2e) and fix any failures
-- [ ] T046 Run `docker compose up --build`, walk quickstart.md scenarios A–J manually, then write the Arabic manual-test steps to `specs/002-accounts-permissions/manual-test-ar.md` (CLAUDE.md). Include timed checks for SC-006 (add a marketer from a phone in under 1 minute) and SC-008 (find an entry by date and actor in under 30 seconds)
+- [X] T043 [P] Update `README.md` (the feature list) and `specs/001-project-skeleton-auth/contracts/ui-routes.md` with a note that the admin route access is replaced by `specs/002-accounts-permissions/contracts/ui-routes.md`
+- [X] T044 [P] Check that the log redaction filter in `api/app/logging_config.py` covers `temporary_password`. Add a case to `api/tests/integration/test_log_safety.py`
+- [X] T045 Run `scripts/test-all.sh` (ruff, pytest, eslint, typecheck, vitest, e2e) and fix any failures
+- [X] T046 Run `docker compose up --build`, walk quickstart.md scenarios A–J manually, then write the Arabic manual-test steps to `specs/002-accounts-permissions/manual-test-ar.md` (CLAUDE.md). Include timed checks for SC-006 (add a marketer from a phone in under 1 minute) and SC-008 (find an entry by date and actor in under 30 seconds)
+
+---
+
+**Batch 2 notes (2026-11-22)**:
+- T031: the admin PATCH route also calls `ensure_not_protected` (defence in depth); `get_target` already makes the main admin unreachable (404).
+- T039: the audit target name is joined from `users` when `entity_type = 'user'`; date filter rejects `from > to` with 422.
+- T043: README had no feature list yet; added a «الفيزات المنجزة» table.
+- T044: the redaction regex already covered `temporary_password` (it matches `password`); added a log test that creates/resets with temporary passwords and sends a rejected body.
+- T045: full gate green — ruff, pytest 181, eslint (1 pre-existing warning from 001), typecheck, vitest 64, Playwright 15.
+- T046: Arabic manual steps in `manual-test-ar.md`, including the timed checks for SC-006 and SC-008.
 
 ---
 
