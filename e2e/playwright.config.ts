@@ -6,6 +6,9 @@ export default defineConfig({
   timeout: 60_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,
+  // One worker: files run in name order, so admin-first-login (which sets the main admin's
+  // password) runs before the feature-002 specs that sign in as the main admin.
+  workers: 1,
   retries: 0,
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
   outputDir: 'test-results',

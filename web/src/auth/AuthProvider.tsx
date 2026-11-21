@@ -1,5 +1,13 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { ReactNode } from 'react';
 
 import {
@@ -7,6 +15,7 @@ import {
   apiFetch,
   refreshSession,
   setAccessToken,
+  setForbiddenListener,
   setSessionEndedListener,
 } from '../lib/api';
 import type { TokenResponse, User } from '../lib/api';
@@ -21,6 +30,8 @@ interface AuthContextValue {
   login: (phone: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
   setSession: (tokens: TokenResponse) => void;
+  /** Re-read /api/auth/me so permission and name changes show without signing out. */
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -79,6 +90,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => setSessionEndedListener(null);
   }, [clear]);
 
+  // Re-read the user on window focus and after any `forbidden` response (002 research R2).
+  const inFlight = useRef<Promise<void> | null>(null);
+  const refreshUser = useCallback(() => {
+    if (status !== 'authenticated') return Promise.resolve();
+    inFlight.current ??= (async () => {
+      try {
+        setUser(await apiFetch<User>('/api/auth/me'));
+      } catch {
+        /* session-ended errors are handled by the listener; network errors keep the old user */
+      } finally {
+        inFlight.current = null;
+      }
+    })();
+    return inFlight.current;
+  }, [status]);
+
+  useEffect(() => {
+    const onFocus = () => void refreshUser();
+    window.addEventListener('focus', onFocus);
+    setForbiddenListener(onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      setForbiddenListener(null);
+    };
+  }, [refreshUser]);
+
   const login = useCallback(
     async (phone: string, password: string) => {
       const tokens = await apiFetch<TokenResponse>('/api/auth/login', {
@@ -103,8 +140,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [clear]);
 
   const value = useMemo(
-    () => ({ status, user, notice, login, logout, setSession }),
-    [status, user, notice, login, logout, setSession],
+    () => ({ status, user, notice, login, logout, setSession, refreshUser }),
+    [status, user, notice, login, logout, setSession, refreshUser],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -31,3 +31,30 @@ def test_month_bounds_at_baghdad_midnight_on_the_1st() -> None:
 def test_month_label_uses_baghdad_time() -> None:
     assert baghdad_month_label(datetime(2026, 11, 30, 20, 59, tzinfo=UTC)) == "تشرين الثاني 2026"
     assert baghdad_month_label(datetime(2026, 11, 30, 21, 0, tzinfo=UTC)) == "كانون الأول 2026"
+
+
+# --- baghdad_day_bounds (feature 002 audit filter) ----------------------------------------------
+
+from datetime import date  # noqa: E402
+
+from app.core.timeutil import baghdad_day_bounds  # noqa: E402
+
+
+def test_day_bounds_single_day() -> None:
+    start, end = baghdad_day_bounds(date(2026, 11, 22), date(2026, 11, 22))
+    assert start == datetime(2026, 11, 21, 21, 0, tzinfo=UTC)
+    assert end == datetime(2026, 11, 22, 21, 0, tzinfo=UTC)
+
+
+def test_day_bounds_late_evening_belongs_to_that_day() -> None:
+    start, end = baghdad_day_bounds(date(2026, 11, 22), date(2026, 11, 22))
+    at_2330_baghdad = datetime(2026, 11, 22, 20, 30, tzinfo=UTC)
+    assert start <= at_2330_baghdad < end
+
+
+def test_day_bounds_across_month_end_and_open_sides() -> None:
+    start, end = baghdad_day_bounds(date(2026, 11, 30), date(2026, 12, 1))
+    assert start == datetime(2026, 11, 29, 21, 0, tzinfo=UTC)
+    assert end == datetime(2026, 12, 1, 21, 0, tzinfo=UTC)
+    assert baghdad_day_bounds(None, None) == (None, None)
+    assert baghdad_day_bounds(date(2026, 1, 1), None)[1] is None

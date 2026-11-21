@@ -1,6 +1,6 @@
 """The single application clock (research.md R11) and Baghdad-time helpers (Principle X)."""
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 BAGHDAD = ZoneInfo("Asia/Baghdad")
@@ -47,3 +47,20 @@ def baghdad_month_bounds(at: datetime | None = None) -> tuple[datetime, datetime
 def baghdad_month_label(at: datetime | None = None) -> str:
     local = (at or utc_now()).astimezone(BAGHDAD)
     return f"{ARABIC_MONTHS[local.month - 1]} {local.year}"
+
+
+def baghdad_day_bounds(
+    from_date: date | None, to_date: date | None
+) -> tuple[datetime | None, datetime | None]:
+    """Inclusive Baghdad calendar days → UTC [start, end). Either side may be open (None)."""
+    start = (
+        datetime.combine(from_date, time.min, tzinfo=BAGHDAD).astimezone(UTC)
+        if from_date is not None
+        else None
+    )
+    end = (
+        datetime.combine(to_date + timedelta(days=1), time.min, tzinfo=BAGHDAD).astimezone(UTC)
+        if to_date is not None
+        else None
+    )
+    return start, end

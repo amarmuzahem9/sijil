@@ -16,11 +16,12 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.core.access import ADMIN_PERMISSIONS
 from app.core.timeutil import utc_now
 from app.models.base import Base
 
 ROLES = ("super_admin", "admin", "marketer")
-ADMIN_PERMISSIONS = ("review", "link", "settings", "marketers", "reports", "commissions")
+__all__ = ["ADMIN_PERMISSIONS", "ROLES", "User"]
 
 
 class User(Base):
@@ -31,6 +32,11 @@ class User(Base):
         CheckConstraint("char_length(name) BETWEEN 2 AND 100", name="users_name_length"),
         CheckConstraint(
             "role = 'admin' OR permissions = '[]'::jsonb", name="users_permissions_admin_only"
+        ),
+        CheckConstraint(
+            'permissions <@ \'["review", "link", "settings", "marketers", '
+            '"reports", "commissions"]\'::jsonb',
+            name="users_permissions_known",
         ),
         CheckConstraint("failed_logins >= 0", name="users_failed_logins_nonnegative"),
         Index("users_super_admin_idx", "role", postgresql_where=text("role = 'super_admin'")),

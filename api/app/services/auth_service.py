@@ -172,11 +172,11 @@ def refresh(db: Session, refresh_token: str | None) -> AuthResult:
         # Within the grace window: a second tab refreshed at the same moment. Rotate normally.
         session = rotated
 
-    if not session.is_valid(now):
-        raise AppError("session_revoked", 401)
     user = db.get(User, session.user_id)
     if user is None or not user.is_active:
-        raise AppError("account_inactive", 403)
+        raise AppError("account_inactive", 403)  # before validity: deactivation revokes too
+    if not session.is_valid(now):
+        raise AppError("session_revoked", 401)
 
     token = _rotate(session)
     db.commit()

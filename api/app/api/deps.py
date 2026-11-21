@@ -8,6 +8,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.access import has_any_permission
 from app.core.security import TokenExpired, TokenInvalid, decode_access_token
 from app.core.timeutil import utc_now
 from app.db import get_db
@@ -46,10 +47,12 @@ def current_user_allow_password_change(
     if row is None:
         raise AppError("session_revoked", 401)
     user, session = row
-    if not session.is_valid(utc_now()):
-        raise AppError("session_revoked", 401)
+    # Inactive first: deactivation also revokes the sessions, and the user must be told why
+    # («الحساب موقوف، راجع الإدارة»), not just "session ended" (specs/002 FR-015).
     if not user.is_active:
         raise AppError("account_inactive", 403)
+    if not session.is_valid(utc_now()):
+        raise AppError("session_revoked", 401)
     return AuthContext(user, session)
 
 
@@ -63,6 +66,20 @@ def current_user(ctx: AuthContext = Depends(current_user_allow_password_change))
 def require_roles(*roles: str) -> Callable[..., AuthContext]:
     def dependency(ctx: AuthContext = Depends(current_user)) -> AuthContext:
         if ctx.user.role not in roles:
+            raise AppError("forbidden", 403)
+        return ctx
+
+    return dependency
+
+
+def require_permission(*permissions: str) -> Callable[..., AuthContext]:
+    """Main admin always; an admin holding ANY of `permissions`; never a marketer (research R1).
+
+    Permissions come from the users row loaded on this request, so changes apply immediately.
+    """
+
+    def dependency(ctx: AuthContext = Depends(current_user)) -> AuthContext:
+        if not has_any_permission(ctx.user.role, ctx.user.permissions, permissions):
             raise AppError("forbidden", 403)
         return ctx
 

@@ -11,28 +11,54 @@ import LinkOutlined from '@mui/icons-material/LinkOutlined';
 import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined';
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
 
+import Snackbar from '@mui/material/Snackbar';
+import { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+
+import { canAccess } from '../auth/access';
+import type { PageKey } from '../auth/access';
 import { useAuth } from '../auth/AuthProvider';
 import { AppShell } from './AppShell';
 import type { NavItem } from './AppShell';
 
 /** The 11 admin pages of docs/system.md §10, in order. */
-const ADMIN_PAGES: (NavItem & { superAdminOnly?: boolean })[] = [
-  { label: 'الرئيسية', path: '/admin', icon: <DashboardOutlined />, exact: true },
-  { label: 'طلبات بالانتظار', path: '/admin/pending', icon: <HourglassTopOutlined /> },
-  { label: 'بانتظار الربط', path: '/admin/awaiting-link', icon: <LinkOutlined /> },
-  { label: 'المشتركون', path: '/admin/subscribers', icon: <PeopleAltOutlined /> },
-  { label: 'المسوّقون', path: '/admin/marketers', icon: <BadgeOutlined /> },
-  { label: 'الإعدادات', path: '/admin/settings', icon: <SettingsOutlined /> },
+const ADMIN_PAGES: (NavItem & { page: PageKey })[] = [
+  { label: 'الرئيسية', page: 'home', path: '/admin', icon: <DashboardOutlined />, exact: true },
   {
+    label: 'طلبات بالانتظار',
+    page: 'pending',
+    path: '/admin/pending',
+    icon: <HourglassTopOutlined />,
+  },
+  {
+    label: 'بانتظار الربط',
+    page: 'awaiting_link',
+    path: '/admin/awaiting-link',
+    icon: <LinkOutlined />,
+  },
+  {
+    label: 'المشتركون',
+    page: 'subscribers',
+    path: '/admin/subscribers',
+    icon: <PeopleAltOutlined />,
+  },
+  { label: 'المسوّقون', page: 'marketers', path: '/admin/marketers', icon: <BadgeOutlined /> },
+  { label: 'الإعدادات', page: 'settings', path: '/admin/settings', icon: <SettingsOutlined /> },
+  {
+    page: 'admins',
     label: 'الأدمنية والصلاحيات',
     path: '/admin/admins',
     icon: <AdminPanelSettingsOutlined />,
-    superAdminOnly: true,
   },
-  { label: 'التقارير والتصدير', path: '/admin/reports', icon: <FactCheckOutlined /> },
-  { label: 'الاستيراد', path: '/admin/import', icon: <FileUploadOutlined /> },
-  { label: 'النسخ الاحتياطي', path: '/admin/backup', icon: <BackupOutlined /> },
-  { label: 'سجل العمليات', path: '/admin/audit', icon: <HistoryOutlined /> },
+  {
+    label: 'التقارير والتصدير',
+    page: 'reports',
+    path: '/admin/reports',
+    icon: <FactCheckOutlined />,
+  },
+  { label: 'الاستيراد', page: 'import', path: '/admin/import', icon: <FileUploadOutlined /> },
+  { label: 'النسخ الاحتياطي', page: 'backup', path: '/admin/backup', icon: <BackupOutlined /> },
+  { label: 'سجل العمليات', page: 'audit', path: '/admin/audit', icon: <HistoryOutlined /> },
 ];
 
 const ACCOUNT_ITEM: NavItem = {
@@ -41,8 +67,33 @@ const ACCOUNT_ITEM: NavItem = {
   icon: <AccountCircleOutlined />,
 };
 
+/** Menu entries this user may open (the server enforces the same map). */
+function visibleAdminPages(user: Parameters<typeof canAccess>[0]) {
+  return ADMIN_PAGES.filter((p) => canAccess(user, p.page));
+}
+
 export default function AdminLayout() {
-  const { user } = useAuth();
-  const items = ADMIN_PAGES.filter((p) => !p.superAdminOnly || user?.role === 'super_admin');
-  return <AppShell items={items} footerItems={[ACCOUNT_ITEM]} mobileNav="menu" />;
+  const { user, refreshUser } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  // Set by <RequirePage> when this user opened a page they may not see.
+  const denied = Boolean((location.state as { denied?: boolean } | null)?.denied);
+
+  // Permission changes show on the next navigation, without signing out (SC-007).
+  useEffect(() => {
+    void refreshUser();
+  }, [location.pathname, refreshUser]);
+
+  return (
+    <>
+      <AppShell items={visibleAdminPages(user)} footerItems={[ACCOUNT_ITEM]} mobileNav="menu" />
+      <Snackbar
+        open={denied}
+        autoHideDuration={4000}
+        onClose={() => navigate(location.pathname, { replace: true, state: null })}
+        message="ليست لديك صلاحية"
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
+    </>
+  );
 }

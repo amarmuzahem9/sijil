@@ -3,6 +3,8 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { Navigate, Outlet } from 'react-router-dom';
 
 import type { Role } from '../lib/api';
+import { canAccess } from './access';
+import type { PageKey } from './access';
 import { useAuth } from './AuthProvider';
 import { landingPath } from './roles';
 
@@ -42,5 +44,13 @@ export function RequireRole({ roles }: { roles: Role[] }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   if (!roles.includes(user.role)) return <Navigate to={landingPath(user)} replace />;
+  return <Outlet />;
+}
+
+/** Admin page the caller may not open → /admin, with a «ليست لديك صلاحية» notice (002). */
+export function RequirePage({ page }: { page: PageKey }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (!canAccess(user, page)) return <Navigate to="/admin" replace state={{ denied: true }} />;
   return <Outlet />;
 }

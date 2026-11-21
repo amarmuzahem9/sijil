@@ -13,7 +13,10 @@ from app.models.base import Base
 
 class AuditLog(Base):
     __tablename__ = "audit_log"
-    __table_args__ = (Index("audit_log_created_at_idx", text("created_at DESC")),)
+    __table_args__ = (
+        Index("audit_log_created_at_idx", text("created_at DESC")),
+        Index("audit_log_actor_created_idx", "actor_id", text("created_at DESC")),
+    )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     actor_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id"))

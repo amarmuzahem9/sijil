@@ -51,6 +51,13 @@ export function setSessionEndedListener(listener: SessionEndedListener | null): 
   onSessionEnded = listener;
 }
 
+/** Notified on a `forbidden` 403 so the current user (and permissions) is re-read (002 R2). */
+let onForbidden: (() => void) | null = null;
+
+export function setForbiddenListener(listener: (() => void) | null): void {
+  onForbidden = listener;
+}
+
 async function send(path: string, init: RequestInit, withAuth: boolean): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -136,7 +143,10 @@ export async function apiFetch<T>(path: string, options: FetchOptions = {}): Pro
   }
   if (!res.ok) {
     const err = await toError(res);
-    if (auth) notifyEnded(err);
+    if (auth) {
+      notifyEnded(err);
+      if (err.code === 'forbidden') onForbidden?.();
+    }
     throw err;
   }
   if (res.status === 204) return undefined as T;

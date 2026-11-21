@@ -1,0 +1,205 @@
+{
+  "_comment": "docs/system.md §10 v1.1 — shared by api/tests and web/src/__tests__; keep both copies identical",
+  "pages": [
+    {
+      "key": "home",
+      "path": "/admin",
+      "access": "any_admin"
+    },
+    {
+      "key": "pending",
+      "path": "/admin/pending",
+      "access": [
+        "review"
+      ]
+    },
+    {
+      "key": "awaiting_link",
+      "path": "/admin/awaiting-link",
+      "access": [
+        "link"
+      ]
+    },
+    {
+      "key": "subscribers",
+      "path": "/admin/subscribers",
+      "access": [
+        "review",
+        "link",
+        "reports"
+      ]
+    },
+    {
+      "key": "marketers",
+      "path": "/admin/marketers",
+      "access": [
+        "marketers"
+      ]
+    },
+    {
+      "key": "settings",
+      "path": "/admin/settings",
+      "access": [
+        "settings"
+      ]
+    },
+    {
+      "key": "admins",
+      "path": "/admin/admins",
+      "access": "super_admin"
+    },
+    {
+      "key": "reports",
+      "path": "/admin/reports",
+      "access": [
+        "reports"
+      ]
+    },
+    {
+      "key": "import",
+      "path": "/admin/import",
+      "access": [
+        "reports"
+      ]
+    },
+    {
+      "key": "backup",
+      "path": "/admin/backup",
+      "access": "super_admin"
+    },
+    {
+      "key": "audit",
+      "path": "/admin/audit",
+      "access": "super_admin"
+    },
+    {
+      "key": "account",
+      "path": "/admin/account",
+      "access": "any_admin"
+    }
+  ],
+  "cases": [
+    {
+      "role": "admin",
+      "permissions": [],
+      "visible": [
+        "home",
+        "account"
+      ]
+    },
+    {
+      "role": "admin",
+      "permissions": [
+        "marketers"
+      ],
+      "visible": [
+        "home",
+        "marketers",
+        "account"
+      ]
+    },
+    {
+      "role": "admin",
+      "permissions": [
+        "review"
+      ],
+      "visible": [
+        "home",
+        "pending",
+        "subscribers",
+        "account"
+      ]
+    },
+    {
+      "role": "admin",
+      "permissions": [
+        "link"
+      ],
+      "visible": [
+        "home",
+        "awaiting_link",
+        "subscribers",
+        "account"
+      ]
+    },
+    {
+      "role": "admin",
+      "permissions": [
+        "reports"
+      ],
+      "visible": [
+        "home",
+        "subscribers",
+        "reports",
+        "import",
+        "account"
+      ]
+    },
+    {
+      "role": "admin",
+      "permissions": [
+        "settings"
+      ],
+      "visible": [
+        "home",
+        "settings",
+        "account"
+      ]
+    },
+    {
+      "role": "admin",
+      "permissions": [
+        "commissions"
+      ],
+      "visible": [
+        "home",
+        "account"
+      ]
+    },
+    {
+      "role": "admin",
+      "permissions": [
+        "review",
+        "link",
+        "settings",
+        "marketers",
+        "reports",
+        "commissions"
+      ],
+      "visible": [
+        "home",
+        "pending",
+        "awaiting_link",
+        "subscribers",
+        "marketers",
+        "settings",
+        "reports",
+        "import",
+        "account"
+      ]
+    },
+    {
+      "role": "super_admin",
+      "permissions": [],
+      "visible": [
+        "home",
+        "pending",
+        "awaiting_link",
+        "subscribers",
+        "marketers",
+        "settings",
+        "admins",
+        "reports",
+        "import",
+        "backup",
+        "audit",
+        "account"
+      ]
+    },
+    {
+      "role": "marketer",
+      "permissions": [],
+      "visible": []
+    }
+  ]
+}

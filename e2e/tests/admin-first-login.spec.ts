@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { ADMIN_PAGES, env, expectOnRightSide, signIn } from './helpers';
+import { ADMIN_PAGES, env, expectOnRightSide, MAIN_ADMIN_PASSWORD, signIn } from './helpers';
 
 // Changes state (the bootstrap admin's first password change): desktop project only, fresh stack.
 test('main admin: first sign-in from desktop, forced password change, admin panel', async ({
@@ -14,8 +14,8 @@ test('main admin: first sign-in from desktop, forced password change, admin pane
 
   await expect(page).toHaveURL(/\/change-password$/);
   await page.locator('input[name=current_password]').fill(env('SUPERADMIN_PASSWORD'));
-  await page.locator('input[name=new_password]').fill('E2e-New-Passw0rd');
-  await page.locator('input[name=confirm_password]').fill('E2e-New-Passw0rd');
+  await page.locator('input[name=new_password]').fill(MAIN_ADMIN_PASSWORD);
+  await page.locator('input[name=confirm_password]').fill(MAIN_ADMIN_PASSWORD);
   await page.getByRole('button', { name: 'حفظ' }).click();
 
   await expect(page).toHaveURL(/\/admin$/);
