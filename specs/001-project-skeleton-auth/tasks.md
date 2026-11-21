@@ -159,7 +159,7 @@ be verified. The server and the domain are ready.
 
 - [X] T065 Write `deploy/staging.md` (Arabic) covering: DNS check for `sijil.t3cftth.net`; ports 80/443 open; cloning the repo and checking out the feature branch; creating a server-only `.env` from `.env.example` with `SITE_ADDRESS=sijil.t3cftth.net`, `APP_ENV=staging`, `COOKIE_SECURE=true`, and freshly generated `JWT_SECRET`, `POSTGRES_PASSWORD`, `SUPERADMIN_PASSWORD`, `DEMO_MARKETER_PASSWORD` (never committed); and the production-only compose command. It also states that before go-live (feature 014) the demo accounts are deactivated (never deleted) and `APP_ENV` becomes `production`
 - [X] T066 Create `scripts/deploy-staging.sh`, run on the server: `git pull`; `docker compose -f docker-compose.yml up -d --build` (never the override file); wait until `https://sijil.t3cftth.net/api/health` returns ok; run `docker compose -f docker-compose.yml exec api python -m app.cli seed-demo`. Exit non-zero on any failure
-- [ ] T067 (files ready; to be run on the server by the owner — deploy/staging.md) Deploy to staging and run quickstart scenarios 3–10 at `https://sijil.t3cftth.net`: main admin from a computer; the demo marketer from a real Android phone and a real iPhone. Record the results in `specs/001-project-skeleton-auth/manual-test-ar.md`
+- [X] T067 (run on the server by the owner, 2026-11-22) Deploy to staging and run quickstart scenarios 3–10 at `https://sijil.t3cftth.net`: main admin from a computer; the demo marketer from a real Android phone and a real iPhone. Record the results in `specs/001-project-skeleton-auth/manual-test-ar.md`
 
 **Checkpoint**: The feature's acceptance criterion is verified on real devices over HTTPS.
 
