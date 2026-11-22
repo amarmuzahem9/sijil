@@ -70,10 +70,13 @@ that the list shows «40,000» and that «سجل العمليات» shows 35,000
 
 1. **Given** the admin adds «PLUS» with 20000 and 35000, **Then** the list shows «20,000» and
    «35,000» and the category is «فعّال».
-2. **Given** a price typed as «20,000», «٢٠٠٠٠» or « 20000 », **Then** it is accepted as 20000.
+2. **Given** a price typed in the input field as «20,000», «٢٠٠٠٠» or « 20000 », **Then** it is
+   accepted as 20000 (the screen converts it before saving; the server itself takes whole
+   numbers only).
 3. **Given** a price that is negative, has decimals, is empty, or is larger than 10,000,000, **Then**
    it is refused with a clear Arabic message.
-4. **Given** a category name already used (ignoring letter case and spaces), **Then** it is refused.
+4. **Given** a category name already used (ignoring letter case and extra spaces), **Then** it is
+   refused. «PL US» and «PLUS» are different names.
 5. **Given** the admin changes a price, **Then** one audit entry records the category, the old and
    the new price.
 6. **Given** a price change, **Then** requests created before it keep their recorded prices
@@ -161,9 +164,10 @@ The admin sets how many minutes an OTP code stays valid (default 60).
 
 - **FR-005**: Admins MUST be able to add a category with a name, a trial-month price and a
   second-month price, edit them, and deactivate/reactivate it. Names MUST be unique ignoring case
-  and spaces. Prices MUST be whole dinars from 0 to 10,000,000.
-- **FR-006**: A price change MUST apply to new requests only: prices are copied onto each request
-  when it is submitted (§5.3) and never recalculated.
+  and extra spaces. Prices MUST be whole dinars from 0 to 10,000,000.
+- **FR-006**: A settings change MUST apply to new requests only. Each request copies, at submit
+  time, the category name, the trial-month price, the second-month price, the tower code and the
+  region name (§5.3); these copies are never recalculated when settings change (Principle IV).
 
 **Tiers**
 
@@ -190,6 +194,13 @@ The admin sets how many minutes an OTP code stays valid (default 60).
 - **FR-012**: All money values MUST be shown with thousands separators (20,000) and the unit
   «د.ع»; numeric inputs MUST accept Arabic-Indic digits and separators.
 - **FR-013**: All screens MUST be Arabic, right-to-left, and usable on a phone.
+
+**Catalog for the request form**
+
+- **FR-014**: Any signed-in user (marketers included) MUST be able to read the catalog the
+  new-request form offers: active regions, active towers whose region is also active, and active
+  categories with their two prices. Deactivated items and settings such as tiers or OTP validity
+  MUST NOT be included.
 
 ### Key Entities
 
