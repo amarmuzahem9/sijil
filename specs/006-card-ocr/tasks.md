@@ -584,13 +584,17 @@ stay.
 - 005 test `test_complete_draft_has_no_missing_items` now types the fake reader's national ID,
   since the cross-check (US4) rightly flags a different one.
 
-- [ ] T053 Before the first staging deployment, remind the owner, then create the public copy of
+- [X] T053 Before the first staging deployment, remind the owner, then create the public copy of
   `ocr/` on the owner's GitHub account (owner's instruction). Then set `OCR_SOURCE_URL` in the
   server `.env`. This is an outward-facing step, so confirm first.
+- T053 done 2026-11-23 with the owner's approval: public copy https://github.com/amarmuzahem9/sijil-ocr
+  (one commit from `ocr/` only, no Sijil history), published by `scripts/publish-ocr.sh`;
+  `OCR_SOURCE_URL` set in `.env.example` and `deploy/staging.md`.
+- T055 done: CLAUDE.md «لا تشغّل قارئ البطاقة على صور حقيقية إلا في حاوية بلا شبكة، ولا تحفظ النتائج».
 - [ ] T054 Staging check (owner): reader healthy, I1–I4 on the server, one real card read end to
   end within 15 s of the second upload (SC-001, analysis M1), and the licence link opens the
   public copy.
-- [ ] T055 Update `CLAUDE.md` only if a new runtime instruction is needed, for example «لا
+- [X] T055 Update `CLAUDE.md` only if a new runtime instruction is needed, for example «لا
   تشغّل قارئ البطاقة على صور حقيقية إلا بحاوية بلا شبكة». Otherwise leave it unchanged.
 
 ---
