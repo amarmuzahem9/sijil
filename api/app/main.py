@@ -3,7 +3,7 @@ which uvicorn enforces via --forwarded-allow-ips (see entrypoint.sh)."""
 
 from fastapi import FastAPI
 
-from app.api import admin, admins, audit, auth, health, marketer, marketers
+from app.api import admin, admins, archive, audit, auth, health, marketer, marketers
 from app.config import get_settings
 from app.errors import install_error_handlers
 from app.logging_config import setup_logging
@@ -20,7 +20,7 @@ def create_app() -> FastAPI:
         openapi_url="/api/openapi.json" if dev else None,
     )
     install_error_handlers(app)
-    for module in (health, auth, marketer, admin, admins, marketers, audit):
+    for module in (health, auth, marketer, admin, admins, marketers, audit, archive):
         app.include_router(module.router, prefix="/api")
     return app
 

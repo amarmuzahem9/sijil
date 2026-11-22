@@ -29,6 +29,7 @@ PAGE_ACCESS: dict[str, AccessRule] = {
     "import": ("reports",),
     "backup": "super_admin",
     "audit": "super_admin",
+    "archive": "super_admin",
     "account": "any_admin",
 }
 

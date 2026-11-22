@@ -1,5 +1,5 @@
 {
-  "_comment": "docs/system.md §10 v1.1 — shared by api/tests and web/src/__tests__; keep both copies identical",
+  "_comment": "docs/system.md §10 v1.2 — shared by api/tests and web/src/__tests__; keep both copies identical",
   "pages": [
     {
       "key": "home",
@@ -70,6 +70,11 @@
     {
       "key": "audit",
       "path": "/admin/audit",
+      "access": "super_admin"
+    },
+    {
+      "key": "archive",
+      "path": "/admin/archive",
       "access": "super_admin"
     },
     {
@@ -193,6 +198,7 @@
         "import",
         "backup",
         "audit",
+        "archive",
         "account"
       ]
     },

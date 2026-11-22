@@ -75,8 +75,8 @@ def _commit(db: Session) -> None:
 def get_target(db: Session, user_id: int, role: str) -> User:
     """Only rows of the route's role are reachable: the main admin never is (research R4)."""
     user = db.get(User, user_id)
-    if user is None or user.role != role:
-        raise AppError("not_found", 404)
+    if user is None or user.role != role or user.archived_at is not None:
+        raise AppError("not_found", 404)  # archived rows: only via the archive routes
     return user
 
 
@@ -87,7 +87,7 @@ def ensure_not_protected(target: User) -> None:
 
 
 def list_accounts(db: Session, role: str) -> list[User]:
-    query = select(User).where(User.role == role)
+    query = select(User).where(User.role == role, User.archived_at.is_(None))
     if role == "marketer":
         query = query.order_by(User.is_active.desc(), User.name)
     else:
@@ -252,6 +252,78 @@ def reset_password(db: Session, actor: User, target: User, temporary_password: s
         entity_id=target.id,
         before={"must_change_password": was_forced},
         after={"must_change_password": True},
+    )
+    _commit(db)
+    return target
+
+
+# --- archive (feature 003, system.md §3.6) -------------------------------------------------------
+
+
+def get_archivable(db: Session, user_id: int) -> User:
+    """An admin or marketer that is not archived; anything else (incl. the main admin) is 404."""
+    user = db.get(User, user_id)
+    if user is None or user.role not in ("admin", "marketer") or user.archived_at is not None:
+        raise AppError("not_found", 404)
+    return user
+
+
+def get_archived(db: Session, user_id: int) -> User:
+    user = db.get(User, user_id)
+    if user is None or user.archived_at is None:
+        raise AppError("not_found", 404)
+    return user
+
+
+def list_archived(db: Session) -> list[User]:
+    query = (
+        select(User)
+        .where(User.archived_at.is_not(None))
+        .order_by(User.archived_at.desc(), User.id.desc())
+    )
+    return list(db.execute(query).scalars())
+
+
+def archive(db: Session, actor: User, target: User) -> User:
+    """Mark archived + inactive and end every session; never deletes anything."""
+    ensure_not_protected(target)
+    if target.archived_at is not None:
+        return target  # no-op
+    was_active = target.is_active
+    now = utc_now()
+    target.archived_at = now
+    target.archived_by = actor.id
+    target.is_active = False
+    target.updated_at = now
+    deactivate_user_sessions(db, target.id, "archived")
+    audit_service.record(
+        db,
+        actor_id=actor.id,
+        action="user.archived",
+        entity_type="user",
+        entity_id=target.id,
+        before={"is_active": was_active, "archived": False},
+        after={"is_active": False, "archived": True},
+    )
+    _commit(db)
+    return target
+
+
+def restore(db: Session, actor: User, target: User) -> User:
+    """Back to its list as deactivated; reactivation is a separate step (system.md §3.6)."""
+    if target.archived_at is None:
+        return target  # no-op
+    target.archived_at = None
+    target.archived_by = None
+    target.updated_at = utc_now()
+    audit_service.record(
+        db,
+        actor_id=actor.id,
+        action="user.restored",
+        entity_type="user",
+        entity_id=target.id,
+        before={"archived": True},
+        after={"archived": False},
     )
     _commit(db)
     return target

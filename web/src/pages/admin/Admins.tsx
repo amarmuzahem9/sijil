@@ -49,6 +49,8 @@ export default function Admins() {
   const [editing, setEditing] = useState<Account | null>(null);
   const [resetting, setResetting] = useState<Account | null>(null);
   const [stopping, setStopping] = useState<Account | null>(null);
+  const [archiving, setArchiving] = useState<Account | null>(null);
+  const isMainAdmin = user?.role === 'super_admin';
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -79,6 +81,20 @@ export default function Admins() {
     await accountsApi.resetPassword('admins', resetting.id, temporaryPassword);
     setResetting(null);
     await done();
+  }
+
+  async function archive(account: Account) {
+    setBusy(true);
+    try {
+      await accountsApi.archive(account.id);
+      setArchiving(null);
+      setNotice('نُقل الحساب إلى الأرشيف');
+      await queryClient.invalidateQueries({ queryKey: ['accounts'] });
+    } catch (err) {
+      setNotice(err instanceof ApiError ? err.message : NETWORK_ERROR_MESSAGE);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function setActive(account: Account, active: boolean) {
@@ -129,6 +145,11 @@ export default function Admins() {
         ) : (
           <Button size="small" color="success" disabled={busy} onClick={() => setActive(a, true)}>
             إعادة تفعيل
+          </Button>
+        )}
+        {isMainAdmin && (
+          <Button size="small" color="error" onClick={() => setArchiving(a)}>
+            حذف
           </Button>
         )}
       </>
@@ -192,6 +213,15 @@ export default function Admins() {
         busy={busy}
         onConfirm={() => stopping && setActive(stopping, false)}
         onClose={() => setStopping(null)}
+      />
+      <ConfirmDialog
+        open={archiving !== null}
+        title="حذف الأدمن"
+        message={`نقل حساب ${archiving?.name ?? ''} إلى الأرشيف؟ سيُسجَّل خروجه فوراً ولن يستطيع الدخول، ويمكن استرجاعه من «أرشيف الحسابات».`}
+        confirmLabel="حذف"
+        busy={busy}
+        onConfirm={() => archiving && archive(archiving)}
+        onClose={() => setArchiving(null)}
       />
       <Snackbar
         open={notice !== null}

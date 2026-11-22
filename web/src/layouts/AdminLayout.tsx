@@ -7,6 +7,7 @@ import FactCheckOutlined from '@mui/icons-material/FactCheckOutlined';
 import FileUploadOutlined from '@mui/icons-material/FileUploadOutlined';
 import HistoryOutlined from '@mui/icons-material/HistoryOutlined';
 import HourglassTopOutlined from '@mui/icons-material/HourglassTopOutlined';
+import Inventory2Outlined from '@mui/icons-material/Inventory2Outlined';
 import LinkOutlined from '@mui/icons-material/LinkOutlined';
 import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined';
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
@@ -21,7 +22,7 @@ import { useAuth } from '../auth/AuthProvider';
 import { AppShell } from './AppShell';
 import type { NavItem } from './AppShell';
 
-/** The 11 admin pages of docs/system.md §10, in order. */
+/** The 12 admin pages of docs/system.md §10, in order. */
 const ADMIN_PAGES: (NavItem & { page: PageKey })[] = [
   { label: 'الرئيسية', page: 'home', path: '/admin', icon: <DashboardOutlined />, exact: true },
   {
@@ -59,6 +60,12 @@ const ADMIN_PAGES: (NavItem & { page: PageKey })[] = [
   { label: 'الاستيراد', page: 'import', path: '/admin/import', icon: <FileUploadOutlined /> },
   { label: 'النسخ الاحتياطي', page: 'backup', path: '/admin/backup', icon: <BackupOutlined /> },
   { label: 'سجل العمليات', page: 'audit', path: '/admin/audit', icon: <HistoryOutlined /> },
+  {
+    label: 'أرشيف الحسابات',
+    page: 'archive',
+    path: '/admin/archive',
+    icon: <Inventory2Outlined />,
+  },
 ];
 
 const ACCOUNT_ITEM: NavItem = {

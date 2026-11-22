@@ -10,7 +10,14 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.core.timeutil import utc_now
 from app.models.base import Base
 
-REVOKE_REASONS = ("logout", "password_changed", "password_reset", "deactivated", "reuse_detected")
+REVOKE_REASONS = (
+    "logout",
+    "password_changed",
+    "password_reset",
+    "deactivated",
+    "reuse_detected",
+    "archived",
+)
 USER_AGENT_MAX = 255
 
 
@@ -19,7 +26,8 @@ class UserSession(Base):
     __table_args__ = (
         CheckConstraint(
             "revoke_reason IS NULL OR revoke_reason IN "
-            "('logout', 'password_changed', 'password_reset', 'deactivated', 'reuse_detected')",
+            "('logout', 'password_changed', 'password_reset', 'deactivated', 'reuse_detected', "
+            "'archived')",
             name="sessions_revoke_reason_valid",
         ),
         CheckConstraint(

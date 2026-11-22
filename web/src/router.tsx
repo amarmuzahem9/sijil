@@ -24,6 +24,7 @@ import {
   AdminSubscribers,
 } from './pages/admin/placeholders';
 import Admins from './pages/admin/Admins';
+import Archive from './pages/admin/Archive';
 import Audit from './pages/admin/Audit';
 import Marketers from './pages/admin/Marketers';
 import ChangePassword from './pages/ChangePassword';
@@ -81,6 +82,7 @@ export const router = createBrowserRouter([
                   page('import', { path: 'import', element: <AdminImport /> }),
                   page('backup', { path: 'backup', element: <AdminBackup /> }),
                   page('audit', { path: 'audit', element: <Audit /> }),
+                  page('archive', { path: 'archive', element: <Archive /> }),
                   page('account', { path: 'account', element: <AccountPanel /> }),
                 ],
               },

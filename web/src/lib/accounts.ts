@@ -29,6 +29,17 @@ export interface AccountPatch {
   permissions?: Permission[];
 }
 
+/** An archived account (specs/003 contracts/api.md). */
+export interface ArchivedAccount {
+  id: number;
+  name: string;
+  phone: string;
+  role: Role;
+  permissions: Permission[];
+  archived_at: string;
+  archived_by: { id: number; name: string; role: Role } | null;
+}
+
 const base = (kind: AccountKind) => `/api/admin/${kind}`;
 
 export const accountsApi = {
@@ -46,4 +57,10 @@ export const accountsApi = {
       method: 'POST',
       body: { temporary_password },
     }),
+  /** «حذف»: moves the account to the archive (main admin only). */
+  archive: (id: number) => apiFetch<Account>(`/api/admin/archive/${id}`, { method: 'POST' }),
+  listArchived: () =>
+    apiFetch<{ items: ArchivedAccount[] }>('/api/admin/archive').then((r) => r.items),
+  restore: (id: number) =>
+    apiFetch<Account>(`/api/admin/archive/${id}/restore`, { method: 'POST' }),
 };

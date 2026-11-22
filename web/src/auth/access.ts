@@ -19,6 +19,7 @@ export const PAGE_ACCESS = {
   import: ['reports'],
   backup: 'super_admin',
   audit: 'super_admin',
+  archive: 'super_admin',
   account: 'any_admin',
 } as const satisfies Record<string, AccessRule>;
 
@@ -36,6 +37,7 @@ export const PAGE_PATHS: Record<PageKey, string> = {
   import: '/admin/import',
   backup: '/admin/backup',
   audit: '/admin/audit',
+  archive: '/admin/archive',
   account: '/admin/account',
 };
 

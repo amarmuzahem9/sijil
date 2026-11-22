@@ -30,6 +30,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'user.deactivated': 'إيقاف حساب',
   'user.reactivated': 'إعادة تفعيل حساب',
   'user.password_reset': 'تصفير كلمة السر',
+  'user.archived': 'أرشفة حساب',
+  'user.restored': 'استرجاع حساب من الأرشيف',
 };
 
 export const AUDIT_FIELD_LABELS: Record<string, string> = {
@@ -40,6 +42,7 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   is_active: 'الحالة',
   must_change_password: 'يجب تغيير كلمة السر',
   locked_until: 'مقفل حتى',
+  archived: 'مؤرشف',
 };
 
 export const STATE_LABELS = { active: 'فعّال', inactive: 'موقوف' } as const;

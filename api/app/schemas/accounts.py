@@ -55,3 +55,23 @@ class ResetPasswordBody(_Body):
 
 class NameUpdate(_Body):
     name: str
+
+
+class PersonOut(BaseModel):
+    id: int
+    name: str
+    role: str
+
+
+class ArchivedAccountOut(BaseModel):
+    id: int
+    name: str
+    phone: str
+    role: str
+    permissions: list[str]
+    archived_at: datetime
+    archived_by: PersonOut | None
+
+
+class ArchivedList(BaseModel):
+    items: list[ArchivedAccountOut]

@@ -1,5 +1,15 @@
 <!--
-Sync Impact Report
+Sync Impact Report (2026-11-22, amendment 1)
+- Version change: 1.0.0 → 1.1.0 (MINOR: Principle III materially expanded)
+- Modified principles: III. Permanent Audit Trail — user accounts are never physically deleted;
+  «حذف» moves an account to a reversible archive (docs/system.md §3.6, feature 003); archive and
+  restore are audited.
+- Added/removed sections: none
+- Templates: not modified
+- Follow-up TODOs: none
+- Approved by the project owner in the feature 003 request.
+
+Previous report (ratification)
 - Version change: (unversioned template) → 1.0.0
 - Modified principles: none (initial ratification; all template placeholders replaced)
 - Added principles (10, per project owner input):
@@ -65,6 +75,10 @@ company.
   the value before and after. This covers: approve, reject, linked, undo linked, subscriber data
   edit, price change, export, and password reset.
 - Requests and subscribers MUST NOT be physically deleted; they may only be deactivated.
+- User accounts MUST NOT be physically deleted. «حذف» moves an account to the archive, which is
+  reversible: the account cannot sign in, its sessions end, its phone stays reserved, and its
+  requests and history keep showing its name. Archive and restore are audited. The main admin
+  can never be archived (docs/system.md §3.6).
 
 **Rationale**: Disputes over commissions and fraud can only be resolved from a complete,
 tamper-evident history.
@@ -179,4 +193,4 @@ reliable proof they hold.
   violation MUST be resolved, or explicitly justified and approved, before merge.
 - Runtime guidance for agents lives in `CLAUDE.md`.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-21 | **Last Amended**: 2026-11-21
+**Version**: 1.1.0 | **Ratified**: 2026-11-21 | **Last Amended**: 2026-11-22

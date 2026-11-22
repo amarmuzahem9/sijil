@@ -1,4 +1,4 @@
-"""users — data-model.md › users. Rows are never deleted, only deactivated (Principle III)."""
+"""users — data-model.md › users. Never deleted: only deactivated or archived (Principle III)."""
 
 from datetime import datetime
 
@@ -7,6 +7,7 @@ from sqlalchemy import (
     Boolean,
     CheckConstraint,
     DateTime,
+    ForeignKey,
     Identity,
     Index,
     SmallInteger,
@@ -38,6 +39,11 @@ class User(Base):
             '"reports", "commissions"]\'::jsonb',
             name="users_permissions_known",
         ),
+        CheckConstraint("(archived_at IS NULL) = (archived_by IS NULL)", name="users_archive_pair"),
+        CheckConstraint("archived_at IS NULL OR is_active = false", name="users_archived_inactive"),
+        CheckConstraint(
+            "role <> 'super_admin' OR archived_at IS NULL", name="users_super_admin_not_archived"
+        ),
         CheckConstraint("failed_logins >= 0", name="users_failed_logins_nonnegative"),
         Index("users_super_admin_idx", "role", postgresql_where=text("role = 'super_admin'")),
     )
@@ -60,6 +66,9 @@ class User(Base):
         SmallInteger, nullable=False, default=0, server_default=text("0")
     )
     locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Archive (feature 003, system.md §3.6): never deleted, only marked; null = not archived.
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    archived_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now, server_default=text("now()")
     )

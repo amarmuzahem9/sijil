@@ -13,6 +13,7 @@ import Typography from '@mui/material/Typography';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
+import { useAuth } from '../../auth/AuthProvider';
 import { AccountDialog } from '../../components/AccountDialog';
 import type { AccountFormValues } from '../../components/AccountDialog';
 import { AccountList } from '../../components/AccountList';
@@ -29,6 +30,7 @@ type StateFilter = 'all' | 'active' | 'inactive';
 
 /** «المسوّقون» — `marketers` permission or main admin (specs/002 US2). */
 export default function Marketers() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const marketers = useQuery({ queryKey: QUERY_KEY, queryFn: () => accountsApi.list('marketers') });
   const [search, setSearch] = useState('');
@@ -37,6 +39,8 @@ export default function Marketers() {
   const [editing, setEditing] = useState<Account | null>(null);
   const [resetting, setResetting] = useState<Account | null>(null);
   const [stopping, setStopping] = useState<Account | null>(null);
+  const [archiving, setArchiving] = useState<Account | null>(null);
+  const isMainAdmin = user?.role === 'super_admin';
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -70,6 +74,20 @@ export default function Marketers() {
     await accountsApi.resetPassword('marketers', resetting.id, temporaryPassword);
     setResetting(null);
     await done();
+  }
+
+  async function archive(account: Account) {
+    setBusy(true);
+    try {
+      await accountsApi.archive(account.id);
+      setArchiving(null);
+      setNotice('نُقل الحساب إلى الأرشيف');
+      await queryClient.invalidateQueries({ queryKey: ['accounts'] });
+    } catch (err) {
+      setNotice(err instanceof ApiError ? err.message : NETWORK_ERROR_MESSAGE);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function setActive(account: Account, active: boolean) {
@@ -118,6 +136,11 @@ export default function Marketers() {
         ) : (
           <Button size="small" color="success" disabled={busy} onClick={() => setActive(m, true)}>
             إعادة تفعيل
+          </Button>
+        )}
+        {isMainAdmin && (
+          <Button size="small" color="error" onClick={() => setArchiving(m)}>
+            حذف
           </Button>
         )}
       </>
@@ -205,6 +228,15 @@ export default function Marketers() {
         busy={busy}
         onConfirm={() => stopping && setActive(stopping, false)}
         onClose={() => setStopping(null)}
+      />
+      <ConfirmDialog
+        open={archiving !== null}
+        title="حذف المسوّق"
+        message={`نقل حساب ${archiving?.name ?? ''} إلى الأرشيف؟ سيُسجَّل خروجه فوراً ولن يستطيع الدخول، ويمكن استرجاعه من «أرشيف الحسابات».`}
+        confirmLabel="حذف"
+        busy={busy}
+        onConfirm={() => archiving && archive(archiving)}
+        onClose={() => setArchiving(null)}
       />
       <Snackbar
         open={notice !== null}
