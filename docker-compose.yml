@@ -26,6 +26,10 @@ services:
     env_file: ${SIJIL_ENV_FILE:-.env}
     environment:
       APP_ENV: ${APP_ENV:-production}
+    volumes:
+      # Private card-image storage (specs/005 research.md R7). Only the api mounts it; it is
+      # never served by the web container. Named sijil_uploads under the project name "sijil".
+      - uploads:/data/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -66,5 +70,6 @@ services:
 
 volumes:
   pgdata:
+  uploads:
   caddy_data:
   caddy_config:

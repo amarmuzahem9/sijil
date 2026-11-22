@@ -42,13 +42,13 @@ come before US3, because the acceptance test of US3 fills both.
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-- [ ] T001 Add `python-multipart` and `Pillow` (pinned versions) to `api/pyproject.toml` dependencies (research.md R6). In `api/Dockerfile`, create `/data/uploads` owned by `app` (uid 10001) before `USER app` (research.md R7).
-- [ ] T002 [P] Add the `uploads` volume to `docker-compose.yml`:
+- [X] T001 Add `python-multipart` and `Pillow` (pinned versions) to `api/pyproject.toml` dependencies (research.md R6). In `api/Dockerfile`, create `/data/uploads` owned by `app` (uid 10001) before `USER app` (research.md R7).
+- [X] T002 [P] Add the `uploads` volume to `docker-compose.yml`:
   - mounted at `/data/uploads` on `api` only
   - declared under top-level `volumes:` as `uploads`, with no fixed `name:` (research.md R7)
   - not mounted on `web` or `proxy`
-- [ ] T003 [P] Add the variables of contracts/api.md › "Environment variables" to `.env.example`, with comments: `UPLOADS_DIR`, `MAX_IMAGE_BYTES`, `GOOGLE_MAPS_API_KEY` (empty; restrict by HTTP referrer in the Google console), `GOOGLE_MAPS_MAP_ID` and `MAP_DEFAULT_CENTER`.
-- [ ] T004 [P] Add the settings `uploads_dir`, `max_image_bytes`, `google_maps_api_key`, `google_maps_map_id` and `map_default_center` to `api/app/config.py`. `map_default_center` is parsed from `lat,lng`, and an invalid value is a startup error naming the variable. Defaults come from contracts/api.md.
+- [X] T003 [P] Add the variables of contracts/api.md › "Environment variables" to `.env.example`, with comments: `UPLOADS_DIR`, `MAX_IMAGE_BYTES`, `GOOGLE_MAPS_API_KEY` (empty; restrict by HTTP referrer in the Google console), `GOOGLE_MAPS_MAP_ID` and `MAP_DEFAULT_CENTER`.
+- [X] T004 [P] Add the settings `uploads_dir`, `max_image_bytes`, `google_maps_api_key`, `google_maps_map_id` and `map_default_center` to `api/app/config.py`. `map_default_center` is parsed from `lat,lng`, and an invalid value is a startup error naming the variable. Defaults come from contracts/api.md.
 
 ---
 
@@ -56,7 +56,7 @@ come before US3, because the acceptance test of US3 fills both.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T005 Write the Alembic migration `api/migrations/versions/0005_drafts.py`, creating:
+- [X] T005 Write the Alembic migration `api/migrations/versions/0005_drafts.py`, creating:
   - `drafts` per data-model.md › `drafts`:
     - `drafts.id`: uuid PK
     - `drafts.marketer_id`: FK RESTRICT
@@ -89,30 +89,30 @@ come before US3, because the acceptance test of US3 fills both.
     - `image_access_log.created_at`: index DESC
 
   It has a working downgrade.
-- [ ] T006 [P] Create the SQLAlchemy models `Draft`, `DraftImage` and `ImageAccessLog` in `api/app/models/draft.py`, mirroring T005. Export them from `api/app/models/__init__.py`. Depends on T005.
-- [ ] T007 [P] Add every code of contracts/api.md › "New error codes" to `api/app/errors.py`. `draft_conflict` and `too_long` carry their extra fields through `AppError(extra=…)`.
-- [ ] T008 [P] Create `api/app/core/national_id.py` with `normalize_national_id(text) -> str | None` (research.md R9):
+- [X] T006 [P] Create the SQLAlchemy models `Draft`, `DraftImage` and `ImageAccessLog` in `api/app/models/draft.py`, mirroring T005. Export them from `api/app/models/__init__.py`. Depends on T005.
+- [X] T007 [P] Add every code of contracts/api.md › "New error codes" to `api/app/errors.py`. `draft_conflict` and `too_long` carry their extra fields through `AppError(extra=…)`.
+- [X] T008 [P] Create `api/app/core/national_id.py` with `normalize_national_id(text) -> str | None` (research.md R9):
   - converts Arabic-Indic and Persian digits
   - strips spaces and direction marks, reusing the helpers in `app/core/phone.py`
   - returns the 12 digits or None
 
   Unit tests in `api/tests/unit/test_national_id.py`.
-- [ ] T009 [P] Create the shared fixture `api/tests/fixtures/draft_validation_cases.json`:
+- [X] T009 [P] Create the shared fixture `api/tests/fixtures/draft_validation_cases.json`:
   - national IDs: 11, 12 and 13 digits, Arabic digits, with spaces, with letters
   - phones: reuse the §8.1 cases
   - empty and whitespace-only text
   - over-length text
 
   Copy it to `web/src/__tests__/fixtures/draft_validation_cases.json`.
-- [ ] T010 Create `api/app/services/draft_validation.py`. `missing(draft, images) -> list[{field, code}]` follows the order and codes of data-model.md › "Validation rules". Unit tests in `api/tests/unit/test_draft_validation.py`, driven by the T009 fixture. Depends on T006, T008 and T009.
-- [ ] T011 [P] Create `web/src/lib/nationalId.ts` (mirror of T008) and `web/src/lib/draftValidation.ts` (mirror of T010). The mirror keeps the same field order and codes, with these Arabic messages: «مطلوب», «الرقم الوطني 12 رقماً», «رقم غير صالح», «النص أطول من المسموح». Tests in `web/src/__tests__/draftValidation.test.ts`, driven by the shared fixture.
-- [ ] T012 [P] Add `api/app/schemas/drafts.py`, per contracts/api.md:
+- [X] T010 Create `api/app/services/draft_validation.py`. `missing(draft, images) -> list[{field, code}]` follows the order and codes of data-model.md › "Validation rules". Unit tests in `api/tests/unit/test_draft_validation.py`, driven by the T009 fixture. Depends on T006, T008 and T009.
+- [X] T011 [P] Create `web/src/lib/nationalId.ts` (mirror of T008) and `web/src/lib/draftValidation.ts` (mirror of T010). The mirror keeps the same field order and codes, with these Arabic messages: «مطلوب», «الرقم الوطني 12 رقماً», «رقم غير صالح», «النص أطول من المسموح». Tests in `web/src/__tests__/draftValidation.test.ts`, driven by the shared fixture.
+- [X] T012 [P] Add `api/app/schemas/drafts.py`, per contracts/api.md:
   - `DraftChanges`: `extra="forbid"`, all fields optional, a `location` sub-model, no price or copy fields
   - `PatchBody {version, changes}`
   - `DraftOut`, with `images`, `missing` and `notices`
   - `DraftListItem`
   - `VersionOut {version, updated_at, same_client}`
-- [ ] T013 Create the base of `api/app/services/draft_service.py`. Depends on T006, T007, T010 and T012.
+- [X] T013 Create the base of `api/app/services/draft_service.py`. Depends on T006, T007, T010 and T012.
   - `get_owned(db, user, id)` raises 404 `draft_not_found` both when the draft is missing and when another marketer owns it.
   - `apply_changes` handles the text fields, the location and the phone:
     - It trims text, and an empty value becomes null.
@@ -120,18 +120,33 @@ come before US3, because the acceptance test of US3 fills both.
     - It sets data-model.md › `drafts.phone_normalized` from `app/core/phone.py` when the phone is valid, and otherwise to null.
   - `to_out(draft)` fills `missing` from T010.
   - No field value is logged (FR-022).
-- [ ] T014 Create the router `api/app/api/drafts.py` and register it in `api/app/main.py`.
+- [X] T014 Create the router `api/app/api/drafts.py` and register it in `api/app/main.py`.
   - Draft routes use `require_roles("marketer")`.
   - A dependency `client_id()` reads `X-Client-Id`. It must be a UUID on writes, otherwise 422 `validation_error` (research.md R3, analysis U1).
-- [ ] T015 [P] Create `web/src/lib/drafts.ts` with typed calls for every route in contracts/api.md.
+- [X] T015 [P] Create `web/src/lib/drafts.ts` with typed calls for every route in contracts/api.md.
   - It holds one module-level `clientId = crypto.randomUUID()` per page load, sent as `X-Client-Id` on every draft call. It is never persisted.
   - The image upload is a stub here, finished in T027.
-- [ ] T016 Add the routes `/drafts/new` and `/drafts/:id` (marketer only, inside `MarketerLayout`) to `web/src/router.tsx`. Create the shell `web/src/pages/marketer/subscriber/SubscriberForm.tsx`:
+- [X] T016 Add the routes `/drafts/new` and `/drafts/:id` (marketer only, inside `MarketerLayout`) to `web/src/router.tsx`. Create the shell `web/src/pages/marketer/subscriber/SubscriberForm.tsx`:
   - the five section headings in the §5 order (FR-003)
   - a sticky header slot for the save badge
   - a bottom slot for «النواقص» and the disabled «إرسال»
 
 **Checkpoint (end of batch 1)**: The schema, models, validation (server and client) and the empty form shell are in place, and all 001–004 tests still pass.
+
+**Batch 1 notes (2026-11-22, T001–T016)**:
+- **File names**: `draft_images.file_name` is `<uuid4().hex>.jpg` (32 hex characters). Migration 0005 adds a CHECK on that exact format as a path-traversal backstop.
+- **Shared code**: `app/core/phone.py` and `web/src/lib/phone.ts` now export `to_latin_digits` / `toLatinDigits`, which the national-ID helpers reuse.
+- **Fixture**: `draft_validation_cases.json` also carries `limits` and `missing_order`. Both sides assert their constants against it, and the server additionally checks `TEXT_LIMITS` in `models/draft.py`.
+- **API client**: `apiFetch` gained an optional `headers` option, used for `X-Client-Id`.
+- **Router**: `api/drafts.py` exposes the `client_id` dependency (required on writes) and `optional_client_id` (reads). The routes come with US1.
+- **Form constants**: the section list and the send note live in `pages/marketer/subscriber/sections.ts`, which keeps fast refresh working.
+- **Tooling pitfall**: `\uXXXX` escapes typed through the editing tools were written as the literal invisible characters. The strip patterns in `national_id.py` and `nationalId.ts` were rewritten with real escapes, and no hidden direction marks remain in `api/app` or `web/src`.
+- **Dashboard button**: it stays disabled until T025 (batch 2).
+- **Checks run**:
+  - upgrade, downgrade 0004 and upgrade again on a scratch database: OK
+  - the `api` container (uid 10001) can write to `/data/uploads`
+  - the `sijil_uploads` volume exists
+  - full gate `scripts/test-all.sh`: green
 
 ---
 

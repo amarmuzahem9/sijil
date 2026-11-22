@@ -4,7 +4,8 @@
  */
 const DIGIT_OFFSETS = [0x0660, 0x06f0]; // Arabic-Indic, Extended Arabic-Indic (Persian)
 
-function toLatinDigits(input: string): string {
+/** Arabic-Indic and Persian digits → ASCII digits; every other character is kept. */
+export function toLatinDigits(input: string): string {
   let out = '';
   for (const ch of input) {
     const code = ch.codePointAt(0)!;

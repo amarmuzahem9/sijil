@@ -14,6 +14,9 @@ dependencies = [
     "pyjwt==2.15.1",
     "argon2-cffi==25.1.0",
     "tzdata==2026.6",
+    # Feature 005: multipart uploads and card image verification (research.md R6).
+    "python-multipart==0.0.34",
+    "Pillow==13.0.0",
 ]
 
 [project.optional-dependencies]

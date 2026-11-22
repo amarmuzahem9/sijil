@@ -11,6 +11,11 @@ _ASCII_DIGITS = frozenset("0123456789")
 _VALID = re.compile(r"07\d{9}")
 
 
+def to_latin_digits(text: str) -> str:
+    """Arabic-Indic and Persian digits → ASCII digits; every other character is kept."""
+    return text.translate(_TRANSLATE)
+
+
 def normalize_phone(raw: str | None) -> str | None:
     """Return the canonical `07XXXXXXXXX` form, or None if the input is not a valid number.
 

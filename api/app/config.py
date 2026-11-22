@@ -35,6 +35,38 @@ class Settings(BaseSettings):
 
     trusted_proxy_cidrs: str = "127.0.0.1"
 
+    # Card images (specs/005 research.md R6, R7). Private storage, never under the web root.
+    uploads_dir: str = "/data/uploads"
+    max_image_bytes: int = 5 * 1024 * 1024
+
+    # Google Maps (specs/005 research.md R10). Empty key → the form works without the map.
+    google_maps_api_key: str = ""
+    google_maps_map_id: str = ""
+    map_default_center: str = "33.3152,44.3661"
+
+    @property
+    def map_center(self) -> tuple[float, float]:
+        """`map_default_center` as (lat, lng); validated at startup by `_check_map_center`."""
+        lat, lng = (float(part) for part in self.map_default_center.split(","))
+        return lat, lng
+
+    @model_validator(mode="after")
+    def _check_map_center(self) -> "Settings":
+        try:
+            parts = self.map_default_center.split(",")
+            if len(parts) != 2:
+                raise ValueError
+            lat, lng = float(parts[0]), float(parts[1])
+            if not (-90 <= lat <= 90 and -180 <= lng <= 180):
+                raise ValueError
+        except ValueError:
+            raise ValueError(
+                'MAP_DEFAULT_CENTER must be "lat,lng" with valid coordinates'
+            ) from None
+        if self.max_image_bytes <= 0:
+            raise ValueError("MAX_IMAGE_BYTES must be a positive number of bytes")
+        return self
+
     @property
     def is_strict(self) -> bool:
         """staging behaves like production for secrets and cookies."""

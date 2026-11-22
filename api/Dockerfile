@@ -16,7 +16,10 @@ deps=d['dependencies']+(d['optional-dependencies']['dev'] if os.environ.get('INS
 open('/tmp/requirements.txt','w').write('\n'.join(deps))" \
     && pip install -r /tmp/requirements.txt
 
-RUN useradd --create-home --uid 10001 app
+# /data/uploads: private card-image storage (specs/005 research.md R7). A new named volume
+# mounted there inherits this owner, so the app user can write to it.
+RUN useradd --create-home --uid 10001 app \
+    && mkdir -p /data/uploads && chown app:app /data/uploads && chmod 700 /data/uploads
 
 COPY --chown=app:app . .
 RUN chmod +x /app/entrypoint.sh

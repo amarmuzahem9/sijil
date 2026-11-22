@@ -117,13 +117,16 @@ interface FetchOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
   auth?: boolean;
+  /** Extra request headers (e.g. `X-Client-Id` for drafts, specs/005 research.md R3). */
+  headers?: Record<string, string>;
 }
 
 export async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T> {
-  const { method = 'GET', body, auth = true } = options;
+  const { method = 'GET', body, auth = true, headers } = options;
   const init: RequestInit = {
     method,
     body: body === undefined ? undefined : JSON.stringify(body),
+    headers,
   };
 
   let res = await send(path, init, auth);

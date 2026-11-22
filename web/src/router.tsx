@@ -31,6 +31,7 @@ import ChangePassword from './pages/ChangePassword';
 import Login from './pages/Login';
 import Dashboard from './pages/marketer/Dashboard';
 import { MarketerNotifications, MarketerRequests } from './pages/marketer/placeholders';
+import SubscriberForm from './pages/marketer/subscriber/SubscriberForm';
 
 /** Wrap one admin route in its §10 permission guard (specs/002 contracts/ui-routes.md). */
 function page(key: PageKey, route: RouteObject): RouteObject {
@@ -58,6 +59,9 @@ export const router = createBrowserRouter([
                 children: [
                   { path: '/', element: <Dashboard /> },
                   { path: '/requests', element: <MarketerRequests /> },
+                  // specs/005: new-subscriber form (draft created on the first change)
+                  { path: '/drafts/new', element: <SubscriberForm /> },
+                  { path: '/drafts/:draftId', element: <SubscriberForm /> },
                   { path: '/notifications', element: <MarketerNotifications /> },
                   { path: '/account', element: <AccountPanel /> },
                 ],
