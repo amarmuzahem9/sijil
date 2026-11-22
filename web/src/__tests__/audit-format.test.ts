@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { AuditEntry } from '../lib/audit';
 import { actionLabel, entryTargetLabel, formatAuditValue } from '../lib/auditFormat';
+import { formatBaghdad } from '../lib/time';
 
 function entry(partial: Partial<AuditEntry>): AuditEntry {
   return {
@@ -93,6 +94,35 @@ describe('actionLabel', () => {
   it('names the role on account creation', () => {
     expect(actionLabel(entry({ action: 'user.created', after: { role: 'admin' } }))).toBe(
       'إنشاء حساب (أدمن)',
+    );
+  });
+});
+
+describe('draft deletion (specs/005 T044)', () => {
+  const deleted = entry({
+    action: 'draft.deleted',
+    entity_type: 'draft',
+    entity_id: '3f0c0000-0000-4000-8000-000000000000',
+    before: {
+      created_at: '2026-11-22T09:00:00Z',
+      updated_at: '2026-11-22T09:30:00Z',
+      tower_code: 'ALM01',
+      image_count: 2,
+      missing_count: 4,
+    },
+  });
+
+  it('labels the action and the target', () => {
+    expect(actionLabel(deleted)).toBe('حذف مسودة');
+    expect(entryTargetLabel(deleted)).toBe('مسودة (ALM01)');
+    expect(entryTargetLabel(entry({ entity_type: 'draft', before: { tower_code: null } }))).toBe(
+      'مسودة',
+    );
+  });
+
+  it('formats the stored times in Baghdad time', () => {
+    expect(formatAuditValue('created_at', '2026-11-22T09:00:00Z')).toBe(
+      formatBaghdad('2026-11-22T09:00:00Z'),
     );
   });
 });

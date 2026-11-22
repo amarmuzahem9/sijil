@@ -14,26 +14,28 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from fastapi import UploadFile
+from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
 
 from app.core.access import has_any_permission
-from app.core.phone import normalize_phone
+from app.core.phone import normalize_phone, to_latin_digits
 from app.core.timeutil import utc_now
 from app.errors import AppError
-from app.models import Draft, DraftImage, ImageAccessLog, User
+from app.models import Area, Draft, DraftImage, ImageAccessLog, Plan, Tower, User
 from app.models.draft import TEXT_LIMITS
 from app.schemas.drafts import (
     DraftChanges,
     DraftImages,
+    DraftListItem,
     DraftOut,
     ImageOut,
     LocationOut,
     MissingOut,
     NoticeOut,
 )
-from app.services import draft_validation, image_store
+from app.services import audit_service, draft_validation, image_store
 
 log = logging.getLogger("sijil.drafts")
 
@@ -174,17 +176,19 @@ def _conflict(db: Session, draft: Draft, client_id: uuid.UUID | None) -> AppErro
 
 def create_if_absent(
     db: Session, user: User, client_id: uuid.UUID, draft_id: uuid.UUID, changes: DraftChanges
-) -> tuple[Draft, bool]:
+) -> tuple[Draft, list[NoticeOut], bool]:
     """PUT: create the draft with the client's UUID, or return the caller's existing draft
-    unchanged (an idempotent retry). Returns (draft, created)."""
+    unchanged (an idempotent retry). Returns (draft, notices, created)."""
     existing = db.get(Draft, draft_id)
     if existing is not None:
         if existing.marketer_id != user.id:
             raise AppError("draft_not_found", 404)
-        return existing, False
+        return existing, compute_notices(db, existing), False
 
     draft = Draft(id=draft_id, marketer_id=user.id, last_client_id=client_id)
     apply_changes(draft, changes)
+    apply_subscription(db, draft, changes)
+    notices = refresh_copies(db, draft)
     try:
         with db.begin_nested():
             db.add(draft)
@@ -195,9 +199,9 @@ def create_if_absent(
         existing = db.get(Draft, draft_id)
         if existing is None or existing.marketer_id != user.id:
             raise AppError("draft_not_found", 404) from None
-        return existing, False
+        return existing, compute_notices(db, existing), False
     db.commit()
-    return draft, True
+    return draft, notices, True
 
 
 def patch(
@@ -207,20 +211,26 @@ def patch(
     draft_id: uuid.UUID,
     version: int,
     changes: DraftChanges,
-) -> Draft:
+) -> tuple[Draft, list[NoticeOut]]:
     """Apply a partial change if `version` is current; otherwise 409 `draft_conflict` with the
-    current version and whether the newer save came from this same page (`same_client`)."""
+    current version and whether the newer save came from this same page (`same_client`).
+    Every save also refreshes the catalog copies (research.md R4)."""
     draft = get_owned(db, user, draft_id)
     if draft.version != version:
         raise _conflict(db, draft, client_id)
-    apply_changes(draft, changes)
+    # Catalog reads must not autoflush the half-updated draft: each flush of a dirty draft is a
+    # versioned UPDATE, and one save must bump the version exactly once.
+    with db.no_autoflush:
+        apply_changes(draft, changes)
+        apply_subscription(db, draft, changes)
+        notices = refresh_copies(db, draft)
     _touch(draft, client_id)
     try:
         db.flush()  # UPDATE ... WHERE id = :id AND version = :version (version_id_col)
     except StaleDataError:
         raise _conflict(db, draft, client_id) from None
     db.commit()
-    return draft
+    return draft, notices
 
 
 # --- card images (US2, research.md R6, R7) -------------------------------------------------------
@@ -295,3 +305,159 @@ def open_image(db: Session, user: User, image_id: uuid.UUID) -> tuple[DraftImage
     db.add(ImageAccessLog(user_id=user.id, image_id=image.id, draft_id=draft.id, side=image.side))
     db.commit()
     return image, path
+
+
+# --- subscription choice and catalog copies (US7, research.md R2, R4) ----------------------------
+
+_SUBSCRIPTION_KEYS = ("area_id", "tower_id", "plan_id")
+
+
+def _unavailable(field: str) -> NoticeOut:
+    return NoticeOut(field=field, code="choice_unavailable")
+
+
+def apply_subscription(db: Session, draft: Draft, changes: DraftChanges) -> None:
+    """Set the chosen ids from `changes`. An id that does not exist → 422 `invalid_choice`.
+    Changing the area clears the tower unless the same change sets a tower."""
+    given = changes.model_fields_set
+    models = {"area_id": Area, "tower_id": Tower, "plan_id": Plan}
+    for key in _SUBSCRIPTION_KEYS:
+        if key not in given:
+            continue
+        value = getattr(changes, key)
+        if value is not None and db.get(models[key], value) is None:
+            raise AppError("invalid_choice", 422, extra={"field": key})
+    if "area_id" in given and changes.area_id != draft.area_id and "tower_id" not in given:
+        draft.tower_id = None
+    for key in _SUBSCRIPTION_KEYS:
+        if key in given:
+            setattr(draft, key, getattr(changes, key))
+
+
+def _check_choices(
+    db: Session, draft: Draft
+) -> tuple[Area | None, Tower | None, Plan | None, list[NoticeOut]]:
+    """The currently valid choices and a notice for every chosen-but-unavailable one.
+
+    An id that became null by ON DELETE SET NULL while its copy remains also counts as
+    unavailable (the admin deleted an unused item).
+    """
+    notices: list[NoticeOut] = []
+
+    area = db.get(Area, draft.area_id) if draft.area_id is not None else None
+    if area is not None and not area.is_active:
+        area = None
+    if area is None and (draft.area_id is not None or draft.area_name is not None):
+        notices.append(_unavailable("area_id"))
+
+    tower = db.get(Tower, draft.tower_id) if draft.tower_id is not None else None
+    if tower is not None and (not tower.is_active or area is None or tower.area_id != area.id):
+        tower = None
+    if tower is None and (draft.tower_id is not None or draft.tower_code is not None):
+        notices.append(_unavailable("tower_id"))
+
+    plan = db.get(Plan, draft.plan_id) if draft.plan_id is not None else None
+    if plan is not None and not plan.is_active:
+        plan = None
+    if plan is None and (draft.plan_id is not None or draft.plan_name is not None):
+        notices.append(_unavailable("plan_id"))
+    return area, tower, plan, notices
+
+
+def refresh_copies(db: Session, draft: Draft) -> list[NoticeOut]:
+    """On every save: clear unavailable choices and copy names and prices from the current
+    catalog (data-model.md › "Copies"; the final copies are taken at submission, feature 008)."""
+    area, tower, plan, notices = _check_choices(db, draft)
+    draft.area_id = area.id if area else None
+    draft.area_name = area.name if area else None
+    draft.tower_id = tower.id if tower else None
+    draft.tower_code = tower.code if tower else None
+    draft.plan_id = plan.id if plan else None
+    draft.plan_name = plan.name if plan else None
+    draft.trial_price = plan.trial_price if plan else None
+    draft.second_price = plan.second_price if plan else None
+    return notices
+
+
+def compute_notices(db: Session, draft: Draft) -> list[NoticeOut]:
+    """Read-only (GET): what the next save would change. Renames refresh silently."""
+    _, _, plan, notices = _check_choices(db, draft)
+    if plan is not None and (draft.trial_price, draft.second_price) != (
+        plan.trial_price,
+        plan.second_price,
+    ):
+        notices.append(
+            NoticeOut(
+                field="plan_id",
+                code="price_changed",
+                old={"trial_price": draft.trial_price, "second_price": draft.second_price},
+                new={"trial_price": plan.trial_price, "second_price": plan.second_price},
+            )
+        )
+    return notices
+
+
+# --- drafts list and deletion (US4, research.md R8) ----------------------------------------------
+
+
+def _like_escape(text: str) -> str:
+    return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def list_own(db: Session, user: User, q: str | None = None) -> list[DraftListItem]:
+    """The caller's drafts, newest change first; `q` matches the name or the phone digits."""
+    stmt = select(Draft).where(Draft.marketer_id == user.id)
+    text = (q or "").strip()
+    if text:
+        conditions = [Draft.subscriber_name.ilike(f"%{_like_escape(text)}%", escape="\\")]
+        digits = "".join(c for c in to_latin_digits(text) if c.isascii() and c.isdigit())
+        if digits:
+            conditions.append(Draft.phone_normalized.like(f"%{digits}%"))
+        stmt = stmt.where(or_(*conditions))
+    drafts = db.scalars(stmt.order_by(Draft.updated_at.desc())).all()
+    return [
+        DraftListItem(
+            id=d.id,
+            subscriber_name=d.subscriber_name,
+            tower_code=d.tower_code,
+            phone_normalized=d.phone_normalized,
+            updated_at=d.updated_at,
+            missing_count=len(draft_validation.missing(d, image_sides(d.images))),
+            has_images=bool(d.images),
+        )
+        for d in drafts
+    ]
+
+
+def delete(db: Session, user: User, draft_id: uuid.UUID) -> None:
+    """Delete an unsubmitted draft with its images (system.md §5 v1.4, constitution 1.1.1).
+
+    Rows and the audit entry are committed first, then the files are removed: a failed commit
+    leaves the files in place, and a file left behind by a crash is removed by `prune-uploads`.
+    The audit entry carries no card data, names, phone or file names (FR-019, Principle II).
+    """
+    draft = get_owned(db, user, draft_id, lock=True)
+    file_names = [image.file_name for image in draft.images]
+    before = {
+        "created_at": draft.created_at,
+        "updated_at": draft.updated_at,
+        "tower_code": draft.tower_code,
+        "image_count": len(file_names),
+        "missing_count": len(draft_validation.missing(draft, image_sides(draft.images))),
+    }
+    db.delete(draft)
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="draft.deleted",
+        entity_type="draft",
+        entity_id=str(draft_id),
+        before=before,
+    )
+    db.commit()
+    for name in file_names:
+        image_store.unlink_quietly(name)
+
+
+def referenced_file_names(db: Session) -> set[str]:
+    return set(db.scalars(select(DraftImage.file_name)).all())

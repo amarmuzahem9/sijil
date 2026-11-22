@@ -48,6 +48,7 @@ export class AutosaveQueue {
   private failures = 0;
   private paused = false;
   private createRetried = false;
+  private forceNext = false;
   private cancelRetry: (() => void) | null = null;
   state: SaveState = 'idle';
   lastError: ApiError | null = null;
@@ -76,6 +77,18 @@ export class AutosaveQueue {
   enqueue(changes: DraftChanges): Promise<void> {
     this.pending = { ...this.pending, ...changes };
     return this.flush();
+  }
+
+  /** Send a save even with no field change, so the server refreshes the catalog copies
+   * (opening a draft whose choice or price changed, research.md R4). */
+  touch(): Promise<void> {
+    this.forceNext = true;
+    return this.flush();
+  }
+
+  /** True while a change to `key` is waiting to be sent (server values must not override it). */
+  hasPendingKey(key: keyof DraftChanges): boolean {
+    return key in this.pending;
   }
 
   /** A save made elsewhere on this page (an image upload) moved the version forward. */
@@ -136,8 +149,10 @@ export class AutosaveQueue {
 
   flush(): Promise<void> {
     if (this.inFlight) return this.inFlight;
-    if (this.paused || isEmpty(this.pending)) return Promise.resolve();
+    if (this.paused || (isEmpty(this.pending) && !this.forceNext)) return Promise.resolve();
+    if (this.id === null && isEmpty(this.pending)) return Promise.resolve();
     this.cancelTimer();
+    this.forceNext = false;
     const sending = this.pending;
     this.pending = {};
     this.setState('saving', null);
@@ -177,7 +192,8 @@ export class AutosaveQueue {
       this.failures = 0;
       this.createRetried = false;
       this.deps.onSaved?.(draft);
-      this.setState(isEmpty(this.pending) ? 'saved' : 'saving', null);
+      // A pause (conflict/deleted found by polling) during the request keeps its state.
+      if (!this.paused) this.setState(isEmpty(this.pending) ? 'saved' : 'saving', null);
     } catch (err) {
       this.handleError(err, sending);
     }

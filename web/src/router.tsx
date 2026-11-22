@@ -30,7 +30,8 @@ import Marketers from './pages/admin/Marketers';
 import ChangePassword from './pages/ChangePassword';
 import Login from './pages/Login';
 import Dashboard from './pages/marketer/Dashboard';
-import { MarketerNotifications, MarketerRequests } from './pages/marketer/placeholders';
+import { MarketerNotifications } from './pages/marketer/placeholders';
+import Requests from './pages/marketer/Requests';
 import SubscriberForm from './pages/marketer/subscriber/SubscriberForm';
 
 /** Wrap one admin route in its §10 permission guard (specs/002 contracts/ui-routes.md). */
@@ -58,7 +59,7 @@ export const router = createBrowserRouter([
                 element: <MarketerLayout />,
                 children: [
                   { path: '/', element: <Dashboard /> },
-                  { path: '/requests', element: <MarketerRequests /> },
+                  { path: '/requests', element: <Requests /> },
                   // specs/005: new-subscriber form. One route for /drafts/new and /drafts/{id}, so
                   // the form stays mounted when the URL is replaced after the first save.
                   { path: '/drafts/:draftId', element: <SubscriberForm /> },

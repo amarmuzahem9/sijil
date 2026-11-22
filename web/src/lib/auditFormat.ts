@@ -35,7 +35,11 @@ export function formatAuditValue(field: string, value: unknown): string {
   if (field === 'role' && typeof value === 'string' && value in ROLE_LABELS) {
     return ROLE_LABELS[value as keyof typeof ROLE_LABELS];
   }
-  if (field === 'locked_until' && typeof value === 'string') return formatBaghdad(value);
+  if (
+    (field === 'locked_until' || field === 'created_at' || field === 'updated_at') &&
+    typeof value === 'string'
+  )
+    return formatBaghdad(value);
   if (typeof value === 'boolean') return value ? 'نعم' : 'لا';
   if (typeof value === 'number') return formatNumber(value);
   return String(value);
@@ -60,6 +64,10 @@ export function entryTargetLabel(entry: AuditEntry): string | null {
   if (entry.entity_type === 'user') return entry.target?.name ?? null;
   if (entry.entity_type === 'reward_tiers') return 'شرائح المكافآت';
   if (entry.entity_type === 'app_setting') return 'الإعدادات العامة';
+  if (entry.entity_type === 'draft') {
+    const tower = entry.before?.tower_code;
+    return typeof tower === 'string' && tower ? `مسودة (${tower})` : 'مسودة';
+  }
   if (entry.target_label) return entry.target_label; // resolved by the server
   const values = { ...(entry.before ?? {}), ...(entry.after ?? {}) };
   const key = entry.entity_type === 'tower' ? 'code' : 'name';

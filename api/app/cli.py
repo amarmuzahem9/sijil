@@ -107,18 +107,30 @@ def seed_demo(db: Session, settings: Settings, e2e: bool = False) -> int:
     return 0
 
 
+def prune_uploads(db: Session) -> int:
+    """Remove image files no row refers to, older than 1 hour (specs/005 research.md R8)."""
+    from app.services import draft_service, image_store
+
+    removed = image_store.prune_orphans(draft_service.referenced_file_names(db))
+    print(f"prune-uploads: {len(removed)} orphan file(s) removed")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("bootstrap", help="create the main admin from SUPERADMIN_* if none exists")
     seed = sub.add_parser("seed-demo", help="create synthetic test marketers (not in production)")
     seed.add_argument("--e2e", action="store_true", help="also create the e2e test accounts")
+    sub.add_parser("prune-uploads", help="remove card-image files that no draft refers to")
     args = parser.parse_args(argv)
 
     settings = get_settings()
     with get_sessionmaker()() as db:
         if args.command == "bootstrap":
             return bootstrap(db, settings)
+        if args.command == "prune-uploads":
+            return prune_uploads(db)
         return seed_demo(db, settings, e2e=args.e2e)
 
 

@@ -154,11 +154,32 @@ docker exec <npm> curl -s http://sijil-web/api/health
    | HSTS Enabled | مفعّل |
    | Email | بريد الشركة لتنبيهات Let's Encrypt |
    | I Agree to the Let's Encrypt Terms | ✓ |
-5. اضغط **Save**. خلال دقيقة تُصدر الشهادة ويصبح الـ Host بحالة Online.
+5. تبويب **Advanced** ← Custom Nginx Configuration، أضف السطر التالي (الفيزة 005). بدونه يرفض NPM أي صورة أكبر من 1 ميغابايت قبل أن تصل للتطبيق، والتطبيق نفسه يقبل حتى 5 ميغابايت:
+   ```nginx
+   client_max_body_size 6m;
+   ```
+6. اضغط **Save**. خلال دقيقة تُصدر الشهادة ويصبح الـ Host بحالة Online.
 
 **إذا فشل إصدار الشهادة:** تأكد أن الـ DNS يشير للسيرفر، وأن المنفذ 80 مفتوح في جدار الحماية لـ NPM.
 
 **لاحقاً (الفيزة 004، رفع صور البطاقات):** أضف في تبويب **Advanced** السطر `client_max_body_size 20m;`.
+
+## 5ب) مفتاح Google Maps (الفيزة 005)
+
+الخريطة اختيارية: بدون مفتاح تعمل الاستمارة، ويظهر «الخريطة غير متوفرة حالياً»، ويبقى زر «استخدم موقعي الحالي» يعمل.
+
+1. في Google Cloud Console فعّل **Maps JavaScript API** وأنشئ **API key**.
+2. قيّد المفتاح (**Edit API key**):
+   - Application restrictions: **Websites**، والعنوان `https://sijil.t3cftth.net/*`
+   - API restrictions: **Maps JavaScript API** فقط
+3. من **Map Management** أنشئ **Map ID** من نوع JavaScript (يحتاجه الدبوس القابل للسحب).
+4. ضعهما في `.env` على السيرفر فقط، ولا يدخلان git أبداً:
+   ```bash
+   GOOGLE_MAPS_API_KEY=...
+   GOOGLE_MAPS_MAP_ID=...
+   MAP_DEFAULT_CENTER=33.3152,44.3661   # مركز الخريطة عند عدم وجود موقع
+   ```
+5. أعد تشغيل الخادم (`sijil up -d api`)، وافتح الاستمارة. يجب أن تظهر صور القمر الصناعي، وألا تظهر أخطاء CSP في Console المتصفح.
 
 ## 6) التشغيل الثاني والتأكد
 
@@ -186,10 +207,33 @@ alias sijil='docker compose -f docker-compose.yml -f docker-compose.staging.yml'
 sijil ps                 # حالة الحاويات
 sijil logs -f api        # سجل الخادم (لا يحتوي كلمات سر أو tokens)
 sijil restart api        # إعادة تشغيل الخادم
-sijil down               # إيقاف (البيانات تبقى في volume باسم sijil_pgdata)
+sijil down               # إيقاف (البيانات تبقى في volume باسم sijil_pgdata وصور البطاقات في sijil_uploads)
+sijil exec api python -m app.cli prune-uploads   # حذف ملفات صور يتيمة (لا مسودة تشير إليها، أقدم من ساعة)
 ```
 
-**لا تستعمل `down -v` على السيرفر**، لأنه يحذف قاعدة البيانات.
+**لا تستعمل `down -v` على السيرفر**، لأنه يحذف قاعدة البيانات وصور البطاقات.
+
+### نسخ صور البطاقات احتياطياً (الفيزة 005)
+
+صور البطاقات محفوظة في volume باسم `sijil_uploads`، داخل حاوية `api` فقط، ولا تُعرض برابط عام. **يجب أن تدخل في كل نسخة احتياطية** مع قاعدة البيانات. النسخ الليلي التلقائي يأتي في الفيزة 015، وحتى ذلك الحين هذه الأوامر اليدوية:
+
+```bash
+mkdir -p ~/sijil-backups
+# نسخة من الصور (ملف tar مضغوط، بتاريخ اليوم)
+docker run --rm -v sijil_uploads:/data:ro -v ~/sijil-backups:/backup alpine   tar czf /backup/uploads-$(date +%F).tar.gz -C /data .
+# نسخة من قاعدة البيانات في نفس الوقت
+sijil exec -T db pg_dump -U sijil -Fc sijil > ~/sijil-backups/db-$(date +%F).dump
+```
+
+الاستعادة (بعد إيقاف `api`):
+
+```bash
+sijil stop api
+docker run --rm -v sijil_uploads:/data -v ~/sijil-backups:/backup alpine   sh -c 'rm -rf /data/* && tar xzf /backup/uploads-YYYY-MM-DD.tar.gz -C /data && chown -R 10001:10001 /data'
+sijil start api
+```
+
+احفظ ملفات `~/sijil-backups` خارج السيرفر أيضاً (الهارد الخارجي)، لأنها تحتوي صور بطاقات حقيقية. لا ترسلها لأي طرف خارجي.
 
 ## 9) قبل الإطلاق الفعلي (الفيزة 014)
 

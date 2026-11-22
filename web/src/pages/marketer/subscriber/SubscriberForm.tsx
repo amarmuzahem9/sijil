@@ -13,20 +13,38 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link as RouterLink, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../../../auth/AuthProvider';
 import { ApiError, setSessionEndedInterceptor } from '../../../lib/api';
+import {
+  CODE_MESSAGES,
+  computeMissing,
+  isTooLong,
+  type LimitedField,
+  type MissingField,
+} from '../../../lib/draftValidation';
 import { getDraft, type Draft } from '../../../lib/drafts';
-import { useDraftAutosave } from '../../../lib/useDraftAutosave';
+import { useDraftAutosave, type TextField } from '../../../lib/useDraftAutosave';
 import { CardDataSection } from './CardDataSection';
 import { CardSection } from './CardSection';
+import { ConflictBanner } from './ConflictBanner';
 import { LocationSection } from './LocationSection';
+import { MissingSummary } from './MissingSummary';
+import { PhoneSection } from './PhoneSection';
 import { SaveBadge } from './SaveBadge';
-import { SECTIONS, SEND_DISABLED_NOTE, type SectionId } from './sections';
+import { SECTIONS, type SectionId } from './sections';
 import { SignInDialog } from './SignInDialog';
+import { SubscriptionSection } from './SubscriptionSection';
+
+const MISSING_KEY: Partial<Record<TextField, MissingField>> = {
+  subscriber_name: 'subscriber_name',
+  national_id: 'national_id',
+  family_number: 'family_number',
+  phone_input: 'phone',
+};
 
 const TITLES = Object.fromEntries(SECTIONS.map((s) => [s.id, s.title])) as Record<
   SectionId,
@@ -61,7 +79,7 @@ function DraftEditor({
   initial: Draft | null;
   onCreated: (id: string) => void;
 }) {
-  const autosave = useDraftAutosave(initial);
+  const autosave = useDraftAutosave(initial, { onCreated });
   const { user } = useAuth();
   const navigate = useNavigate();
   const [sessionEnded, setSessionEnded] = useState(false);
@@ -73,11 +91,47 @@ function DraftEditor({
     return () => setSessionEndedInterceptor(null);
   }, []);
 
-  useEffect(() => {
-    if (autosave.draftId) onCreated(autosave.draftId);
-  }, [autosave.draftId, onCreated]);
-
   const showSignIn = sessionEnded || autosave.saveState === 'session_ended';
+
+  // Inline errors appear once a field has been left (US5); the server list is authoritative
+  // once everything is saved.
+  const [touched, setTouched] = useState<Set<TextField>>(() => new Set());
+  const { commitField } = autosave;
+  const onCommit = useCallback(
+    (field: TextField) => {
+      setTouched((t) => (t.has(field) ? t : new Set(t).add(field)));
+      commitField(field);
+    },
+    [commitField],
+  );
+  const imageSides = useMemo(() => {
+    const images = autosave.serverDraft?.images;
+    return (['front', 'back'] as const).filter((side) => images?.[side]);
+  }, [autosave.serverDraft]);
+  const localMissing = useMemo(
+    () =>
+      computeMissing(
+        {
+          ...autosave.values,
+          location_lat: autosave.values.location?.lat ?? null,
+          location_lng: autosave.values.location?.lng ?? null,
+        },
+        imageSides,
+      ),
+    [autosave.values, imageSides],
+  );
+  const missing =
+    autosave.saveState === 'saved' && autosave.serverDraft
+      ? autosave.serverDraft.missing
+      : localMissing;
+
+  const errorFor = (field: TextField): string | null => {
+    if (isTooLong(field as LimitedField, autosave.values[field])) return CODE_MESSAGES.too_long;
+    if (!touched.has(field)) return null;
+    const key = MISSING_KEY[field];
+    const item = key && localMissing.find((m) => m.field === key);
+    return item ? CODE_MESSAGES[item.code] : null;
+  };
 
   return (
     <Stack
@@ -106,6 +160,7 @@ function DraftEditor({
         <SaveBadge state={autosave.saveState} onRetry={autosave.retry} />
       </Box>
 
+      <ConflictBanner autosave={autosave} />
       {autosave.saveState === 'failed' && autosave.lastError?.message && (
         <Alert severity="error">{autosave.lastError.message}</Alert>
       )}
@@ -114,25 +169,27 @@ function DraftEditor({
         <CardSection autosave={autosave} />
       </FormSection>
       <FormSection id="section-card-data">
-        <CardDataSection autosave={autosave} />
+        <CardDataSection
+          autosave={autosave}
+          onCommit={onCommit}
+          errors={{
+            subscriber_name: errorFor('subscriber_name') ?? undefined,
+            national_id: errorFor('national_id') ?? undefined,
+            family_number: errorFor('family_number') ?? undefined,
+          }}
+        />
       </FormSection>
       <FormSection id="section-location">
         <LocationSection autosave={autosave} />
       </FormSection>
-      <FormSection id="section-subscription" />
-      <FormSection id="section-phone" />
+      <FormSection id="section-subscription">
+        <SubscriptionSection autosave={autosave} />
+      </FormSection>
+      <FormSection id="section-phone">
+        <PhoneSection autosave={autosave} onCommit={onCommit} error={errorFor('phone_input')} />
+      </FormSection>
 
-      {/* «النواقص» slot (US5, MissingSummary). */}
-      <Box data-testid="missing-summary-slot" />
-
-      <Stack spacing={0.5}>
-        <Button variant="contained" size="large" disabled sx={{ py: 1.5 }}>
-          إرسال
-        </Button>
-        <Typography variant="caption" color="text.secondary" align="center">
-          {SEND_DISABLED_NOTE}
-        </Typography>
-      </Stack>
+      <MissingSummary missing={missing} />
 
       <SignInDialog
         open={showSignIn}
@@ -163,17 +220,20 @@ const noop = () => undefined;
 export default function SubscriberForm() {
   const { draftId = 'new' } = useParams<{ draftId: string }>();
   const location = useLocation();
-  // The id this page created itself: reaching /drafts/{ownId} must not reload or remount.
-  const [ownId, setOwnId] = useState<string | null>(null);
-  const [newKey, setNewKey] = useState(location.key);
-
-  // A fresh «إضافة مشترك جديد» while a created draft is open starts over.
-  if (draftId === 'new' && ownId !== null) {
-    setOwnId(null);
-    setNewKey(location.key);
+  // One "new form" session per navigation to /drafts/new. `ownId` is the draft that session
+  // created: reaching /drafts/{ownId} must not reload or remount the form (an upload may be
+  // running). Only a new navigation to /drafts/new (a new location key) starts over; the
+  // in-between render where the id is known but the URL is still /drafts/new must not.
+  const [session, setSession] = useState<{ key: string; ownId: string | null }>({
+    key: location.key,
+    ownId: null,
+  });
+  if (draftId === 'new' && location.key !== session.key) {
+    setSession({ key: location.key, ownId: null });
   }
+  const onCreated = useCallback((id: string) => setSession((s) => ({ ...s, ownId: id })), []);
 
-  const isNew = draftId === 'new' || draftId === ownId;
+  const isNew = draftId === 'new' || draftId === session.ownId;
   const query = useQuery({
     queryKey: ['draft', draftId],
     queryFn: () => getDraft(draftId),
@@ -183,7 +243,7 @@ export default function SubscriberForm() {
     gcTime: 0,
   });
 
-  if (isNew) return <DraftEditor key={`new-${newKey}`} initial={null} onCreated={setOwnId} />;
+  if (isNew) return <DraftEditor key={`new-${session.key}`} initial={null} onCreated={onCreated} />;
   if (query.isPending) return <CircularProgress aria-label="جارٍ التحميل" />;
   if (query.isError) {
     const err = query.error;

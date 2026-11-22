@@ -280,3 +280,92 @@ def test_version_endpoint(client, marketer) -> None:
     # Reads do not require the header.
     plain = auth_header(marketer[1])
     assert client.get(f"/api/drafts/{draft_id}/version", headers=plain).status_code == 200
+
+
+# --- missing items (US5, FR-013) -------------------------------------------------------------
+
+PAGE_ORDER = [
+    "image_front",
+    "image_back",
+    "subscriber_name",
+    "national_id",
+    "family_number",
+    "location",
+    "address",
+    "landmark",
+    "area_id",
+    "tower_id",
+    "plan_id",
+    "phone",
+]
+
+
+def test_empty_draft_lists_every_item_in_page_order(client, h) -> None:
+    _, created = _create(client, h)
+    assert [m["field"] for m in created.json()["missing"]] == PAGE_ORDER
+    assert {m["code"] for m in created.json()["missing"]} == {"required"}
+
+
+def test_invalid_values_are_saved_and_reported(client, h) -> None:
+    draft_id, _ = _create(client, h)
+    res = client.patch(
+        f"/api/drafts/{draft_id}",
+        json={"version": 1, "changes": {"national_id": "١٢٣٤٥٦٧٨٩٠١", "phone_input": "0780"}},
+        headers=h,
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["national_id"] == "١٢٣٤٥٦٧٨٩٠١"  # kept as typed
+    assert body["phone_input"] == "0780"
+    codes = {m["field"]: m["code"] for m in body["missing"]}
+    assert codes["national_id"] == "invalid_national_id"
+    assert codes["phone"] == "invalid_phone"
+
+
+def test_complete_draft_has_no_missing_items(client, db, h, make_user, tmp_path, monkeypatch):
+    import io
+
+    from PIL import Image
+
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "uploads_dir", str(tmp_path))
+    admin = auth_header(login(client, make_user("super_admin").phone))
+    base = "/api/admin/settings"
+    area = client.post(f"{base}/areas", json={"name": "منطقة اختبار"}, headers=admin).json()
+    tower = client.post(
+        f"{base}/towers",
+        json={"code": "TST01", "name": "برج اختبار", "area_id": area["id"]},
+        headers=admin,
+    ).json()
+    plan = client.post(
+        f"{base}/plans",
+        json={"name": "TEST", "trial_price": 1000, "second_price": 2000},
+        headers=admin,
+    ).json()
+    draft_id, _ = _create(
+        client,
+        h,
+        {
+            "subscriber_name": "مشترك تجريبي",
+            "national_id": "199012345678",
+            "family_number": "A1B2C3",
+            "location": {"lat": 33.3, "lng": 44.4, "source": "map"},
+            "address": "حي تجريبي",
+            "landmark": "قرب نقطة تجريبية",
+            "area_id": area["id"],
+            "tower_id": tower["id"],
+            "plan_id": plan["id"],
+            "phone_input": "07801234567",
+        },
+    )
+    buf = io.BytesIO()
+    Image.new("RGB", (800, 500), (0, 0, 0)).save(buf, format="JPEG")
+    for side in ("front", "back"):
+        res = client.post(
+            f"/api/drafts/{draft_id}/images/{side}",
+            files={"file": ("x.jpg", buf.getvalue(), "image/jpeg")},
+            headers=h,
+        )
+    assert res.json()["missing"] == []
+    assert client.get(f"/api/drafts/{draft_id}", headers=h).json()["missing"] == []

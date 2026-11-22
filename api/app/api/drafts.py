@@ -17,7 +17,7 @@ from app.api.deps import AuthContext, current_user, require_roles
 from app.config import get_settings
 from app.db import get_db
 from app.errors import AppError
-from app.schemas.drafts import CreateBody, DraftOut, PatchBody, VersionOut
+from app.schemas.drafts import CreateBody, DraftList, DraftOut, PatchBody, VersionOut
 from app.services import draft_service
 
 router = APIRouter(tags=["drafts"])
@@ -60,9 +60,11 @@ def put_draft(
     db: Session = Depends(get_db),
 ) -> DraftOut:
     """Create-if-absent with the client's UUID (research.md R1): 201 created, 200 existing."""
-    draft, created = draft_service.create_if_absent(db, ctx.user, cid, draft_id, body.changes)
+    draft, notices, created = draft_service.create_if_absent(
+        db, ctx.user, cid, draft_id, body.changes
+    )
     response.status_code = 201 if created else 200
-    return draft_service.to_out(draft)
+    return draft_service.to_out(draft, notices)
 
 
 @router.get("/drafts/{draft_id}", response_model=DraftOut)
@@ -71,7 +73,9 @@ def get_draft(
     ctx: AuthContext = Depends(marketer_only),
     db: Session = Depends(get_db),
 ) -> DraftOut:
-    return draft_service.to_out(draft_service.get_owned(db, ctx.user, draft_id))
+    """Read-only: notices say what the next save would change (research.md R4)."""
+    draft = draft_service.get_owned(db, ctx.user, draft_id)
+    return draft_service.to_out(draft, draft_service.compute_notices(db, draft))
 
 
 @router.get("/drafts/{draft_id}/version", response_model=VersionOut)
@@ -98,8 +102,32 @@ def patch_draft(
     cid: uuid.UUID = Depends(client_id),
     db: Session = Depends(get_db),
 ) -> DraftOut:
-    draft = draft_service.patch(db, ctx.user, cid, draft_id, body.version, body.changes)
-    return draft_service.to_out(draft)
+    draft, notices = draft_service.patch(db, ctx.user, cid, draft_id, body.version, body.changes)
+    return draft_service.to_out(draft, notices)
+
+
+# --- list and delete (US4) -------------------------------------------------------------------
+
+
+@router.get("/drafts", response_model=DraftList)
+def list_drafts(
+    q: str | None = None,
+    ctx: AuthContext = Depends(marketer_only),
+    db: Session = Depends(get_db),
+) -> DraftList:
+    """The caller's own drafts, newest change first (FR-018)."""
+    return DraftList(items=draft_service.list_own(db, ctx.user, q))
+
+
+@router.delete("/drafts/{draft_id}", status_code=204)
+def delete_draft(
+    draft_id: uuid.UUID,
+    ctx: AuthContext = Depends(marketer_only),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Delete an unsubmitted draft and its images; audited without card data (FR-019)."""
+    draft_service.delete(db, ctx.user, draft_id)
+    return Response(status_code=204)
 
 
 # --- card images (US2) -----------------------------------------------------------------------

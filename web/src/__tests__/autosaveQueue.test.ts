@@ -207,3 +207,42 @@ describe('AutosaveQueue.ensureCreated', () => {
     await expect(queue.ensureCreated()).rejects.toMatchObject({ code: 'network_error' });
   });
 });
+
+describe('AutosaveQueue.touch', () => {
+  it('sends an empty PATCH so the server refreshes catalog copies', async () => {
+    const { deps, queue } = setup();
+    deps.patch.mockResolvedValueOnce(draft(2));
+    await queue.touch();
+    expect(deps.patch).toHaveBeenCalledWith('d1', 1, {});
+  });
+
+  it('never creates a draft by itself', async () => {
+    const { deps, queue } = setup({ id: null, version: 0 });
+    await queue.touch();
+    expect(deps.create).not.toHaveBeenCalled();
+  });
+
+  it('reports pending keys', async () => {
+    const { deps, queue } = setup();
+    deps.patch.mockReturnValue(new Promise(() => undefined));
+    void queue.enqueue({ address: 'أ' });
+    void queue.enqueue({ plan_id: 3 });
+    expect(queue.hasPendingKey('plan_id')).toBe(true);
+    expect(queue.hasPendingKey('area_id')).toBe(false);
+  });
+});
+
+describe('AutosaveQueue.pause', () => {
+  it('keeps the conflict state when an in-flight save finishes', async () => {
+    const { deps, queue } = setup();
+    const inFlight = deferred<Draft>();
+    deps.patch.mockReturnValueOnce(inFlight.promise);
+    const done = queue.enqueue({ address: 'أ' });
+    queue.pause('conflict');
+    inFlight.resolve(draft(2));
+    await done;
+    expect(queue.state).toBe('conflict');
+    await queue.enqueue({ landmark: 'ب' });
+    expect(deps.patch).toHaveBeenCalledTimes(1);
+  });
+});

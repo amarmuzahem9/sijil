@@ -25,6 +25,9 @@ services:
   api:
     container_name: sijil-api
     ports: !reset []
+    # The `uploads` volume (sijil_uploads, defined in docker-compose.yml) holds the card images
+    # (feature 005). It stays on the server, is never mounted by `web`, and must be part of every
+    # backup (deploy/staging.md › «نسخ صور البطاقات احتياطياً»). Never run `down -v` here.
 
   db:
     container_name: sijil-db

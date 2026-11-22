@@ -50,6 +50,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'plan.deleted': 'حذف فئة',
   'reward_tiers.updated': 'تعديل شرائح المكافآت',
   'app_setting.updated': 'تعديل الإعدادات العامة',
+  // specs/005: an unsubmitted draft deleted by its owner (no card data in the entry)
+  'draft.deleted': 'حذف مسودة',
 };
 
 export const AUDIT_FIELD_LABELS: Record<string, string> = {
@@ -67,6 +69,11 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   second_price: 'سعر الشهر الثاني',
   tiers: 'الشرائح',
   otp_validity_minutes: 'مدة صلاحية الرمز (دقيقة)',
+  created_at: 'أُنشئت',
+  updated_at: 'آخر حفظ',
+  tower_code: 'البرج',
+  image_count: 'عدد الصور',
+  missing_count: 'عدد النواقص',
 };
 
 export const STATE_LABELS = { active: 'فعّال', inactive: 'موقوف' } as const;

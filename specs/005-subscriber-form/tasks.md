@@ -343,7 +343,7 @@ come before US3, because the acceptance test of US3 fills both.
 
 **Independent Test**: With «العلم», ALM01 and PLUS (20,000 / 35,000), pick them and see both prices. Change the area and see the tower cleared. Change the price as admin, reopen the draft, and see «تغيّر السعر».
 
-- [ ] T036 [P] [US7] Write integration tests in `api/tests/integration/test_drafts_catalog_copies.py`:
+- [X] T036 [P] [US7] Write integration tests in `api/tests/integration/test_drafts_catalog_copies.py`:
   - **Copies:**
     - A PATCH with `area_id`, `tower_id` and `plan_id` stores the copies from the catalog.
     - A body with a price key gives 422.
@@ -358,10 +358,10 @@ come before US3, because the acceptance test of US3 fills both.
     - Deleting an unused tower sets `drafts.tower_id` to null (SET NULL, research.md R2).
     - Drafts register no usage check.
   - **Bad ids:** an id that does not exist gives 422 `invalid_choice`.
-- [ ] T037 [US7] Add `refresh_copies(db, draft) -> notices` (applied on every PUT and PATCH) and `compute_notices(db, draft)` (read-only, for GET) to `api/app/services/draft_service.py`, per research.md R4.
+- [X] T037 [US7] Add `refresh_copies(db, draft) -> notices` (applied on every PUT and PATCH) and `compute_notices(db, draft)` (read-only, for GET) to `api/app/services/draft_service.py`, per research.md R4.
   - They write data-model.md › `drafts.area_name`, `drafts.tower_code`, `drafts.plan_name`, `drafts.trial_price` and `drafts.second_price`.
   - Each copy is null whenever its id is null (data-model.md › "Copies").
-- [ ] T038 [US7] Build `web/src/pages/marketer/subscriber/SubscriptionSection.tsx`:
+- [X] T038 [US7] Build `web/src/pages/marketer/subscriber/SubscriptionSection.tsx`:
   - area, tower and plan selects from `/api/catalog` (`web/src/lib/settings.ts`); towers are filtered by area and cleared when the area changes
   - «لا توجد أبراج فعّالة» when the area has none
   - prices through `formatMoney`: «الشهر التجريبي: 20,000 د.ع — الشهر الثاني: 35,000 د.ع»
@@ -377,7 +377,7 @@ come before US3, because the acceptance test of US3 fills both.
 
 ### Tests for User Story 3
 
-- [ ] T039 [P] [US3] Write the Playwright test `e2e/tests/subscriber-form-acceptance.spec.ts` (quickstart A, B, D).
+- [X] T039 [P] [US3] Write the Playwright test `e2e/tests/subscriber-form-acceptance.spec.ts` (quickstart A, B, D).
   - **Setup:**
     - two `browser.newContext()` sessions signed in as the same seeded marketer
     - synthetic JPEGs generated in the page with a canvas (text «بطاقة تجريبية»), 4000×3000 for the front, passed to `setInputFiles`
@@ -394,11 +394,11 @@ come before US3, because the acceptance test of US3 fills both.
 
 ### Implementation for User Story 3
 
-- [ ] T040 [US3] Add version polling to `web/src/lib/useDraftAutosave.ts` (research.md R3):
+- [X] T040 [US3] Add version polling to `web/src/lib/useDraftAutosave.ts` (research.md R3):
   - It polls `GET /drafts/{id}/version` every 15 s while `document.visibilityState === 'visible'`, and also on `visibilitychange` and `focus`.
   - A newer version with `same_client=false` moves to state `conflict`.
   - A 404 moves to state `deleted`.
-- [ ] T041 [US3] Build `web/src/pages/marketer/subscriber/ConflictBanner.tsx`. Autosave stays paused in both states (FR-017).
+- [X] T041 [US3] Build `web/src/pages/marketer/subscriber/ConflictBanner.tsx`. Autosave stays paused in both states (FR-017).
   - `conflict`: «تغيّرت المسودة من جهاز آخر», with two choices:
     - «تحميل الأحدث» runs a GET and replaces the form state.
     - «الإبقاء على نسختي» sends a PATCH with every local field and the server's current `version`.
@@ -416,7 +416,7 @@ come before US3, because the acceptance test of US3 fills both.
 
 ### Tests for User Story 4
 
-- [ ] T042 [P] [US4] Write integration tests in `api/tests/integration/test_drafts_list_delete.py`:
+- [X] T042 [P] [US4] Write integration tests in `api/tests/integration/test_drafts_list_delete.py`:
   - **List:**
     - GET `/drafts` returns only the caller's drafts, ordered by `updated_at` DESC, with `missing_count` and `has_images`.
     - `q` matches a substring of the name and the phone digits.
@@ -429,16 +429,16 @@ come before US3, because the acceptance test of US3 fills both.
 
 ### Implementation for User Story 4
 
-- [ ] T043 [US4] Add `list_own(db, user, q)` and `delete(db, ctx, id)` to `api/app/services/draft_service.py`.
+- [X] T043 [US4] Add `list_own(db, user, q)` and `delete(db, ctx, id)` to `api/app/services/draft_service.py`.
   - `delete` locks the row, collects the file names, deletes, audits `draft.deleted`, commits, then unlinks (research.md R8).
   - Add `GET /drafts` and `DELETE /drafts/{id}` to `api/app/api/drafts.py`.
   - Add the `prune-uploads` command to `api/app/cli.py`, using `image_store`.
-- [ ] T044 [P] [US4] Add the action label `draft.deleted` → «حذف مسودة» and its target label to `web/src/lib/labels.ts` and `web/src/lib/auditFormat.ts`, with a case in `web/src/__tests__/audit-format.test.ts`.
-- [ ] T045 [US4] Replace the `MarketerRequests` placeholder with `web/src/pages/marketer/Requests.tsx`, and update `web/src/router.tsx` and `web/src/pages/marketer/placeholders.tsx` (research.md R11):
+- [X] T044 [P] [US4] Add the action label `draft.deleted` → «حذف مسودة» and its target label to `web/src/lib/labels.ts` and `web/src/lib/auditFormat.ts`, with a case in `web/src/__tests__/audit-format.test.ts`.
+- [X] T045 [US4] Replace the `MarketerRequests` placeholder with `web/src/pages/marketer/Requests.tsx`, and update `web/src/router.tsx` and `web/src/pages/marketer/placeholders.tsx` (research.md R11):
   - the tabs بالانتظار / مقبولة / تم الربط / مرفوضة / مسودات, with `?tab=` kept in the URL
   - the other tabs show «لا توجد طلبات بعد»
   - the page opens on «مسودات» when drafts exist and no requests do
-- [ ] T046 [US4] Build the drafts tab in `web/src/pages/marketer/DraftsTab.tsx`:
+- [X] T046 [US4] Build the drafts tab in `web/src/pages/marketer/DraftsTab.tsx`:
   - a search box
   - one card per draft: the name or «بدون اسم», the tower code, the last save in Baghdad time (`lib/time.ts`), «ناقص N», and the grey «مسودة» chip (§7.2)
   - tapping a card opens `/drafts/{id}`
@@ -454,14 +454,14 @@ come before US3, because the acceptance test of US3 fills both.
 
 **Independent Test**: Enter an 11-digit national ID and the phone «+964 780 123 4567». See the ID error and the phone accepted as 07801234567. See every empty field listed, and «إرسال» disabled.
 
-- [ ] T047 [P] [US5] Add integration tests to `api/tests/integration/test_drafts_autosave.py`:
+- [X] T047 [P] [US5] Add integration tests to `api/tests/integration/test_drafts_autosave.py`:
   - GET returns `missing` in page order for an empty draft.
   - After filling every field and both images, `missing` is empty.
   - Invalid values are still saved (US5 scenario 6).
-- [ ] T048 [US5] Build `web/src/pages/marketer/subscriber/PhoneSection.tsx`, wired to autosave:
+- [X] T048 [US5] Build `web/src/pages/marketer/subscriber/PhoneSection.tsx`, wired to autosave:
   - the subscriber phone, LTR with a tel keyboard
   - the normalized value shown under the field («سيُحفظ كـ 07801234567»)
-- [ ] T049 [US5] Build `web/src/pages/marketer/subscriber/MissingSummary.tsx`:
+- [X] T049 [US5] Build `web/src/pages/marketer/subscriber/MissingSummary.tsx`:
   - It uses `draftValidation.ts` locally, then the server `missing` after each save, which is authoritative.
   - Each item is a link that scrolls to and focuses its field.
   - With nothing missing, it shows «كل الحقول مكتملة».
@@ -473,30 +473,55 @@ come before US3, because the acceptance test of US3 fills both.
 
 ## Phase 10: Polish & Cross-Cutting Concerns
 
-- [ ] T050 [P] Extend `api/tests/integration/test_log_safety.py` (FR-022, Principle II): errors raised while saving a draft or uploading an image write no national ID, family number, phone or file name to the app logs.
-- [ ] T051 [P] Extend the Playwright file `e2e/tests/subscriber-form-acceptance.spec.ts` with quickstart E, F, I and J:
+- [X] T050 [P] Extend `api/tests/integration/test_log_safety.py` (FR-022, Principle II): errors raised while saving a draft or uploading an image write no national ID, family number, phone or file name to the app logs.
+- [X] T051 [P] Extend the Playwright file `e2e/tests/subscriber-form-acceptance.spec.ts` with quickstart E, F, I and J:
   - E: the national ID and phone errors, and the summary
   - F: «إرسال» stays disabled
   - I: another marketer opening the URL sees «المسودة غير موجودة»
   - J: with no map key, «الخريطة غير متوفرة حالياً» shows and GPS still sets the pin
-- [ ] T052 [P] Document the uploads volume, the proxy limit and the Maps key:
+- [X] T052 [P] Document the uploads volume, the proxy limit and the Maps key:
   - **`docker-compose.staging.yml`:** a comment that the `uploads` volume (`sijil_uploads`) holds the card images and is kept on the server.
   - **`deploy/staging.md`:**
     - The `sijil_uploads` volume must be in every backup. Give a manual `docker run --rm -v sijil_uploads:/data … tar` command and the restore command, and note that the nightly job comes in 015 (analysis N1).
     - Nginx Proxy Manager › Proxy Host › Advanced: `client_max_body_size 6m;`
     - Google Cloud console: restrict the Maps key to the HTTP referrer `https://sijil.t3cftth.net/*` and to the Maps JavaScript API, and create the Map ID.
-- [ ] T053 [P] Add 005 to the feature table in `README.md`.
+- [X] T053 [P] Add 005 to the feature table in `README.md`.
 - [ ] T054 Check the volume and the map:
   - The `api` container can write to `/data/uploads`.
   - `scripts/e2e.sh` removes the e2e `uploads` volume with `down -v`: no `sijil-e2e_uploads` volume is left after a run (analysis A1).
   - With a real key on staging, the satellite map and the draggable pin load with **no CSP errors** in the browser console (analysis I1).
 - [ ] T055 On a phone viewport, and on a real Android phone if possible, check that «تصوير» opens the camera and «من المعرض» opens the gallery.
-- [ ] T056 Close the feature:
+- [X] T056 Close the feature:
   - Run `scripts/test-all.sh` and fix any failure.
   - Run `docker compose up -d --build`.
   - Write the Arabic manual-test steps to `specs/005-subscriber-form/manual-test-ar.md`, covering quickstart A–J, the two-phone acceptance, the two-tab notice and the map-key setup.
 
 ---
+
+**Batch 3 notes (2026-11-22, T036–T056)**:
+
+*Server*
+- **Copies on every save**: `apply_subscription` and `refresh_copies` run inside `db.no_autoflush`. Without it, the catalog reads autoflushed the half-updated draft and bumped `version` twice in one save. This is covered by `test_one_save_bumps_version_once`.
+- **Notices**: GET computes them read-only (`compute_notices`). A PATCH returns the choices it cleared. A deleted settings item (SET NULL) leaves its copy behind, which also yields `choice_unavailable`.
+
+*Form state*
+- **Form controller**: the React Compiler lint rules refused refs read inside the queue callbacks. The values, the debounce timers, the queue and the polling therefore moved into `web/src/lib/draftFormController.ts`, a plain class. `useDraftAutosave` only mirrors its state.
+- **Queue additions**: `touch()` (a forced empty PATCH when an opened draft has notices) and `hasPendingKey()`. A save that finishes during a pause keeps the `conflict` state.
+- **Remount bug** (found by Playwright on Chromium; WebKit passed): after the first save, the form could remount mid-upload and lose it. `SubscriberForm` now keys the new-form session on the router `location.key`, and the hook calls `onCreated` before `navigate`.
+
+*Pages*
+- **Status colors**: `web/src/lib/requestStatus.ts` holds the §7.2 labels and colors for all statuses, and the tab order of «الطلبات».
+- **Docs**: `deploy/staging.md` covers the NPM `client_max_body_size 6m`, a new section 5ب on the Maps key, and the manual backup and restore of `sijil_uploads`. `docker-compose.staging.yml` carries a comment on the volume.
+
+*Checks run*
+- Full gate `scripts/test-all.sh` green: pytest 390, vitest 155, Playwright 22 passed and 26 project-scoped skips.
+- The acceptance test passes on desktop-chrome, pixel-7 and iphone-14.
+- `docker compose up -d --build --wait`: all healthy, `/data/uploads` writable, `prune-uploads` runs.
+
+*Still open: they need the owner's hardware or keys*
+- **T054**: check the satellite map on staging with a real key, with no CSP errors in the console. The volume and e2e cleanup checks are done.
+- **T055**: try «تصوير» and «من المعرض» on a real Android phone. Playwright already checks that only the camera input has `capture`.
+- **Known limit**: if an admin resets the marketer's password while the form is open, signing in through the dialog then needs a password change. Saves stop with «يجب تغيير كلمة السر قبل المتابعة», and the values stay on screen until the change.
 
 ## Dependencies & Execution Order
 
