@@ -7,7 +7,15 @@
  *
  * Card data is never written to localStorage or any other device storage (Principle II).
  */
-import { ApiError, apiFetch } from './api';
+import {
+  ApiError,
+  apiErrorFrom,
+  apiFetch,
+  apiFetchBlob,
+  getAccessToken,
+  refreshSession,
+  reportAuthError,
+} from './api';
 import type { MissingItem } from './draftValidation';
 
 export const clientId: string = crypto.randomUUID();
@@ -131,16 +139,70 @@ export const patchDraft = (id: string, version: number, changes: DraftChanges) =
 export const deleteDraft = (id: string) =>
   apiFetch<void>(path(id), { method: 'DELETE', headers: draftHeaders() });
 
+const UPLOAD_TIMEOUT_MS = 120_000; // a slow 3G-class connection (SC-003)
+
+interface XhrResult {
+  status: number;
+  body: unknown;
+}
+
+function xhrUpload(
+  url: string,
+  form: FormData,
+  onProgress: (fraction: number) => void,
+): Promise<XhrResult> {
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    xhr.timeout = UPLOAD_TIMEOUT_MS;
+    xhr.responseType = 'json';
+    const token = getAccessToken();
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.setRequestHeader('X-Client-Id', clientId);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && e.total > 0) onProgress(Math.min(1, e.loaded / e.total));
+    };
+    xhr.onload = () => resolve({ status: xhr.status, body: xhr.response });
+    xhr.onerror = () => resolve({ status: 0, body: null });
+    xhr.ontimeout = () => resolve({ status: 0, body: null });
+    xhr.onabort = () => resolve({ status: 0, body: null });
+    xhr.send(form);
+  });
+}
+
 /**
- * Upload one compressed card image with progress (research.md R6). Stub until T032: the real
- * version uses XMLHttpRequest because fetch has no upload progress events.
+ * Upload one compressed card image with progress (research.md R6). XMLHttpRequest because fetch
+ * has no upload progress events. One automatic token refresh on 401 `token_expired`.
  */
-export type UploadDraftImage = (
+export async function uploadDraftImage(
   id: string,
   side: Side,
   blob: Blob,
   onProgress: (fraction: number) => void,
-) => Promise<Draft>;
+): Promise<Draft> {
+  const form = new FormData();
+  form.append('file', blob, `${side}.jpg`);
+  const url = `${path(id)}/images/${side}`;
+  let result = await xhrUpload(url, form, onProgress);
+  let err =
+    result.status >= 200 && result.status < 300 ? null : apiErrorFrom(result.status, result.body);
+  if (err?.code === 'token_expired') {
+    await refreshSession();
+    onProgress(0);
+    result = await xhrUpload(url, form, onProgress);
+    err =
+      result.status >= 200 && result.status < 300 ? null : apiErrorFrom(result.status, result.body);
+  }
+  if (err) {
+    reportAuthError(err);
+    throw err;
+  }
+  return result.body as Draft;
+}
 
-export const uploadDraftImage: UploadDraftImage = () =>
-  Promise.reject(new ApiError('not_implemented', 'رفع الصور غير متاح بعد', 0));
+/** A card image as an object URL for <img> (the bearer token cannot go in an img src).
+ * The caller revokes it with URL.revokeObjectURL when done. */
+export async function fetchImageObjectUrl(imageId: string): Promise<string> {
+  const blob = await apiFetchBlob(`/api/draft-images/${encodeURIComponent(imageId)}`);
+  return URL.createObjectURL(blob);
+}

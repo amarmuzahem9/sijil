@@ -59,8 +59,8 @@ export const router = createBrowserRouter([
                 children: [
                   { path: '/', element: <Dashboard /> },
                   { path: '/requests', element: <MarketerRequests /> },
-                  // specs/005: new-subscriber form (draft created on the first change)
-                  { path: '/drafts/new', element: <SubscriberForm /> },
+                  // specs/005: new-subscriber form. One route for /drafts/new and /drafts/{id}, so
+                  // the form stays mounted when the URL is replaced after the first save.
                   { path: '/drafts/:draftId', element: <SubscriberForm /> },
                   { path: '/notifications', element: <MarketerNotifications /> },
                   { path: '/account', element: <AccountPanel /> },

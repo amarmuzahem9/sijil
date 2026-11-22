@@ -57,7 +57,11 @@ export default function ChangePassword() {
 
   return (
     <Box sx={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', px: 2 }}>
-      <Paper component="main" elevation={2} sx={{ width: '100%', maxWidth: 420, p: { xs: 3, sm: 4 } }}>
+      <Paper
+        component="main"
+        elevation={2}
+        sx={{ width: '100%', maxWidth: 420, p: { xs: 3, sm: 4 } }}
+      >
         <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
           <BrandMark size={40} />
         </Box>

@@ -16,7 +16,14 @@ function signedIn(role: Role, mustChange = false) {
   auth.state = {
     status: 'authenticated',
     notice: null,
-    user: { id: 1, name: 'مستخدم', phone: '07700000001', role, permissions: [], must_change_password: mustChange },
+    user: {
+      id: 1,
+      name: 'مستخدم',
+      phone: '07700000001',
+      role,
+      permissions: [],
+      must_change_password: mustChange,
+    },
   };
 }
 

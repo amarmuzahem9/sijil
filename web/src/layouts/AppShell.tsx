@@ -148,7 +148,12 @@ export function AppShell({ items, mobileNav, footerItems = [] }: AppShellProps) 
 
   return (
     <Box sx={{ minHeight: '100dvh', bgcolor: 'background.default' }}>
-      <AppBar position="sticky" color="inherit" elevation={0} sx={{ borderBottom: 1, borderColor: 'divider' }}>
+      <AppBar
+        position="sticky"
+        color="inherit"
+        elevation={0}
+        sx={{ borderBottom: 1, borderColor: 'divider' }}
+      >
         <Toolbar sx={{ gap: 1 }}>
           {mobileNav === 'menu' && (
             <IconButton edge="start" aria-label="فتح القائمة" onClick={() => setMenuOpen(true)}>
@@ -171,7 +176,11 @@ export function AppShell({ items, mobileNav, footerItems = [] }: AppShellProps) 
             sx={{ width: SIDEBAR_WIDTH, height: '100%', display: 'flex', flexDirection: 'column' }}
           >
             <Toolbar>{identity}</Toolbar>
-            <NavList items={items} footerItems={footerItems} onNavigate={() => setMenuOpen(false)} />
+            <NavList
+              items={items}
+              footerItems={footerItems}
+              onNavigate={() => setMenuOpen(false)}
+            />
           </Box>
         </Drawer>
       )}

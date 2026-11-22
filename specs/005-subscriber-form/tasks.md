@@ -158,7 +158,7 @@ come before US3, because the acceptance test of US3 fills both.
 
 ### Tests for User Story 1
 
-- [ ] T017 [P] [US1] Write integration tests in `api/tests/integration/test_drafts_autosave.py`:
+- [X] T017 [P] [US1] Write integration tests in `api/tests/integration/test_drafts_autosave.py`:
   - **Create:**
     - PUT with a new UUID gives 201 and `version` 1.
     - A repeated PUT by the same owner gives 200 and leaves the draft unchanged (idempotent).
@@ -172,7 +172,7 @@ come before US3, because the acceptance test of US3 fills both.
     - A stale `version` sent with a different `X-Client-Id` gives 409 `draft_conflict` with `same_client=false` and the current `version`. This holds **for the same session too**, because two tabs share one session (analysis U1).
     - A stale `version` sent with the same `X-Client-Id` gives 409 with `same_client=true`.
   - **Version endpoint:** GET returns `{version, updated_at, same_client}`.
-- [ ] T018 [P] [US1] Write `web/src/__tests__/autosaveQueue.test.ts` for the queue logic:
+- [X] T018 [P] [US1] Write `web/src/__tests__/autosaveQueue.test.ts` for the queue logic:
   - Changes made while a save is in flight merge into the next PATCH.
   - Only one request is in flight at a time.
   - The backoff is 2, 4, 8 … up to 30 s.
@@ -182,35 +182,35 @@ come before US3, because the acceptance test of US3 fills both.
 
 ### Implementation for User Story 1
 
-- [ ] T019 [US1] Add `create_if_absent` (PUT) and `patch` to `api/app/services/draft_service.py`.
+- [X] T019 [US1] Add `create_if_absent` (PUT) and `patch` to `api/app/services/draft_service.py`.
   - Both use the single `UPDATE … WHERE id AND marketer_id AND version = :v RETURNING` statement of research.md R3.
   - Each save increases data-model.md › `drafts.version` by 1, sets `drafts.updated_at`, and sets `drafts.last_client_id` from `X-Client-Id`.
   - When no row matches but the draft exists, the response is 409 with `same_client = (drafts.last_client_id == client_id)`.
-- [ ] T020 [US1] Add `PUT /drafts/{id}`, `GET /drafts/{id}`, `GET /drafts/{id}/version` and `PATCH /drafts/{id}` to `api/app/api/drafts.py`.
-- [ ] T021 [US1] Create `web/src/lib/useDraftAutosave.ts`: the pure queue logic tested in T018, plus the hook.
+- [X] T020 [US1] Add `PUT /drafts/{id}`, `GET /drafts/{id}`, `GET /drafts/{id}/version` and `PATCH /drafts/{id}` to `api/app/api/drafts.py`.
+- [X] T021 [US1] Create `web/src/lib/useDraftAutosave.ts`: the pure queue logic tested in T018, plus the hook.
   - Text fields save about 1 s after the last keystroke, and immediately on blur. Selects, the pin and buttons save immediately.
   - The first real change generates the UUID, sends the PUT, and calls `navigate(replace)` to `/drafts/{id}` (US1 scenario 4).
   - States: `saved | saving | offline | failed | conflict | deleted | session_ended`.
   - It retries on the `online` event.
   - Nothing is written to localStorage (research.md R3).
-- [ ] T022 [P] [US1] Create `web/src/pages/marketer/subscriber/SaveBadge.tsx` (research.md R11):
+- [X] T022 [P] [US1] Create `web/src/pages/marketer/subscriber/SaveBadge.tsx` (research.md R11):
   - «محفوظ»
   - «جارٍ الحفظ…»
   - «غير متصل — سيُعاد الحفظ تلقائياً»
   - «لم يُحفظ — إعادة المحاولة», shown as a button after 3 failures
-- [ ] T023 [US1] Add the in-place sign-in for the form (research.md R3, analysis U2):
+- [X] T023 [US1] Add the in-place sign-in for the form (research.md R3, analysis U2):
   - **API listener:** `web/src/lib/api.ts` gets an opt-in hook, `setSessionEndedInterceptor`. While the form is mounted, `session_revoked` or a failed refresh is routed to the form instead of the global sign-out redirect. `account_inactive` keeps the existing behaviour.
   - **Dialog:** `web/src/pages/marketer/subscriber/SignInDialog.tsx` shows «انتهت الجلسة، سجّل الدخول للمتابعة» with the phone and password fields.
     - Signing in as the same user id resumes the queue.
     - Signing in as a different user clears the form state and goes to `/`.
   - **Test:** `web/src/__tests__/sign-in-dialog.test.tsx`.
-- [ ] T024 [US1] Build `web/src/pages/marketer/subscriber/CardDataSection.tsx` and wire it to the autosave hook:
+- [X] T024 [US1] Build `web/src/pages/marketer/subscriber/CardDataSection.tsx` and wire it to the autosave hook:
   - the subscriber name
   - the national ID, LTR with a numeric keyboard
   - the family number, LTR, stored as typed
 
   `SubscriberForm.tsx` loads an existing draft with GET. A 404 shows «المسودة غير موجودة».
-- [ ] T025 [US1] Point the dashboard button «إضافة مشترك جديد» in `web/src/pages/marketer/Dashboard.tsx` to `/drafts/new`.
+- [X] T025 [US1] Point the dashboard button «إضافة مشترك جديد» in `web/src/pages/marketer/Dashboard.tsx` to `/drafts/new`.
 
 **Checkpoint**: Text fields autosave and survive a reload. An ended session asks for sign-in over the form without losing values.
 
@@ -224,7 +224,7 @@ come before US3, because the acceptance test of US3 fills both.
 
 ### Tests for User Story 2
 
-- [ ] T026 [P] [US2] Write integration tests in `api/tests/integration/test_draft_images.py`. Each test uses a temporary `UPLOADS_DIR` and synthetic images generated with Pillow.
+- [X] T026 [P] [US2] Write integration tests in `api/tests/integration/test_draft_images.py`. Each test uses a temporary `UPLOADS_DIR` and synthetic images generated with Pillow.
   - **Upload:**
     - A valid JPEG gives 200.
     - The file `<uuid>.jpg` exists.
@@ -241,35 +241,35 @@ come before US3, because the acceptance test of US3 fills both.
     - The owner, the main admin and a `review` admin get 200 `image/jpeg` with `Cache-Control: private, no-store`.
     - Each successful open writes one row with the correct `image_access_log.user_id`, `image_id`, `draft_id` and `side`.
   - **Privacy:** no path under `/api` or the web serves the file by its name.
-- [ ] T027 [P] [US2] Write `web/src/__tests__/imageCompress.test.ts`:
+- [X] T027 [P] [US2] Write `web/src/__tests__/imageCompress.test.ts`:
   - `fitWithin`: 4000×3000 → 1600×1200; a 1200×1600 portrait stays 1200×1600; 800×600 stays unchanged, with no upscaling.
   - `compressImage`, with a mocked `createImageBitmap` and canvas: `toBlob` is called with `'image/jpeg', 0.8`, and the fallback path is used when `createImageBitmap` throws.
 
 ### Implementation for User Story 2
 
-- [ ] T028 [US2] Create `api/app/services/image_store.py` (research.md R6, R7):
+- [X] T028 [US2] Create `api/app/services/image_store.py` (research.md R6, R7):
   - a streamed read capped at `max_image_bytes`
   - a magic-bytes check, then Pillow `verify` and a reload to read the dimensions
   - write a temp file, `fsync`, then `os.replace` to `<uuid4>.jpg` in `uploads_dir`
   - `unlink_quietly(name)`, which logs the file name only
   - `open_path(name)`, with a path-traversal guard on data-model.md › `draft_images.file_name`
-- [ ] T029 [US2] Add `save_image(db, ctx, client_id, draft, side, upload)` to `api/app/services/draft_service.py`:
+- [X] T029 [US2] Add `save_image(db, ctx, client_id, draft, side, upload)` to `api/app/services/draft_service.py`:
   - upsert the row per data-model.md › `draft_images.side`, `draft_images.file_name`, `draft_images.size_bytes`, `draft_images.width`, `draft_images.height` and `draft_images.uploaded_by`
   - increase `drafts.version` and set `drafts.last_client_id`
   - commit, then unlink the replaced file
-- [ ] T030 [US2] Add `POST /drafts/{id}/images/{side}` and `GET /draft-images/{image_id}` to `api/app/api/drafts.py`.
+- [X] T030 [US2] Add `POST /drafts/{id}/images/{side}` and `GET /draft-images/{image_id}` to `api/app/api/drafts.py`.
   - The image GET allows the owner, `super_admin`, or `has_any_permission(..., ["review"])`. Everyone else gets 404.
   - Every successful open inserts one row per data-model.md › `image_access_log.user_id`, `image_access_log.image_id`, `image_access_log.draft_id`, `image_access_log.side` and `image_access_log.created_at` (research.md R7, analysis C1).
   - It returns a `FileResponse` with the headers of contracts/api.md.
-- [ ] T031 [P] [US2] Create `web/src/lib/imageCompress.ts` with `fitWithin` and `compressImage(file)`, per research.md R5 (EXIF orientation, 1600px, JPEG 0.8).
-- [ ] T032 [US2] Finish `uploadDraftImage(id, side, blob, onProgress)` in `web/src/lib/drafts.ts`:
+- [X] T031 [P] [US2] Create `web/src/lib/imageCompress.ts` with `fitWithin` and `compressImage(file)`, per research.md R5 (EXIF orientation, 1600px, JPEG 0.8).
+- [X] T032 [US2] Finish `uploadDraftImage(id, side, blob, onProgress)` in `web/src/lib/drafts.ts`:
   - an `XMLHttpRequest` multipart upload with the bearer token and `X-Client-Id`
   - progress events
   - one automatic token refresh on 401 `token_expired`
   - Arabic error messages from the response `code`
 
   Also add `fetchImageObjectUrl(imageId)`: a blob fetch with `Authorization`, shown through `URL.createObjectURL`, and revoked on unmount.
-- [ ] T033 [US2] Build `web/src/pages/marketer/subscriber/ImageSlot.tsx` and `CardSection.tsx` (front, then back):
+- [X] T033 [US2] Build `web/src/pages/marketer/subscriber/ImageSlot.tsx` and `CardSection.tsx` (front, then back):
   - Each slot shows **two separate buttons**, «تصوير» and «من المعرض», each with its own hidden input. Only «تصوير» has `capture="environment"` (research.md R5, the owner's requirement for Android).
   - a progress bar
   - «فشل الرفع» with «إعادة المحاولة», which resends the kept compressed blob
@@ -287,7 +287,7 @@ come before US3, because the acceptance test of US3 fills both.
 
 **Independent Test**: Grant location, tap «استخدم موقعي الحالي», drag the pin, and reload on another device to see the dragged position. With no key, see «الخريطة غير متوفرة حالياً» while GPS still works.
 
-- [ ] T034 [P] [US6] Write integration tests in `api/tests/integration/test_client_config.py`:
+- [X] T034 [P] [US6] Write integration tests in `api/tests/integration/test_client_config.py`:
   - **Config:**
     - A signed-in user gets 200. With no key, `maps` is `null`. With a key, the response has `api_key`, `map_id` and `default_center`.
     - An anonymous caller gets 401.
@@ -295,7 +295,7 @@ come before US3, because the acceptance test of US3 fills both.
     - A PATCH with `location` stores `drafts.location_lat`, `drafts.location_lng`, `drafts.location_source` and `drafts.location_accuracy_m`.
     - A value out of range gives 422.
     - `null` clears both coordinates.
-- [ ] T035 [US6] Implement location and map support:
+- [X] T035 [US6] Implement location and map support:
   - **API:** create `api/app/api/client_config.py` (`GET /client-config`, `current_user`) and register it in `api/app/main.py`.
   - **Config client:** create `web/src/lib/clientConfig.ts` as a cached query.
   - **Map loader:** create `web/src/lib/googleMaps.ts` (research.md R10).
@@ -309,6 +309,31 @@ come before US3, because the acceptance test of US3 fills both.
     - The «العنوان» and «أقرب نقطة دالّة» fields are included.
 
 **Checkpoint (end of batch 2)**: Text, images and location autosave and survive a reload on another browser.
+
+**Batch 2 notes (2026-11-22, T017–T035)**:
+
+*Saving*
+- **Optimistic concurrency**: `Draft` uses SQLAlchemy `version_id_col`, so every save is one `UPDATE … WHERE version = :loaded`. A `StaleDataError` from a race becomes 409. An image upload locks the row instead.
+- **Autosave queue**: the pure logic lives in `web/src/lib/autosaveQueue.ts` (tested in `autosaveQueue.test.ts`). `useDraftAutosave.ts` is the React wrapper. `ensureCreated()` creates the draft before the first upload when no text has been typed yet.
+
+*Routing*
+- **One route**: `/drafts/:draftId` serves both `new` and an id, so replacing the URL after the first save does not remount the form.
+
+*Session end and images*
+- **Session ended**: `lib/api.ts` gained `setSessionEndedInterceptor`, `reportAuthError`, `apiErrorFrom`, `apiFetchBlob` and `getAccessToken`. While the form is mounted, `session_revoked` / `not_authenticated` open `SignInDialog` instead of signing out. `account_inactive` still signs out.
+- **Uploads**:
+  - A `Content-Length` guard refuses an oversized body before the multipart parsing.
+  - `Image.MAX_IMAGE_PIXELS` is capped.
+  - The thumbnail of a just-uploaded image uses the local blob. A saved image is fetched once per image id, because every server read is an audited access.
+- **Smoke test through `https://localhost`**: PUT, upload, and image GET returned the same bytes; anonymous got 401. The test draft was removed afterwards; its access-log rows remain by design.
+
+*Map*
+- **CSP**: the extended CSP applies only to the built `web` container (e2e, staging, production), not to the Vite dev server. A real key still needs the manual staging check (T054).
+
+*Other*
+- **Sections still to come**: «الاشتراك» and «هاتف المشترك» show «قريباً» until US7 / US5 (batch 3).
+- **E2E update**: `marketer-mobile.spec.ts` now expects «إضافة مشترك جديد» as a link to `/drafts/new`.
+- **Checks run**: full gate `scripts/test-all.sh` green (pytest 353, vitest 149, Playwright 17 passed with 22 project-scoped skips).
 
 ---
 

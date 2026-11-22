@@ -47,6 +47,11 @@ export function setAccessToken(token: string | null): void {
   accessToken = token;
 }
 
+/** For requests that cannot go through apiFetch (XHR uploads with progress, specs/005 R6). */
+export function getAccessToken(): string | null {
+  return accessToken;
+}
+
 export function setSessionEndedListener(listener: SessionEndedListener | null): void {
   onSessionEnded = listener;
 }
@@ -156,9 +161,66 @@ export async function apiFetch<T>(path: string, options: FetchOptions = {}): Pro
   return (await res.json()) as T;
 }
 
+/**
+ * Opt-in override while the new-subscriber form is open (specs/005 research.md R3, analysis U2):
+ * an ended session (not a deactivated account) is routed to the form, which asks for sign-in in
+ * place instead of the global sign-out redirect, so unsaved values are kept.
+ */
+type SessionEndedInterceptor = (code: string, message: string) => void;
+let sessionEndedInterceptor: SessionEndedInterceptor | null = null;
+
+export function setSessionEndedInterceptor(interceptor: SessionEndedInterceptor | null): void {
+  sessionEndedInterceptor = interceptor;
+}
+
+/** Report an API error from a non-apiFetch request (session ended, forbidden). */
+export function reportAuthError(err: ApiError): void {
+  notifyEnded(err);
+  if (err.code === 'forbidden') onForbidden?.();
+}
+
+/** Parse an error body the same way apiFetch does. */
+export function apiErrorFrom(status: number, body: unknown): ApiError {
+  if (body && typeof body === 'object') {
+    const { code, message, ...extra } = body as Record<string, unknown>;
+    if (typeof code === 'string' && typeof message === 'string')
+      return new ApiError(code, message, status, extra);
+  }
+  if (status === 0) return new ApiError('network_error', NETWORK_ERROR_MESSAGE, 0);
+  return new ApiError(
+    status >= 500 ? 'server_error' : 'unknown_error',
+    status === 502 || status === 503 ? NETWORK_ERROR_MESSAGE : GENERIC_ERROR_MESSAGE,
+    status,
+  );
+}
+
+/** GET a binary resource (a card image) with the bearer token; one refresh on expiry. */
+export async function apiFetchBlob(path: string, headers?: Record<string, string>): Promise<Blob> {
+  let res = await send(path, { method: 'GET', headers }, true);
+  if (res.status === 401) {
+    const err = await toError(res);
+    if (err.code !== 'token_expired') {
+      notifyEnded(err);
+      throw err;
+    }
+    await refreshSession();
+    res = await send(path, { method: 'GET', headers }, true);
+  }
+  if (!res.ok) {
+    const err = await toError(res);
+    notifyEnded(err);
+    throw err;
+  }
+  return res.blob();
+}
+
 function notifyEnded(err: ApiError): void {
   if (['session_revoked', 'account_inactive', 'not_authenticated'].includes(err.code)) {
     setAccessToken(null);
+    if (sessionEndedInterceptor && err.code !== 'account_inactive') {
+      sessionEndedInterceptor(err.code, err.message);
+      return;
+    }
     onSessionEnded?.(err.code, err.message);
   }
 }

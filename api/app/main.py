@@ -10,6 +10,7 @@ from app.api import (
     audit,
     auth,
     catalog,
+    client_config,
     drafts,
     health,
     marketer,
@@ -44,6 +45,7 @@ def create_app() -> FastAPI:
         settings,
         catalog,
         drafts,
+        client_config,
     ):
         app.include_router(module.router, prefix="/api")
     return app

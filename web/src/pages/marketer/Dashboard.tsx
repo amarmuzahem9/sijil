@@ -8,6 +8,7 @@ import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useQuery } from '@tanstack/react-query';
+import { Link as RouterLink } from 'react-router-dom';
 
 import { apiFetch } from '../../lib/api';
 
@@ -28,18 +29,26 @@ export default function Dashboard() {
         الرئيسية
       </Typography>
 
-      {/* Both actions are enabled by features 004 and 008. */}
+      {/* «إضافة مشترك جديد» opens the single-page form (feature 005); the second action
+          comes with feature 009. */}
       <Button
         variant="contained"
         size="large"
-        disabled
+        component={RouterLink}
+        to="/drafts/new"
         startIcon={<PersonAddAlt1Outlined />}
         sx={{ py: 2.5, fontSize: '1.15rem' }}
       >
         إضافة مشترك جديد
       </Button>
       <Stack spacing={0.5}>
-        <Button variant="outlined" size="large" disabled startIcon={<GroupAddOutlined />} sx={{ py: 1.5 }}>
+        <Button
+          variant="outlined"
+          size="large"
+          disabled
+          startIcon={<GroupAddOutlined />}
+          sx={{ py: 1.5 }}
+        >
           إضافة اشتراك لمشترك موجود
         </Button>
         <Typography variant="caption" color="text.secondary" align="center">

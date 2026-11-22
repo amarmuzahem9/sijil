@@ -8,7 +8,11 @@ test('marketer: dashboard skeleton, navigation and admin refusal', async ({ page
   await signIn(page, DEMO_MARKETER, env('DEMO_MARKETER_PASSWORD'));
 
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole('button', { name: 'إضافة مشترك جديد' })).toBeDisabled();
+  // Enabled since feature 005: it opens the single-page form.
+  await expect(page.getByRole('link', { name: 'إضافة مشترك جديد' })).toHaveAttribute(
+    'href',
+    '/drafts/new',
+  );
   await expect(page.getByRole('button', { name: 'إضافة اشتراك لمشترك موجود' })).toBeDisabled();
   await expect(page.getByTestId('linked-counter')).toHaveText('تم الربط هذا الشهر: 0');
 

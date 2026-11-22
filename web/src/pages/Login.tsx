@@ -68,7 +68,11 @@ export default function Login() {
         bgcolor: 'background.default',
       }}
     >
-      <Paper component="main" elevation={2} sx={{ width: '100%', maxWidth: 400, p: { xs: 3, sm: 4 } }}>
+      <Paper
+        component="main"
+        elevation={2}
+        sx={{ width: '100%', maxWidth: 400, p: { xs: 3, sm: 4 } }}
+      >
         <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
           <BrandMark size={48} />
         </Box>

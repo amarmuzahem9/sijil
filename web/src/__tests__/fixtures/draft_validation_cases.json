@@ -1,386 +1,357 @@
 {
- "_comment": "Shared by api/tests and web/src/__tests__ (copy kept identical). Synthetic data only.",
- "limits": {
-  "subscriber_name": 100,
-  "national_id": 30,
-  "family_number": 30,
-  "address": 300,
-  "landmark": 200,
-  "phone_input": 30
- },
- "missing_order": [
-  "image_front",
-  "image_back",
-  "subscriber_name",
-  "national_id",
-  "family_number",
-  "location",
-  "address",
-  "landmark",
-  "area_id",
-  "tower_id",
-  "plan_id",
-  "phone"
- ],
- "national_id": [
-  {
-   "note": "12 digits",
-   "input": "199012345678",
-   "expected": "199012345678"
+  "_comment": "Shared by api/tests and web/src/__tests__ (copy kept identical). Synthetic data only.",
+  "limits": {
+    "subscriber_name": 100,
+    "national_id": 30,
+    "family_number": 30,
+    "address": 300,
+    "landmark": 200,
+    "phone_input": 30
   },
-  {
-   "note": "11 digits",
-   "input": "19901234567",
-   "expected": null
-  },
-  {
-   "note": "13 digits",
-   "input": "1990123456789",
-   "expected": null
-  },
-  {
-   "note": "Arabic-Indic digits",
-   "input": "١٩٩٠١٢٣٤٥٦٧٨",
-   "expected": "199012345678"
-  },
-  {
-   "note": "Persian digits",
-   "input": "۱۹۹۰۱۲۳۴۵۶۷۸",
-   "expected": "199012345678"
-  },
-  {
-   "note": "Arabic-Indic 11 digits",
-   "input": "١٢٣٤٥٦٧٨٩٠١",
-   "expected": null
-  },
-  {
-   "note": "spaces",
-   "input": " 1990 1234 5678 ",
-   "expected": "199012345678"
-  },
-  {
-   "note": "direction marks U+200F U+202A",
-   "input": "‪19901234‏5678‬",
-   "expected": "199012345678"
-  },
-  {
-   "note": "letters",
-   "input": "19901234567A",
-   "expected": null
-  },
-  {
-   "note": "dashes",
-   "input": "1990-1234-5678",
-   "expected": null
-  },
-  {
-   "note": "empty",
-   "input": "",
-   "expected": null
-  }
- ],
- "drafts": [
-  {
-   "note": "empty draft",
-   "draft": {},
-   "images": [],
-   "missing": [
+  "missing_order": [
+    "image_front",
+    "image_back",
+    "subscriber_name",
+    "national_id",
+    "family_number",
+    "location",
+    "address",
+    "landmark",
+    "area_id",
+    "tower_id",
+    "plan_id",
+    "phone"
+  ],
+  "national_id": [
     {
-     "field": "image_front",
-     "code": "required"
+      "note": "12 digits",
+      "input": "199012345678",
+      "expected": "199012345678"
     },
     {
-     "field": "image_back",
-     "code": "required"
+      "note": "11 digits",
+      "input": "19901234567",
+      "expected": null
     },
     {
-     "field": "subscriber_name",
-     "code": "required"
+      "note": "13 digits",
+      "input": "1990123456789",
+      "expected": null
     },
     {
-     "field": "national_id",
-     "code": "required"
+      "note": "Arabic-Indic digits",
+      "input": "١٩٩٠١٢٣٤٥٦٧٨",
+      "expected": "199012345678"
     },
     {
-     "field": "family_number",
-     "code": "required"
+      "note": "Persian digits",
+      "input": "۱۹۹۰۱۲۳۴۵۶۷۸",
+      "expected": "199012345678"
     },
     {
-     "field": "location",
-     "code": "required"
+      "note": "Arabic-Indic 11 digits",
+      "input": "١٢٣٤٥٦٧٨٩٠١",
+      "expected": null
     },
     {
-     "field": "address",
-     "code": "required"
+      "note": "spaces",
+      "input": " 1990 1234 5678 ",
+      "expected": "199012345678"
     },
     {
-     "field": "landmark",
-     "code": "required"
+      "note": "direction marks U+200F U+202A",
+      "input": "‪19901234‏5678‬",
+      "expected": "199012345678"
     },
     {
-     "field": "area_id",
-     "code": "required"
+      "note": "letters",
+      "input": "19901234567A",
+      "expected": null
     },
     {
-     "field": "tower_id",
-     "code": "required"
+      "note": "dashes",
+      "input": "1990-1234-5678",
+      "expected": null
     },
     {
-     "field": "plan_id",
-     "code": "required"
-    },
-    {
-     "field": "phone",
-     "code": "required"
+      "note": "empty",
+      "input": "",
+      "expected": null
     }
-   ]
-  },
-  {
-   "note": "complete draft",
-   "draft": {
-    "subscriber_name": "مشترك تجريبي",
-    "national_id": "199012345678",
-    "family_number": "A1B2C3",
-    "location_lat": 33.31,
-    "location_lng": 44.36,
-    "address": "حي تجريبي، شارع 1",
-    "landmark": "قرب جامع تجريبي",
-    "area_id": 1,
-    "tower_id": 1,
-    "plan_id": 1,
-    "phone_input": "07801234567"
-   },
-   "images": [
-    "front",
-    "back"
-   ],
-   "missing": []
-  },
-  {
-   "note": "back image only",
-   "draft": {
-    "subscriber_name": "مشترك تجريبي",
-    "national_id": "199012345678",
-    "family_number": "A1B2C3",
-    "location_lat": 33.31,
-    "location_lng": 44.36,
-    "address": "حي تجريبي، شارع 1",
-    "landmark": "قرب جامع تجريبي",
-    "area_id": 1,
-    "tower_id": 1,
-    "plan_id": 1,
-    "phone_input": "07801234567"
-   },
-   "images": [
-    "back"
-   ],
-   "missing": [
+  ],
+  "drafts": [
     {
-     "field": "image_front",
-     "code": "required"
-    }
-   ]
-  },
-  {
-   "note": "whitespace-only name",
-   "draft": {
-    "subscriber_name": "   ",
-    "national_id": "199012345678",
-    "family_number": "A1B2C3",
-    "location_lat": 33.31,
-    "location_lng": 44.36,
-    "address": "حي تجريبي، شارع 1",
-    "landmark": "قرب جامع تجريبي",
-    "area_id": 1,
-    "tower_id": 1,
-    "plan_id": 1,
-    "phone_input": "07801234567"
-   },
-   "images": [
-    "front",
-    "back"
-   ],
-   "missing": [
-    {
-     "field": "subscriber_name",
-     "code": "required"
-    }
-   ]
-  },
-  {
-   "note": "11-digit national id",
-   "draft": {
-    "subscriber_name": "مشترك تجريبي",
-    "national_id": "19901234567",
-    "family_number": "A1B2C3",
-    "location_lat": 33.31,
-    "location_lng": 44.36,
-    "address": "حي تجريبي، شارع 1",
-    "landmark": "قرب جامع تجريبي",
-    "area_id": 1,
-    "tower_id": 1,
-    "plan_id": 1,
-    "phone_input": "07801234567"
-   },
-   "images": [
-    "front",
-    "back"
-   ],
-   "missing": [
-    {
-     "field": "national_id",
-     "code": "invalid_national_id"
-    }
-   ]
-  },
-  {
-   "note": "Arabic-Indic national id is valid",
-   "draft": {
-    "subscriber_name": "مشترك تجريبي",
-    "national_id": "١٩٩٠١٢٣٤٥٦٧٨",
-    "family_number": "A1B2C3",
-    "location_lat": 33.31,
-    "location_lng": 44.36,
-    "address": "حي تجريبي، شارع 1",
-    "landmark": "قرب جامع تجريبي",
-    "area_id": 1,
-    "tower_id": 1,
-    "plan_id": 1,
-    "phone_input": "07801234567"
-   },
-   "images": [
-    "front",
-    "back"
-   ],
-   "missing": []
-  },
-  {
-   "note": "invalid phone",
-   "draft": {
-    "subscriber_name": "مشترك تجريبي",
-    "national_id": "199012345678",
-    "family_number": "A1B2C3",
-    "location_lat": 33.31,
-    "location_lng": 44.36,
-    "address": "حي تجريبي، شارع 1",
-    "landmark": "قرب جامع تجريبي",
-    "area_id": 1,
-    "tower_id": 1,
-    "plan_id": 1,
-    "phone_input": "0780123"
-   },
-   "images": [
-    "front",
-    "back"
-   ],
-   "missing": [
-    {
-     "field": "phone",
-     "code": "invalid_phone"
-    }
-   ]
-  },
-  {
-   "note": "+964 phone with spaces is valid",
-   "draft": {
-    "subscriber_name": "مشترك تجريبي",
-    "national_id": "199012345678",
-    "family_number": "A1B2C3",
-    "location_lat": 33.31,
-    "location_lng": 44.36,
-    "address": "حي تجريبي، شارع 1",
-    "landmark": "قرب جامع تجريبي",
-    "area_id": 1,
-    "tower_id": 1,
-    "plan_id": 1,
-    "phone_input": "+964 780 123 4567"
-   },
-   "images": [
-    "front",
-    "back"
-   ],
-   "missing": []
-  },
-  {
-   "note": "no location",
-   "draft": {
-    "subscriber_name": "مشترك تجريبي",
-    "national_id": "199012345678",
-    "family_number": "A1B2C3",
-    "location_lat": null,
-    "location_lng": null,
-    "address": "حي تجريبي، شارع 1",
-    "landmark": "قرب جامع تجريبي",
-    "area_id": 1,
-    "tower_id": 1,
-    "plan_id": 1,
-    "phone_input": "07801234567"
-   },
-   "images": [
-    "front",
-    "back"
-   ],
-   "missing": [
-    {
-     "field": "location",
-     "code": "required"
-    }
-   ]
-  },
-  {
-   "note": "family number kept as typed",
-   "draft": {
-    "subscriber_name": "مشترك تجريبي",
-    "national_id": "199012345678",
-    "family_number": "ab 12/3",
-    "location_lat": 33.31,
-    "location_lng": 44.36,
-    "address": "حي تجريبي، شارع 1",
-    "landmark": "قرب جامع تجريبي",
-    "area_id": 1,
-    "tower_id": 1,
-    "plan_id": 1,
-    "phone_input": "07801234567"
-   },
-   "images": [
-    "front",
-    "back"
-   ],
-   "missing": []
-  },
-  {
-   "note": "no tower, no plan, empty landmark",
-   "draft": {
-    "subscriber_name": "مشترك تجريبي",
-    "national_id": "199012345678",
-    "family_number": "A1B2C3",
-    "location_lat": 33.31,
-    "location_lng": 44.36,
-    "address": "حي تجريبي، شارع 1",
-    "landmark": "",
-    "area_id": 1,
-    "tower_id": null,
-    "plan_id": null,
-    "phone_input": "07801234567"
-   },
-   "images": [
-    "front",
-    "back"
-   ],
-   "missing": [
-    {
-     "field": "landmark",
-     "code": "required"
+      "note": "empty draft",
+      "draft": {},
+      "images": [],
+      "missing": [
+        {
+          "field": "image_front",
+          "code": "required"
+        },
+        {
+          "field": "image_back",
+          "code": "required"
+        },
+        {
+          "field": "subscriber_name",
+          "code": "required"
+        },
+        {
+          "field": "national_id",
+          "code": "required"
+        },
+        {
+          "field": "family_number",
+          "code": "required"
+        },
+        {
+          "field": "location",
+          "code": "required"
+        },
+        {
+          "field": "address",
+          "code": "required"
+        },
+        {
+          "field": "landmark",
+          "code": "required"
+        },
+        {
+          "field": "area_id",
+          "code": "required"
+        },
+        {
+          "field": "tower_id",
+          "code": "required"
+        },
+        {
+          "field": "plan_id",
+          "code": "required"
+        },
+        {
+          "field": "phone",
+          "code": "required"
+        }
+      ]
     },
     {
-     "field": "tower_id",
-     "code": "required"
+      "note": "complete draft",
+      "draft": {
+        "subscriber_name": "مشترك تجريبي",
+        "national_id": "199012345678",
+        "family_number": "A1B2C3",
+        "location_lat": 33.31,
+        "location_lng": 44.36,
+        "address": "حي تجريبي، شارع 1",
+        "landmark": "قرب جامع تجريبي",
+        "area_id": 1,
+        "tower_id": 1,
+        "plan_id": 1,
+        "phone_input": "07801234567"
+      },
+      "images": ["front", "back"],
+      "missing": []
     },
     {
-     "field": "plan_id",
-     "code": "required"
+      "note": "back image only",
+      "draft": {
+        "subscriber_name": "مشترك تجريبي",
+        "national_id": "199012345678",
+        "family_number": "A1B2C3",
+        "location_lat": 33.31,
+        "location_lng": 44.36,
+        "address": "حي تجريبي، شارع 1",
+        "landmark": "قرب جامع تجريبي",
+        "area_id": 1,
+        "tower_id": 1,
+        "plan_id": 1,
+        "phone_input": "07801234567"
+      },
+      "images": ["back"],
+      "missing": [
+        {
+          "field": "image_front",
+          "code": "required"
+        }
+      ]
+    },
+    {
+      "note": "whitespace-only name",
+      "draft": {
+        "subscriber_name": "   ",
+        "national_id": "199012345678",
+        "family_number": "A1B2C3",
+        "location_lat": 33.31,
+        "location_lng": 44.36,
+        "address": "حي تجريبي، شارع 1",
+        "landmark": "قرب جامع تجريبي",
+        "area_id": 1,
+        "tower_id": 1,
+        "plan_id": 1,
+        "phone_input": "07801234567"
+      },
+      "images": ["front", "back"],
+      "missing": [
+        {
+          "field": "subscriber_name",
+          "code": "required"
+        }
+      ]
+    },
+    {
+      "note": "11-digit national id",
+      "draft": {
+        "subscriber_name": "مشترك تجريبي",
+        "national_id": "19901234567",
+        "family_number": "A1B2C3",
+        "location_lat": 33.31,
+        "location_lng": 44.36,
+        "address": "حي تجريبي، شارع 1",
+        "landmark": "قرب جامع تجريبي",
+        "area_id": 1,
+        "tower_id": 1,
+        "plan_id": 1,
+        "phone_input": "07801234567"
+      },
+      "images": ["front", "back"],
+      "missing": [
+        {
+          "field": "national_id",
+          "code": "invalid_national_id"
+        }
+      ]
+    },
+    {
+      "note": "Arabic-Indic national id is valid",
+      "draft": {
+        "subscriber_name": "مشترك تجريبي",
+        "national_id": "١٩٩٠١٢٣٤٥٦٧٨",
+        "family_number": "A1B2C3",
+        "location_lat": 33.31,
+        "location_lng": 44.36,
+        "address": "حي تجريبي، شارع 1",
+        "landmark": "قرب جامع تجريبي",
+        "area_id": 1,
+        "tower_id": 1,
+        "plan_id": 1,
+        "phone_input": "07801234567"
+      },
+      "images": ["front", "back"],
+      "missing": []
+    },
+    {
+      "note": "invalid phone",
+      "draft": {
+        "subscriber_name": "مشترك تجريبي",
+        "national_id": "199012345678",
+        "family_number": "A1B2C3",
+        "location_lat": 33.31,
+        "location_lng": 44.36,
+        "address": "حي تجريبي، شارع 1",
+        "landmark": "قرب جامع تجريبي",
+        "area_id": 1,
+        "tower_id": 1,
+        "plan_id": 1,
+        "phone_input": "0780123"
+      },
+      "images": ["front", "back"],
+      "missing": [
+        {
+          "field": "phone",
+          "code": "invalid_phone"
+        }
+      ]
+    },
+    {
+      "note": "+964 phone with spaces is valid",
+      "draft": {
+        "subscriber_name": "مشترك تجريبي",
+        "national_id": "199012345678",
+        "family_number": "A1B2C3",
+        "location_lat": 33.31,
+        "location_lng": 44.36,
+        "address": "حي تجريبي، شارع 1",
+        "landmark": "قرب جامع تجريبي",
+        "area_id": 1,
+        "tower_id": 1,
+        "plan_id": 1,
+        "phone_input": "+964 780 123 4567"
+      },
+      "images": ["front", "back"],
+      "missing": []
+    },
+    {
+      "note": "no location",
+      "draft": {
+        "subscriber_name": "مشترك تجريبي",
+        "national_id": "199012345678",
+        "family_number": "A1B2C3",
+        "location_lat": null,
+        "location_lng": null,
+        "address": "حي تجريبي، شارع 1",
+        "landmark": "قرب جامع تجريبي",
+        "area_id": 1,
+        "tower_id": 1,
+        "plan_id": 1,
+        "phone_input": "07801234567"
+      },
+      "images": ["front", "back"],
+      "missing": [
+        {
+          "field": "location",
+          "code": "required"
+        }
+      ]
+    },
+    {
+      "note": "family number kept as typed",
+      "draft": {
+        "subscriber_name": "مشترك تجريبي",
+        "national_id": "199012345678",
+        "family_number": "ab 12/3",
+        "location_lat": 33.31,
+        "location_lng": 44.36,
+        "address": "حي تجريبي، شارع 1",
+        "landmark": "قرب جامع تجريبي",
+        "area_id": 1,
+        "tower_id": 1,
+        "plan_id": 1,
+        "phone_input": "07801234567"
+      },
+      "images": ["front", "back"],
+      "missing": []
+    },
+    {
+      "note": "no tower, no plan, empty landmark",
+      "draft": {
+        "subscriber_name": "مشترك تجريبي",
+        "national_id": "199012345678",
+        "family_number": "A1B2C3",
+        "location_lat": 33.31,
+        "location_lng": 44.36,
+        "address": "حي تجريبي، شارع 1",
+        "landmark": "",
+        "area_id": 1,
+        "tower_id": null,
+        "plan_id": null,
+        "phone_input": "07801234567"
+      },
+      "images": ["front", "back"],
+      "missing": [
+        {
+          "field": "landmark",
+          "code": "required"
+        },
+        {
+          "field": "tower_id",
+          "code": "required"
+        },
+        {
+          "field": "plan_id",
+          "code": "required"
+        }
+      ]
     }
-   ]
-  }
- ]
+  ]
 }

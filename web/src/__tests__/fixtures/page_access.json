@@ -9,39 +9,27 @@
     {
       "key": "pending",
       "path": "/admin/pending",
-      "access": [
-        "review"
-      ]
+      "access": ["review"]
     },
     {
       "key": "awaiting_link",
       "path": "/admin/awaiting-link",
-      "access": [
-        "link"
-      ]
+      "access": ["link"]
     },
     {
       "key": "subscribers",
       "path": "/admin/subscribers",
-      "access": [
-        "review",
-        "link",
-        "reports"
-      ]
+      "access": ["review", "link", "reports"]
     },
     {
       "key": "marketers",
       "path": "/admin/marketers",
-      "access": [
-        "marketers"
-      ]
+      "access": ["marketers"]
     },
     {
       "key": "settings",
       "path": "/admin/settings",
-      "access": [
-        "settings"
-      ]
+      "access": ["settings"]
     },
     {
       "key": "admins",
@@ -51,16 +39,12 @@
     {
       "key": "reports",
       "path": "/admin/reports",
-      "access": [
-        "reports"
-      ]
+      "access": ["reports"]
     },
     {
       "key": "import",
       "path": "/admin/import",
-      "access": [
-        "reports"
-      ]
+      "access": ["reports"]
     },
     {
       "key": "backup",
@@ -87,90 +71,41 @@
     {
       "role": "admin",
       "permissions": [],
-      "visible": [
-        "home",
-        "account"
-      ]
+      "visible": ["home", "account"]
     },
     {
       "role": "admin",
-      "permissions": [
-        "marketers"
-      ],
-      "visible": [
-        "home",
-        "marketers",
-        "account"
-      ]
+      "permissions": ["marketers"],
+      "visible": ["home", "marketers", "account"]
     },
     {
       "role": "admin",
-      "permissions": [
-        "review"
-      ],
-      "visible": [
-        "home",
-        "pending",
-        "subscribers",
-        "account"
-      ]
+      "permissions": ["review"],
+      "visible": ["home", "pending", "subscribers", "account"]
     },
     {
       "role": "admin",
-      "permissions": [
-        "link"
-      ],
-      "visible": [
-        "home",
-        "awaiting_link",
-        "subscribers",
-        "account"
-      ]
+      "permissions": ["link"],
+      "visible": ["home", "awaiting_link", "subscribers", "account"]
     },
     {
       "role": "admin",
-      "permissions": [
-        "reports"
-      ],
-      "visible": [
-        "home",
-        "subscribers",
-        "reports",
-        "import",
-        "account"
-      ]
+      "permissions": ["reports"],
+      "visible": ["home", "subscribers", "reports", "import", "account"]
     },
     {
       "role": "admin",
-      "permissions": [
-        "settings"
-      ],
-      "visible": [
-        "home",
-        "settings",
-        "account"
-      ]
+      "permissions": ["settings"],
+      "visible": ["home", "settings", "account"]
     },
     {
       "role": "admin",
-      "permissions": [
-        "commissions"
-      ],
-      "visible": [
-        "home",
-        "account"
-      ]
+      "permissions": ["commissions"],
+      "visible": ["home", "account"]
     },
     {
       "role": "admin",
-      "permissions": [
-        "review",
-        "link",
-        "settings",
-        "marketers",
-        "reports",
-        "commissions"
-      ],
+      "permissions": ["review", "link", "settings", "marketers", "reports", "commissions"],
       "visible": [
         "home",
         "pending",

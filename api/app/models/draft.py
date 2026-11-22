@@ -106,6 +106,10 @@ class Draft(Base):
     created_at: Mapped[datetime] = _ts()
     updated_at: Mapped[datetime] = _ts()
 
+    # Optimistic concurrency (research.md R3): every UPDATE is `... WHERE version = :loaded`
+    # and increments it; zero rows matched raises StaleDataError, mapped to 409 draft_conflict.
+    __mapper_args__ = {"version_id_col": version}
+
     images: Mapped[list["DraftImage"]] = relationship(
         back_populates="draft",
         cascade="all, delete-orphan",
