@@ -199,7 +199,7 @@ docker exec <npm> curl -s http://sijil-web/api/health
    ```bash
    OCR_MODE=http
    OCR_URL=http://ocr:8080
-   OCR_SOURCE_URL=https://github.com/<حساب الشركة>/<النسخة العامة من ocr>   # انظر الخطوة 4
+   OCR_SOURCE_URL=https://github.com/amarmuzahem9/sijil-ocr   # النسخة العامة من ocr/ (الخطوة 4)
    ```
 2. البناء والتشغيل مع باقي الخدمات (`scripts/deploy-staging.sh` يبني `ocr` أيضاً). أول بناء يأخذ عدة دقائق.
 3. الفحوص بعد التشغيل:
@@ -209,7 +209,8 @@ docker exec <npm> curl -s http://sijil-web/api/health
    sijil exec ocr python -c "import urllib.request; urllib.request.urlopen('https://github.com', timeout=5)"   # يجب أن يفشل: لا إنترنت
    docker stats --no-stream sijil-ocr             # الحد: 2 GiB
    ```
-4. **رخصة AGPL:** قبل كل نشر يغيّر مجلد `ocr/`، انشر مجلد `ocr/` إلى النسخة العامة (fork عام على حساب الشركة)،
+4. **رخصة AGPL:** قبل كل نشر يغيّر مجلد `ocr/`، انشره إلى النسخة العامة
+   https://github.com/amarmuzahem9/sijil-ocr بالأمر `scripts/publish-ocr.sh` (من جهازك، و`gh` مسجّل الدخول)،
    ورابطها هو `OCR_SOURCE_URL`. المستخدمون يرون الرابط في «حسابي» ← «رخص البرمجيات المفتوحة». كود سِجلّ نفسه
    (`api/` و`web/`) يبقى خاصاً ولا يُنشر.
 5. لا تشغّل القارئ على صور بطاقات حقيقية خارج التطبيق إلا في حاوية بلا شبكة، ولا تحفظ النتائج (انظر
