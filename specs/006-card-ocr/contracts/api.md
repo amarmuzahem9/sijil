@@ -111,6 +111,6 @@ The reading's own outcomes are states, not HTTP errors. Their Arabic texts are s
 | `multiple` | «يظهر أكثر من مستمسك في الصورة» |
 | Re-shoot button and tips | «أعد التصوير» — «بلا لمعة، البطاقة مسطّحة وتملأ الإطار، والوجه في خانته» |
 | `failed` | «تعذّرت القراءة الآلية، أكمل يدوياً» + «أعد المحاولة» |
-| National ID mismatch | «تأكد من الرقم الوطني» — «على الوجه: … / في الشريط الآلي: …» with «اعتماد هذا الرقم» on each |
+| National ID mismatch | «تأكد من الرقم الوطني» — «الرقم الحالي: … / في الشريط الآلي: …» with «اعتماد هذا الرقم» on each |
 | Surname | checkbox «لا يوجد لقب على البطاقة»; hint when the card's surname is empty: «لا يوجد لقب على البطاقة؟ اختر الخيار أدناه أو اسأل المشترك» |
 | «حسابي» | «رخص البرمجيات المفتوحة» |

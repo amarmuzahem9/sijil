@@ -47,7 +47,7 @@ Details: [research.md](./research.md).
   - CPU-only torch;
   - FastAPI, uvicorn and python-multipart for the wrapper;
   - the `tesseract-ocr` system package.
-- **api**: no new package. `httpx` is already a runtime dependency; Pillow (005) is used for the
+- **api**: `httpx` moves from the dev extras to the runtime dependencies (it was test-only); Pillow (005) is used for the
   fake reader's corner colour.
 - **web**: none new.
 

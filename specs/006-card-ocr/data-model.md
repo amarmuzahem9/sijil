@@ -27,6 +27,16 @@ The derived states are computed, not stored:
   sets `confirmed_value = null`.
 - `full_name` is unchanged: it is the first five names, empty parts skipped.
 
+## Change to `image_access_log` (analysis C1, Principle II)
+
+| Column | Type | Null | Rule |
+|---|---|---|---|
+| `purpose` | text | no, default `'view'` | `view` (a person opened the image, 005) \| `ocr` (the server sent it to the reader). CHECK on the two values. |
+
+Every side sent to the reader adds one row: `user_id` = the marketer whose upload queued the
+reading (the draft owner), `image_id`, `draft_id`, `side`, `purpose = 'ocr'`. Existing rows
+become `view`.
+
 ## New table `card_readings`
 
 One row per draft and side: the latest reading of that side's current image.

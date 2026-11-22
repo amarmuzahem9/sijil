@@ -83,6 +83,12 @@ the repository) is summarised in [spec.md › Clarifications](./spec.md#clarific
   (`parse_td1`), which has no composite flag, the wrapper computes it from `raw_mrz` with the same
   ICAO 9303 rule (line 1 [5:30] + line 2 [0:7] + [8:15] + [18:29], check digit at line 2 [29]).
   If neither is available, `valid_composite` is `null`, which counts as not verified.
+- **Dropped fillers (found in batch 1)**: OCR sometimes drops `<` fillers from the middle of
+  MRZ line 2, so the composite digit is read from the wrong position (step 0, card 1). Before
+  computing the composite, the wrapper rebuilds line 2 as `line[:-1]` padded with `<` to 29
+  characters plus the last character. Fillers count as 0 in the sum, so this cannot make wrong
+  data pass. When the last character is itself a filler (the digit was not read), the zone
+  stays unverified.
 - **Alternatives**: returning a ready-made "fill these fields" answer from the reader (puts our
   rules in AGPL code and makes them untestable without the models).
 
@@ -106,6 +112,9 @@ the repository) is summarised in [spec.md › Clarifications](./spec.md#clarific
     while reading), the result is dropped; the newer upload has queued its own job (US6-3).
 - **Retry**: «أعد المحاولة» calls `POST /api/drafts/{id}/card-reading/retry`, which re-queues the
   failed or timed-out sides.
+- **Access log (analysis C1)**: each side sent to the reader writes an `image_access_log` row
+  with `purpose = 'ocr'` and the uploader as `user_id`, in the same transaction that marks the
+  side `running` (Principle II: every access is logged).
 - **Restart safety**:
   - At startup, and lazily on read, any `running` reading older than 60 s becomes
     `failed/timeout`.
@@ -152,6 +161,8 @@ Evaluated in `api/app/services/card_reading_rules.py` on the reader's raw detect
      the character is `O`. Position 4 is the series letter and is kept.
    - Accept only `^\d{4}[A-Z][0-9A-Z]{13}$`. Anything else stays empty, and the raw text is kept.
 
+- **Note (analysis L4)**: this is the normalization for storing the read value. The comparison
+  key of Principle I (O treated as 0 everywhere) is applied by the duplicate check in 008.
 - **Rationale**: These thresholds reproduce step 0 on all 11 cards:
   - the duplicate back in photo 22 merged;
   - the phantom front in photo 1 ignored;
