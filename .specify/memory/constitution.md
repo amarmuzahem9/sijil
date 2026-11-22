@@ -1,5 +1,14 @@
 <!--
-Sync Impact Report (2026-11-22, amendment 1)
+Sync Impact Report (2026-11-22, amendment 2)
+- Version change: 1.1.0 → 1.1.1 (PATCH: clarification)
+- Modified principles: III. Permanent Audit Trail — clarified that an unsubmitted draft is not a
+  request; its owner may delete it, and the deletion is audited (docs/system.md §5 v1.4, feature 005).
+- Added/removed sections: none
+- Templates: not modified
+- Follow-up TODOs: none
+- Approved by the project owner in the feature 005 review.
+
+Previous report (2026-11-22, amendment 1)
 - Version change: 1.0.0 → 1.1.0 (MINOR: Principle III materially expanded)
 - Modified principles: III. Permanent Audit Trail — user accounts are never physically deleted;
   «حذف» moves an account to a reversible archive (docs/system.md §3.6, feature 003); archive and
@@ -75,6 +84,8 @@ company.
   the value before and after. This covers: approve, reject, linked, undo linked, subscriber data
   edit, price change, export, and password reset.
 - Requests and subscribers MUST NOT be physically deleted; they may only be deactivated.
+  An unsubmitted draft is not yet a request: its owner MAY delete it (with its images), and the
+  deletion MUST be audited without card data (docs/system.md §5, feature 005).
 - User accounts MUST NOT be physically deleted. «حذف» moves an account to the archive, which is
   reversible: the account cannot sign in, its sessions end, its phone stays reserved, and its
   requests and history keep showing its name. Archive and restore are audited. The main admin
@@ -193,4 +204,4 @@ reliable proof they hold.
   violation MUST be resolved, or explicitly justified and approved, before merge.
 - Runtime guidance for agents lives in `CLAUDE.md`.
 
-**Version**: 1.1.0 | **Ratified**: 2026-11-21 | **Last Amended**: 2026-11-22
+**Version**: 1.1.1 | **Ratified**: 2026-11-21 | **Last Amended**: 2026-11-22
