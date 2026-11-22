@@ -8,6 +8,12 @@ services:
       # one), and must not send requests to Google on the owner's account.
       GOOGLE_MAPS_API_KEY: ""
       GOOGLE_MAPS_MAP_ID: ""
+      # The synthetic card reader (specs/006 research.md R10): no models, no real cards.
+      OCR_MODE: fake
+
+  # The real reader is not built or started in e2e (4 GB image; the fake reader is used).
+  ocr:
+    profiles: ["ocr-real"]
 
   proxy:
     ports: !reset []

@@ -44,6 +44,10 @@ class DraftChanges(_Body):
     tower_id: StrictInt | None = None
     plan_id: StrictInt | None = None
     phone_input: str | None = None
+    # Feature 006 (contracts/api.md): «لا يوجد لقب على البطاقة», and confirming a national ID
+    # that differs from the verified MRZ. Provenance and readings are never accepted.
+    no_surname: bool | None = None
+    national_id_confirmed: bool | None = None
 
 
 class CreateBody(_Body):
@@ -90,6 +94,43 @@ class NoticeOut(BaseModel):
     new: dict[str, int] | None = None
 
 
+class CardFieldMarkOut(BaseModel):
+    """Provenance of one card field (specs/006 data-model.md › drafts.card_fields)."""
+
+    source: Literal["card", "edited"]
+    original: str | None = None
+    confidence: float | None = None
+    from_: Literal["front", "back", "mrz"] | None = Field(default=None, alias="from")
+
+    model_config = ConfigDict(populate_by_name=True, serialize_by_alias=True)
+
+
+class NationalIdCheckOut(BaseModel):
+    mrz: str
+    mismatch: bool
+    confirmed: bool
+
+
+class CardReadingSideOut(BaseModel):
+    state: Literal["pending", "running", "done", "reshoot", "failed"]
+    reason: str | None = None
+    finished_at: datetime | None = None
+    # Front only: the card's surname line is empty (FR-017 hint).
+    surname_empty: bool | None = None
+
+
+class CardReadingOut(BaseModel):
+    front: CardReadingSideOut | None = None
+    back: CardReadingSideOut | None = None
+
+
+class CardReadingStatusOut(CardReadingOut):
+    """GET /api/drafts/{id}/card-reading (the 2-second poll while a reading runs)."""
+
+    version: int
+    same_client: bool
+
+
 class DraftOut(BaseModel):
     id: uuid.UUID
     status: str
@@ -122,6 +163,10 @@ class DraftOut(BaseModel):
     phone_input: str | None
     phone_normalized: str | None
     images: DraftImages
+    no_surname: bool = False
+    card_fields: dict[str, CardFieldMarkOut] = Field(default_factory=dict)
+    national_id_check: NationalIdCheckOut | None = None
+    card_reading: CardReadingOut = Field(default_factory=CardReadingOut)
     missing: list[MissingOut]
     notices: list[NoticeOut] = Field(default_factory=list)
 

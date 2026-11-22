@@ -49,6 +49,50 @@ export interface DraftNotice {
   new?: { trial_price: number; second_price: number } | null;
 }
 
+/** The eight form fields a card reading may fill (specs/006 data-model.md › drafts.card_fields). */
+export const CARD_FIELDS = [
+  'first_name',
+  'father_name',
+  'grandfather_name',
+  'surname',
+  'mother_first_name',
+  'mother_second_name',
+  'national_id',
+  'family_number',
+] as const;
+export type CardField = (typeof CARD_FIELDS)[number];
+
+/** Where a card field's value came from: «من البطاقة» or «عُدِّل يدوياً». */
+export interface CardFieldMark {
+  source: 'card' | 'edited';
+  original: string | null;
+  confidence: number | null;
+  from: 'front' | 'back' | 'mrz' | null;
+}
+
+export type CardReadingState = 'pending' | 'running' | 'done' | 'reshoot' | 'failed';
+export type ReshootReason = 'no_card' | 'wrong_side' | 'not_unified' | 'multiple';
+export type FailedReason = 'timeout' | 'unavailable' | 'error';
+
+export interface CardReadingSide {
+  state: CardReadingState;
+  reason: ReshootReason | FailedReason | null;
+  finished_at?: string | null;
+  /** Front only: the card's surname line is empty (FR-017 hint). */
+  surname_empty?: boolean | null;
+}
+
+export interface CardReading {
+  front: CardReadingSide | null;
+  back: CardReadingSide | null;
+}
+
+export interface NationalIdCheck {
+  mrz: string;
+  mismatch: boolean;
+  confirmed: boolean;
+}
+
 export interface Draft extends NullableNames {
   id: string;
   status: 'draft';
@@ -73,6 +117,11 @@ export interface Draft extends NullableNames {
   phone_input: string | null;
   phone_normalized: string | null;
   images: { front: DraftImage | null; back: DraftImage | null };
+  /** Feature 006 (contracts/api.md › DraftOut). */
+  no_surname: boolean;
+  card_fields: Partial<Record<CardField, CardFieldMark>>;
+  national_id_check: NationalIdCheck | null;
+  card_reading: CardReading;
   missing: MissingItem[];
   notices: DraftNotice[];
 }
@@ -89,6 +138,10 @@ export interface DraftChanges extends Partial<NullableNames> {
   tower_id?: number | null;
   plan_id?: number | null;
   phone_input?: string | null;
+  /** «لا يوجد لقب على البطاقة» (FR-017). */
+  no_surname?: boolean;
+  /** Confirms the current national ID against the verified MRZ (FR-012). */
+  national_id_confirmed?: boolean;
 }
 
 export interface DraftListItem {
@@ -131,6 +184,21 @@ export const getDraft = (id: string) => apiFetch<Draft>(path(id), { headers: dra
 
 export const getDraftVersion = (id: string) =>
   apiFetch<DraftVersion>(`${path(id)}/version`, { headers: draftHeaders() });
+
+/** Reading status for the 2-second poll while a card reading runs (specs/006 research R5). */
+export interface CardReadingStatus extends CardReading {
+  version: number;
+  same_client: boolean;
+}
+
+export const getCardReadingStatus = (id: string) =>
+  apiFetch<CardReadingStatus>(`${path(id)}/card-reading`, { headers: draftHeaders() });
+
+export const retryCardReading = (id: string) =>
+  apiFetch<CardReading>(`${path(id)}/card-reading/retry`, {
+    method: 'POST',
+    headers: draftHeaders(),
+  });
 
 export const patchDraft = (id: string, version: number, changes: DraftChanges) =>
   apiFetch<Draft>(path(id), {

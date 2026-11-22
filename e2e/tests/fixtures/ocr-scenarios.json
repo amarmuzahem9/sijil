@@ -1,0 +1,77 @@
+{
+  "clear_front": [
+    220,
+    40,
+    40
+  ],
+  "clear_back": [
+    40,
+    160,
+    60
+  ],
+  "front_b": [
+    240,
+    140,
+    20
+  ],
+  "front_no_surname": [
+    150,
+    40,
+    200
+  ],
+  "front_no_id": [
+    0,
+    150,
+    150
+  ],
+  "front_latin_name": [
+    200,
+    0,
+    120
+  ],
+  "back_nid_mismatch": [
+    30,
+    60,
+    200
+  ],
+  "back_unverified": [
+    200,
+    200,
+    40
+  ],
+  "back_family_o": [
+    255,
+    105,
+    180
+  ],
+  "no_card": [
+    0,
+    255,
+    120
+  ],
+  "two_cards": [
+    0,
+    200,
+    255
+  ],
+  "duplicate_back": [
+    100,
+    100,
+    255
+  ],
+  "other_document": [
+    255,
+    255,
+    0
+  ],
+  "reader_failure": [
+    80,
+    0,
+    160
+  ],
+  "reader_slow": [
+    90,
+    0,
+    0
+  ]
+}

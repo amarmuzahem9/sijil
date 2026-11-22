@@ -1,0 +1,6 @@
+**/__pycache__
+**/*.pyc
+upstream/models/weights/
+*.jpg
+*.jpeg
+*.png

@@ -44,6 +44,12 @@ class Settings(BaseSettings):
     google_maps_map_id: str = ""
     map_default_center: str = "33.3152,44.3661"
 
+    # Card reader (specs/006 research.md R3, R10). `fake` = synthetic results, no models (tests,
+    # e2e); `http` = the internal `ocr` service. The source URL is the public copy of ocr/ (R12).
+    ocr_mode: Literal["http", "fake"] = "http"
+    ocr_url: str = "http://ocr:8080"
+    ocr_source_url: str = ""
+
     @property
     def map_center(self) -> tuple[float, float]:
         """`map_default_center` as (lat, lng); validated at startup by `_check_map_center`."""

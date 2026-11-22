@@ -1,0 +1,7 @@
+# The HTTP wrapper (service/). Same versions as the Sijil api where they overlap.
+fastapi==0.165.0
+uvicorn==0.54.0
+python-multipart==0.0.34
+# Tests inside the image (tests/test_service.py).
+pytest==9.2.0
+httpx==0.28.1

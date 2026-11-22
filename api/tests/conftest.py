@@ -16,6 +16,8 @@ os.environ["DATABASE_URL"] = _TEST_DB_URL
 os.environ["APP_ENV"] = "test"
 os.environ["JWT_SECRET"] = "test-secret-" + "x" * 32
 os.environ["COOKIE_SECURE"] = "true"
+# Tests never call the real card reader (specs/006 research.md R10).
+os.environ["OCR_MODE"] = "fake"
 
 from alembic import command  # noqa: E402
 from alembic.config import Config  # noqa: E402

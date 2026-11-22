@@ -37,7 +37,7 @@ from app.schemas.drafts import (
     MissingOut,
     NoticeOut,
 )
-from app.services import audit_service, draft_validation, image_store
+from app.services import audit_service, card_reading_service, draft_validation, image_store
 
 log = logging.getLogger("sijil.drafts")
 
@@ -167,6 +167,10 @@ def to_out(draft: Draft, notices: list[NoticeOut] | None = None) -> DraftOut:
         phone_input=draft.phone_input,
         phone_normalized=draft.phone_normalized,
         images=DraftImages(front=image_out("front"), back=image_out("back")),
+        no_surname=draft.no_surname,
+        card_fields=card_reading_service.card_fields_out(draft),
+        national_id_check=card_reading_service.national_id_check_out(draft),
+        card_reading=card_reading_service.reading_out(draft),
         missing=[
             MissingOut(**item)
             for item in draft_validation.missing(draft, image_sides(draft.images))

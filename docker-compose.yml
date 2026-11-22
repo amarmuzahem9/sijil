@@ -26,6 +26,10 @@ services:
     env_file: ${SIJIL_ENV_FILE:-.env}
     environment:
       APP_ENV: ${APP_ENV:-production}
+    networks:
+      - default
+      # The card reader is reached only here (specs/006 research.md R3).
+      - ocr_net
     volumes:
       # Private card-image storage (specs/005 research.md R7). Only the api mounts it; it is
       # never served by the web container. Named sijil_uploads under the project name "sijil".
@@ -43,6 +47,30 @@ services:
       timeout: 5s
       retries: 12
       start_period: 20s
+
+  # Card reader (feature 006, AGPL-3.0; see ocr/UPSTREAM.md). No internet: it is only on the
+  # internal network ocr_net, publishes no port, and only `api` can reach it. `api` does not wait
+  # for it: the form keeps working while the reader is down (specs/006 research.md R3).
+  ocr:
+    build:
+      context: ./ocr
+    restart: unless-stopped
+    networks:
+      - ocr_net
+    cpus: 2
+    mem_limit: 2g
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=3)"
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 60s
 
   web:
     build:
@@ -67,6 +95,11 @@ services:
     depends_on:
       - api
       - web
+
+networks:
+  # Internal only: no route to the internet (FR-018).
+  ocr_net:
+    internal: true
 
 volumes:
   pgdata:

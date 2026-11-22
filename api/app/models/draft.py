@@ -10,6 +10,7 @@ from typing import Literal
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     CheckConstraint,
     DateTime,
     Float,
@@ -21,7 +22,7 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.timeutil import utc_now
@@ -43,6 +44,18 @@ NAME_FIELDS: tuple[str, ...] = (
 FULL_NAME_FIELDS: tuple[str, ...] = NAME_FIELDS[:5]
 OPTIONAL_NAME_FIELDS: tuple[str, ...] = ("mother_third_name", "mother_surname")
 NAME_MAX = 50
+
+# The eight form fields the card reading may fill (specs/006 data-model.md › drafts.card_fields).
+CARD_FIELDS: tuple[str, ...] = (
+    "first_name",
+    "father_name",
+    "grandfather_name",
+    "surname",
+    "mother_first_name",
+    "mother_second_name",
+    "national_id",
+    "family_number",
+)
 
 # data-model.md › drafts / draft_images — limits shared by the service and the validation.
 TEXT_LIMITS: dict[str, int] = {
@@ -122,6 +135,16 @@ class Draft(Base):
     trial_price: Mapped[int | None] = mapped_column(Integer)
     second_price: Mapped[int | None] = mapped_column(Integer)
 
+    # Feature 006 (data-model.md): provenance of the card fields, «لا يوجد لقب على البطاقة», and
+    # the national-ID check against a verified MRZ ({mrz, confirmed_value} or null).
+    card_fields: Mapped[dict] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb")
+    )
+    no_surname: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    national_id_check: Mapped[dict | None] = mapped_column(JSONB)
+
     phone_input: Mapped[str | None] = mapped_column(Text)
     phone_normalized: Mapped[str | None] = mapped_column(Text)
 
@@ -138,6 +161,12 @@ class Draft(Base):
     __mapper_args__ = {"version_id_col": version}
 
     images: Mapped[list["DraftImage"]] = relationship(
+        back_populates="draft",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        lazy="selectin",
+    )
+    card_readings: Mapped[list["CardReading"]] = relationship(
         back_populates="draft",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -181,3 +210,43 @@ class ImageAccessLog(Base):
     draft_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     side: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = _ts()
+    # `view` = a person opened the image (005); `ocr` = the server sent it to the card reader
+    # (specs/006 data-model.md, analysis C1).
+    purpose: Mapped[str] = mapped_column(
+        Text, nullable=False, default="view", server_default=text("'view'")
+    )
+
+
+class CardReading(Base):
+    """The latest reading of one side of a draft's card (specs/006 data-model.md › card_readings).
+
+    `raw` is the reader's answer as received; `result` is the side after the rules (R6). Neither
+    is ever sent to the page (research R11) or logged.
+    """
+
+    __tablename__ = "card_readings"
+    __table_args__ = (
+        UniqueConstraint("draft_id", "side", name="card_readings_draft_side_key"),
+        CheckConstraint("side IN ('front', 'back')", name="card_readings_side"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    draft_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("drafts.id", ondelete="CASCADE"), nullable=False
+    )
+    side: Mapped[str] = mapped_column(Text, nullable=False)
+    image_file_name: Mapped[str] = mapped_column(Text, nullable=False)
+    state: Mapped[str] = mapped_column(
+        Text, nullable=False, default="pending", server_default=text("'pending'")
+    )
+    reason: Mapped[str | None] = mapped_column(Text)
+    raw: Mapped[dict | None] = mapped_column(JSONB)
+    result: Mapped[dict | None] = mapped_column(JSONB)
+    queued_by_client: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    duration_ms: Mapped[int | None] = mapped_column(Integer)
+    created_at: Mapped[datetime] = _ts()
+    updated_at: Mapped[datetime] = _ts()
+
+    draft: Mapped[Draft] = relationship(back_populates="card_readings")

@@ -29,6 +29,11 @@ services:
     # (feature 005). It stays on the server, is never mounted by `web`, and must be part of every
     # backup (deploy/staging.md › «نسخ صور البطاقات احتياطياً»). Never run `down -v` here.
 
+  ocr:
+    # Card reader (feature 006). Internal network only, no ports, no internet.
+    container_name: sijil-ocr
+    ports: !reset []
+
   db:
     container_name: sijil-db
     ports: !reset []

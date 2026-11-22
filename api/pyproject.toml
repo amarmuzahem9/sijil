@@ -17,12 +17,13 @@ dependencies = [
     # Feature 005: multipart uploads and card image verification (research.md R6).
     "python-multipart==0.0.34",
     "Pillow==13.0.0",
+    # Feature 006: calls the internal card reader service (specs/006 research R5).
+    "httpx==0.28.1",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest==9.2.0",
-    "httpx==0.28.1",
     "ruff==0.17.6",
 ]
 
