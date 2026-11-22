@@ -293,3 +293,45 @@ Evaluated in `api/app/services/card_reading_rules.py` on the reader's raw detect
     deployment time, after reminding the owner (their instruction). `deploy/staging.md` gets a
     step: «انشر مجلد ocr/ إلى النسخة العامة قبل كل نشر يغيّره».
 - **Rationale**: Owner answer A. The link must be visible to network users (AGPL §13).
+
+## R13. The other fields on the back (owner change; FR-025–FR-031)
+
+- **Problem**: the reader's back model (`MRZ1.pt`) only locates `MRZ`, `city` (place of birth)
+  and `nu_f` (family number). The printed issue date, expiry date, birth date and issuing
+  authority have no box.
+- **Decision**: In `ocr/service/reader.py` (our wrapper), after a back is straightened:
+  - **Locating the rows**: the rows are cut by position. The row pitch is half the distance
+    between the `city` and `nu_f` centres. The rows are: authority = city − 3 pitches, issue =
+    city − 2, expiry = city − 1, birth = city + 1.
+  - **Reading the rows**: each date row is read by the Arabic recogniser and by Tesseract
+    (digits and «/» only, 2.5× upscale, raw and Otsu), on the whole band and on its value end.
+    This gives up to 6 candidate texts per row. The authority row is read by the Arabic
+    recogniser.
+  - **Output**: the wrapper returns these raw texts under `bands`; it decides nothing.
+- **Rules in `api`** (`card_reading_rules`, FR-026–FR-028):
+  1. **Expiry and birth**: from the MRZ when that field's check digit is right. The birth century
+     comes from the national ID's first two digits.
+  2. **Expiry from print**: if the MRZ expiry is unusable, the printed expiry is accepted when
+     some printed issue candidate equals expiry − 10 years + 1 day (both accepted together).
+  3. **Issue date**: accepted when one candidate equals expiry − 10 years + 1 day.
+  4. **Birth from print**: if the MRZ birth date is unusable, the printed birth date is accepted
+     when exactly one date has two or more agreeing candidates and its year equals the national
+     ID's first four digits.
+  5. **Authority**: snapped to «مديرية الجنسية والمعلومات المدنية» when the similarity is at
+     least 0.70.
+- **Evidence** (spike on the 11 private cards, outside the repository, nothing kept):
+  - with the Arabic recogniser alone: 2–8 correct per field;
+  - with Tesseract added and the cross-checks: expiry 11/11, birth 11/11, authority 11/11,
+    issue 9/11 (2 empty), **0 wrong**.
+  - The first version, with no agreement rule for the printed birth date, accepted one wrong
+    day; the two-reading agreement removed it.
+- **Assumptions**:
+  - Expiry = issue + 10 years − 1 day held on all 11 cards. A card that does not follow it
+    simply gets its printed dates left empty.
+  - The national ID's first four digits equal the birth year on all 11 cards. Where it does not
+    hold, the printed birth date stays empty; the MRZ birth date does not depend on it except for
+    the century.
+- **Cost**: about 6 more recognitions per back (roughly +1 s on 2 CPUs; measured in T050).
+- **Alternatives**:
+  - MRZ only, with issue date and authority typed: simpler, but 4 fields typed by hand.
+  - Training a new detector: needs many labelled real cards.

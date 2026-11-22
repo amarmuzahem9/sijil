@@ -33,6 +33,7 @@ tested on its own. The FR-017 no-surname choice is part of US1 (its scenario 3).
 |---|---|---|
 | 1 | 1–2 (Setup, Foundational) | T001–T017 |
 | 2 | 3–5 (US1, US2, US3) | T018–T034 |
+| 2b | 5b (US7, owner change: back fields) | T056–T067 |
 | 3 | 6–9 (US4, US5, US6, Polish) | T035–T055 |
 
 ---
@@ -346,6 +347,94 @@ and a reading never overwrites an edit.
 
 ---
 
+## Phase 5b: User Story 7 - The other fields on the back (Priority: P2, owner change)
+
+**Goal**: The back also fills the date of birth, place of birth, issue date, expiry date and
+issuing authority, accepted only when cross-checked (research R13). All five are required, and
+an expired card blocks sending (system.md v1.8).
+
+**Independent Test**: synthetic clear back → five fields filled and marked; synthetic expired
+back → «البطاقة منتهية الصلاحية» in the missing items.
+
+### Tests for User Story 7
+
+- [ ] T056 [P] [US7] Add unit tests to `api/tests/unit/test_card_reading_rules.py` for the
+  back-field rules (research R13, data-model.md › Applying a `done` pair). Use synthetic dates
+  only:
+  - **MRZ dates**: the MRZ birth date with its own check digit is accepted, and the century comes
+    from the national ID; the expiry is 20xx.
+  - **Wrong birth check digit**: the printed birth date is accepted only with two agreeing
+    candidates and a year equal to the national ID's first four digits. One candidate, or a
+    wrong year, gives empty.
+  - **Issue date**: accepted only when it equals expiry − 10 years + 1 day; otherwise empty.
+  - **MRZ expiry unusable**: the printed expiry and issue are accepted together when they are
+    consistent.
+  - **Invalid dates**: dates such as `2034/13/40` are rejected.
+  - **Authority**: snapped to the known text at a similarity of 0.70 or more; empty below that.
+  - **Place of birth**: the text rule.
+- [ ] T057 [P] [US7] Add integration tests to `api/tests/integration/test_card_reading.py` and
+  `test_card_fields.py` with new fake scenarios: `clear_back` with bands, `back_birth_print`
+  (MRZ birth wrong, printed agrees), `back_issue_mismatch`, `back_expired`:
+  - **Filling**: the five fields fill with marks and `original`.
+  - **Expired card**: `missing` has `card_expired`.
+  - **Edits**: an edited date is kept after a re-read.
+  - **Variety (owner request)**: synthetic cases include a female card and a birth after
+    2000 (century from the national ID «20…»).
+  - **Bad values**: a PATCH with a bad date or a Latin place of birth gets 422.
+- [ ] T058 [P] [US7] Extend the shared fixture `draft_validation_cases.json` (api and web
+  copies): the five required back fields, plus `card_expired` judged against a fixed «today»
+  given in the case.
+
+### Implementation for User Story 7
+
+- [X] T059 [US7] Write migration `api/migrations/versions/0008_card_back_fields.py` and the model
+  columns (data-model.md › Changes to `drafts`):
+  - `drafts.birth_date`, `drafts.issue_date` and `drafts.expiry_date` (date);
+  - `drafts.birth_place` and `drafts.issuing_authority` (text, CHECK ≤ 100);
+  - `CARD_FIELDS` gains the five keys.
+- [ ] T060 [US7] Read the printed rows of the back in `ocr/service/reader.py` (research R13,
+  contracts/ocr-service.md › `bands`):
+  - **Locating**: rows by geometry from `city`/`nu_f`.
+  - **Reading**: the Arabic recogniser and Tesseract candidates.
+  - **Output**: `bands` on back detections.
+  - **Tests**: extend `ocr/tests/test_service.py` (a synthetic back is not detected, so `bands`
+    is absent; plus a unit test of the row geometry on fixed boxes). Rebuild the image.
+- [ ] T061 [US7] Add the back-field rules to `api/app/services/card_reading_rules.py` (R13 rules
+  1–5): `_back_result` gains `dates: {birth, expiry, issue}`, each with `value`, `original` and
+  `from`, plus `birth_place` and `authority`. Put the constants in `api/app/core/card_reading.py`
+  (data-model.md › Constants). The national ID used for the century and the year check is the
+  front's normalized ID, or the verified MRZ ID, passed in by `apply_pair`.
+- [ ] T062 [US7] Map the five fields in `card_reading_service.apply_pair` (data-model.md ›
+  Applying a `done` pair) with the FR-007 rules. In `draft_service.apply_changes`, add the PATCH
+  keys: ISO dates; `birth_place` checked by `clean_place_text` (Arabic letters, spaces, «-»,
+  «/»), with 422 `invalid_place_text`; `issuing_authority` limited to ≤ 100. Add these to
+  `DraftChanges`/`DraftOut` and to the edited marks.
+- [ ] T063 [US7] In `draft_validation.missing` (api) and `computeMissing` (web), make the five
+  fields required and add `card_expired`: `expiry_date` before today in Baghdad
+  (`app.core.timeutil`). The page passes its Baghdad «today».
+- [ ] T064 [US7] Web: add the five fields to the «بيانات البطاقة» section after the family number,
+  plus the FR-032 warning «سنة الميلاد لا تطابق الرقم الوطني، تأكد منهما» (warning only, not a
+  missing item):
+  - **Dates**: native date inputs, saved immediately.
+  - **Text**: the place of birth and authority as text fields.
+  - **Marks**: «من البطاقة» / «عُدِّل يدوياً» on all five.
+  - **Expired card**: an «البطاقة منتهية الصلاحية» alert.
+
+  Add them to `FormValues`, `valuesFromDraft`, `CARD_FIELDS` (web) and the missing-summary labels.
+- [ ] T065 [US7] Update the fake reader data (`card_reader_fake_data.py`): synthetic bands and
+  MRZ dates for the clear back, plus the new scenarios of T057. Regenerate
+  `e2e/tests/fixtures/ocr-scenarios.json`.
+- [ ] T066 [US7] Extend `e2e/tests/card-reading.spec.ts`:
+  - quickstart B checks the five back fields and their marks;
+  - an expired back shows «البطاقة منتهية الصلاحية» and lists it in «النواقص».
+- [ ] T067 [US7] Re-run the owner's private check (T050 method, outside the repository) with the
+  real reader on `test-cards/`. Report per-field correct, empty and wrong counts and the time per
+  back. Accept only 0 wrong values.
+
+**Checkpoint**: Batch 2b ends. Run all tests and report.
+
+---
+
 ## Phase 6: User Story 4 - National ID cross-check with the MRZ (Priority: P2)
 
 **Goal**: A verified MRZ that differs from the national ID asks the marketer to confirm. An
@@ -504,6 +593,8 @@ stay.
 - **US4 (Phase 6)**: needs US1 (`apply_pair`).
 - **US5 (Phase 7)**: needs US1.
 - **US6 (Phase 8)**: needs US1 and US2 (edits must survive a re-read).
+- **US7 (Phase 5b, owner change)**: needs US1 (`apply_pair`, marks) and US2; done before
+  batch 3.
 - **Polish (Phase 9)**: after every story. T053–T054 come only at deployment time, and T055 is
   last.
 

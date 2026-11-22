@@ -37,6 +37,10 @@ New keys:
 - `card_reading.<side>` is null when that side has no image.
 - The raw reader output is **not** returned.
 - `missing` (005) can now also contain `{"field": "national_id_unconfirmed"}`.
+- Back fields (owner change, R13): `birth_date`, `issue_date` and `expiry_date` are ISO dates
+  (`"2023-06-15"`) or null. `birth_place` and `issuing_authority` are text or null. All five
+  can appear in `card_fields`. `missing` can contain these five, and also
+  `{"field": "card_expired", "code": "card_expired"}`.
 
 ## Changed: `PATCH /api/drafts/{id}` body (`changes`)
 
@@ -44,6 +48,9 @@ New keys:
 |---|---|---|
 | `no_surname` | bool | `true` clears `surname` and marks it edited; `false` only clears the flag |
 | `national_id_confirmed` | bool | `true` confirms the current (or same-request) `national_id` against the verified MRZ; ignored when there is no mismatch |
+| `birth_date`, `issue_date`, `expiry_date` | ISO date \| null | A real date (else 422 `validation_error`) |
+| `birth_place` | text \| null | Arabic letters, spaces, «-», «/»; ≤ 100 (else 422 `invalid_place_text` / `too_long`) |
+| `issuing_authority` | text \| null | ≤ 100 (else 422 `too_long`) |
 
 Any change to one of the eight card fields marks it `edited` (data-model › Rules on save).
 `card_fields`, `card_reading` and `national_id_check` are never accepted from the client (422
@@ -86,6 +93,7 @@ Adds:
 | HTTP | Code | Arabic message |
 |---|---|---|
 | 409 | `reading_not_retryable` | «لا توجد قراءة فاشلة لإعادتها» |
+| 422 | `invalid_place_text` | «محل الولادة أحرف عربية فقط» (+ `field`) |
 
 The reading's own outcomes are states, not HTTP errors. Their Arabic texts are shown by the page
 (see the UI strings below).
@@ -114,3 +122,5 @@ The reading's own outcomes are states, not HTTP errors. Their Arabic texts are s
 | National ID mismatch | «تأكد من الرقم الوطني» — «الرقم الحالي: … / في الشريط الآلي: …» with «اعتماد هذا الرقم» on each |
 | Surname | checkbox «لا يوجد لقب على البطاقة»; hint when the card's surname is empty: «لا يوجد لقب على البطاقة؟ اختر الخيار أدناه أو اسأل المشترك» |
 | «حسابي» | «رخص البرمجيات المفتوحة» |
+| Back fields | «تاريخ الميلاد» «محل الولادة» «تاريخ الإصدار» «تاريخ النفاذ» «جهة الإصدار» (date pickers for the three dates) |
+| Expired card | «البطاقة منتهية الصلاحية» |

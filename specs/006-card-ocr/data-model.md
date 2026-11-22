@@ -10,6 +10,14 @@ Migration `0007_card_reading`. It builds on 005's `drafts` and `draft_images`
 | `card_fields` | jsonb | no, default `{}` | Provenance of the eight card fields (R8). Keys: `first_name`, `father_name`, `grandfather_name`, `surname`, `mother_first_name`, `mother_second_name`, `national_id`, `family_number`. Value: `{source: "card"\|"edited", original: text\|null, confidence: float\|null, from: "front"\|"back"\|"mrz"\|null}`. Validated by a Pydantic model before writing. |
 | `no_surname` | boolean | no, default false | «لا يوجد لقب على البطاقة» (FR-017, R9). CHECK: `NOT no_surname OR surname IS NULL`. |
 | `national_id_check` | jsonb | yes | Set only while a verified MRZ exists (R7): `{mrz: "12 digits", confirmed_value: text\|null}`. Null when there is no verified MRZ. |
+| `birth_date` | date | yes | Back field (R13, FR-026/027); required for sending |
+| `birth_place` | text | yes | Arabic letters, spaces, «-», «/»; ≤ 100 (CHECK on length) |
+| `issue_date` | date | yes | Back field; printed only (R13) |
+| `expiry_date` | date | yes | Back field; before today (Baghdad) → missing item `card_expired` |
+| `issuing_authority` | text | yes | ≤ 100; snapped to the known text when read (FR-028) |
+
+These five columns come from migration `0008_card_back_fields`. `card_fields` keys grow from
+8 to 13: the five back fields are added, with `from = "back"` or `"mrz"`.
 
 The derived states are computed, not stored:
 - **National-ID mismatch**: `national_id_check` exists and `national_id ≠ mrz`.
@@ -92,6 +100,14 @@ a successful side are applied even when the other side failed (spec edge case).
 | `mother_second_name` | front `gm` | name rule |
 | `national_id` | front `id`, else the verified MRZ `optional1` | `normalize_national_id` → 12 digits |
 | `family_number` | back `nu_f` | R6 step 6 normalization and pattern |
+| `birth_date` | MRZ birth (own check digit), else printed birth band | R13 rules 1 and 4 (FR-026/027) |
+| `expiry_date` | MRZ expiry (own check digit), else printed expiry band | R13 rules 1 and 2 |
+| `issue_date` | printed issue band | R13 rule 3: equals expiry − 10 years + 1 day |
+| `birth_place` | back `city` | FR-028 text rule |
+| `issuing_authority` | printed authority band | R13 rule 5: snapped when similarity ≥ 0.70 |
+
+`original` for a date is the accepted date as ISO text, or the first raw candidate text when
+none was accepted.
 
 Each field is written only when `card_fields[field]` is absent or `source = "card"` (FR-007).
 Its `original`/`confidence`/`from` are always updated to the new reading. The apply step then
@@ -106,6 +122,10 @@ Added or changed items, in page order:
 - **`surname`**: required unless `no_surname` (the label is unchanged).
 - **`national_id_unconfirmed`**: the national ID differs from the verified MRZ and is not
   confirmed. Its label is «تأكد من الرقم الوطني».
+- **The five back fields**: `birth_date`, `birth_place`, `issue_date`, `expiry_date` and
+  `issuing_authority`, each `required` (FR-029). They come after `family_number` in page order.
+- **`card_expired`**: `expiry_date` is before today in Baghdad time (FR-030). Its label is
+  «البطاقة منتهية الصلاحية». It is a missing item, so sending (008) is blocked; saving is not.
 
 The shared fixture `draft_validation_cases.json` gains these cases, and pytest and vitest both
 read it.
@@ -122,6 +142,10 @@ read it.
 | `READER_HTTP_TIMEOUT_S` | 45 | R5 |
 | `READING_POLL_MS` | 2000 | R5 (web) |
 | `FAMILY_NUMBER_RE` | `^\d{4}[A-Z][0-9A-Z]{13}$` | FR-006 |
+| `CARD_VALIDITY_YEARS` | 10 | R13 (expiry = issue + 10 y − 1 d) |
+| `KNOWN_AUTHORITIES` | («مديرية الجنسية والمعلومات المدنية»,) | FR-028 |
+| `AUTHORITY_MIN_SIMILARITY` | 0.70 | FR-028 |
+| `BIRTH_PLACE_MAX` / `AUTHORITY_MAX` | 100 / 100 | FR-028 |
 
 ## What is never stored
 

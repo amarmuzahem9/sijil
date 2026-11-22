@@ -77,6 +77,27 @@ multi-device change notice, name-field rules, private image storage).
   separate `ocr` reader) and docs/system.md v1.7 (§5.1 reading rules, the «لا يوجد لقب» choice,
   §14 reader choice) before planning.
 
+### Session 2026-11-23 (owner change: every field on the back of the card)
+
+- The back's other fields are added: date of birth, place of birth, issue date, expiry date and
+  issuing authority, next to the family number. Same «من البطاقة» / «عُدِّل يدوياً» rules and
+  the original reading is kept.
+- Q: How are the printed values read, since the reader's back model only locates the MRZ, the
+  place of birth and the family number? → A: Spike first. Result on the 11 private cards: rows
+  cut by their position from the place-of-birth and family-number boxes (the layout is fixed),
+  read by the Arabic recogniser and Tesseract, and accepted only when cross-checked: expiry
+  11/11, birth 11/11, issuing authority 11/11, issue date 9/11 (2 left empty), 0 wrong values.
+- Q: Which are required? → A: All five.
+- Q: An expired card? → A: Saving the draft is allowed; sending is blocked (008) and «البطاقة
+  منتهية الصلاحية» is a missing item.
+- Q: Which MRZ check digits must hold for a date? → A: The field's own check digit (birth or
+  expiry). The national-ID cross-check still needs all four.
+- docs/system.md v1.8 §5.1 «حقول ظهر البطاقة» records the rules.
+- Follow-up answers: the five fields are required; the national ID's first four digits are
+  the birth year (confirmed by the owner). When the birth year (typed or read) differs from
+  them, the form warns «سنة الميلاد لا تطابق الرقم الوطني، تأكد منهما» but does not block
+  saving or sending (FR-032). Tests include a female card and births after 2000.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A clear card fills the form by itself (Priority: P1)
@@ -253,6 +274,39 @@ card; the unedited fields change to the new reading and the edited field does no
 
 ---
 
+### User Story 7 - The back fills its dates, place of birth and issuing authority (Priority: P2)
+
+From the back of the card, the reading also fills the date of birth, the place of birth, the
+issue date, the expiry date and the issuing authority, with the same marks and the same
+never-overwrite rule. A date that cannot be confirmed by its check digit or by the other dates
+stays empty for the marketer, who picks it with a date picker. An expired card is shown as
+«البطاقة منتهية الصلاحية» and blocks sending.
+
+**Why this priority**: The ministry registration needs these fields; typing four dates on a
+phone is slow and error-prone.
+
+**Independent Test**: Upload a synthetic clear front and back; the five back fields fill and are
+marked «من البطاقة». A synthetic back with an expired date lists «البطاقة منتهية الصلاحية»
+among the missing items.
+
+**Acceptance Scenarios**:
+
+1. **Given** a clear back whose MRZ birth and expiry check digits are right, **When** it is
+   read, **Then** the birth and expiry dates come from the MRZ, the issue date from the printed
+   text (it equals expiry − 10 years + 1 day), and the place of birth and authority from the
+   printed text.
+2. **Given** a back whose MRZ birth check digit is wrong, **When** it is read, **Then** the
+   birth date comes from the printed text only if two readings agree and its year equals the
+   first four digits of the national ID; otherwise it stays empty.
+3. **Given** a printed issue date that does not match the expiry date, **When** it is read,
+   **Then** the issue date stays empty and its raw reading is kept.
+4. **Given** an expiry date before today (Baghdad time), **When** it is filled or typed,
+   **Then** «البطاقة منتهية الصلاحية» shows and is a missing item; the draft still saves.
+5. **Given** the marketer corrects a date, **When** the card is read again, **Then** the
+   corrected date stays (FR-007).
+
+---
+
 ### Edge Cases
 
 - Both images uploaded from two different devices at about the same time: one reading of the
@@ -380,6 +434,35 @@ card; the unedited fields change to the new reading and the edited field does no
   2 GB of memory alongside the existing services, and MUST be ready to read again without
   reloading its models between readings.
 
+**Back of the card (owner change, US7; system.md v1.8)**
+
+- **FR-025**: From the back, the system MUST also fill the date of birth, the place of birth,
+  the issue date, the expiry date and the issuing authority, with the provenance, marks and
+  never-overwrite rules of FR-007–FR-010.
+- **FR-026**: Birth and expiry dates MUST come from the machine-readable zone when that field's
+  own check digit is right. The birth century comes from the first two digits of the national
+  ID (else: a two-digit year later than this year means 19xx); the expiry is 20xx.
+- **FR-027**: When the zone cannot give them, the printed dates MAY be used only when confirmed:
+  the printed expiry and issue dates must satisfy expiry = issue + 10 years − 1 day; the printed
+  birth date needs two agreeing readings and a year equal to the national ID's first four
+  digits. The issue date (not in the zone) is accepted only when it matches the expiry date by
+  the same rule. Anything unconfirmed stays empty, with its raw reading kept.
+- **FR-028**: The place of birth MUST be Arabic letters, spaces, «-» and «/», at most 100
+  characters. The issuing authority MUST be snapped to the known text «مديرية الجنسية والمعلومات
+  المدنية» when the reading is similar enough (≥ 0.70); otherwise it stays empty.
+- **FR-029**: The five fields are required (missing items). Dates are entered with a date picker
+  and stored as dates; a typed date must be a real date.
+- **FR-030**: An expiry date before today in Baghdad time MUST show «البطاقة منتهية الصلاحية»
+  and add the missing item `card_expired`; the draft still saves, and sending (008) is blocked.
+- **FR-031**: The printed rows are located from the positions of the place-of-birth and
+  family-number boxes on the straightened back (the card layout is fixed). This geometry and the
+  extra recognition live in the reader's wrapper; the acceptance rules above live in the app.
+
+- **FR-032**: When both a birth date and a 12-digit national ID are present and the birth
+  year differs from the ID's first four digits, the form MUST show «سنة الميلاد لا تطابق
+  الرقم الوطني، تأكد منهما». It is a warning only: not a missing item, and it never blocks
+  saving or sending.
+
 **Unchanged from 005**
 
 - **FR-024**: The send button stays disabled (007 and 008); the missing-items summary,
@@ -395,6 +478,8 @@ card; the unedited fields change to the new reading and the edited field does no
 - **Field provenance (per draft, per card field)**: for each of the eight fields, where the
   current value came from (card or typed), the original reading and its confidence, and whether
   the marketer edited it.
+- **Back fields (per draft)**: date of birth, place of birth, issue date, expiry date, issuing
+  authority, each with its provenance like the other card fields.
 - **No-surname choice (per draft)**: whether the marketer chose «لا يوجد لقب على البطاقة».
 - **National ID confirmation (per draft)**: when the front and verified MRZ numbers differ, the
   two numbers and the marketer's choice; cleared when the national ID is edited.
@@ -417,6 +502,9 @@ card; the unedited fields change to the new reading and the edited field does no
 - **SC-006**: The same card detected twice in one photo never causes «أعد التصوير».
 - **SC-007**: Card data appears in 0 lines of the app's and the reader's logs during the test
   runs.
+- **SC-009**: On the owner's private sample, the back fields are filled correctly or left
+  empty, never wrong: at least 90% of birth and expiry dates and 80% of issue dates filled
+  (spike: 11/11, 11/11, 9/11).
 - **SC-008**: The marketer types at most the three names that are not on the card (plus any
   field the reading could not fill) for a clear card, instead of all eleven card fields.
 

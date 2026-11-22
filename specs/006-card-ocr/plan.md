@@ -34,6 +34,16 @@ without touching what the marketer typed.
 - the no-surname checkbox;
 - a «رخص البرمجيات المفتوحة» item in «حسابي».
 
+**Owner change (back fields, system.md v1.8)**: the back also fills the date of birth, place of
+birth, issue date, expiry date and issuing authority:
+- **Locating and reading**: the rows are located by geometry in the reader's wrapper and read
+  by the Arabic recogniser plus Tesseract.
+- **Accepting a value**: only when cross-checked. The dates use the MRZ check digits, the rule
+  expiry = issue + 10 years − 1 day, and the national ID's birth year. The authority is
+  snapped to its known text.
+- **Requirements and storage**: all five are required; an expired card blocks sending.
+  Migration `0008_card_back_fields` adds them. See research R13.
+
 Details: [research.md](./research.md).
 
 ## Technical Context
@@ -160,6 +170,7 @@ api/app/
 ├── api/client_config.py               # + open_source
 └── config.py                          # + OCR_MODE, OCR_URL, OCR_SOURCE_URL
 api/migrations/versions/0007_card_reading.py
+api/migrations/versions/0008_card_back_fields.py    # owner change: the five back fields (R13)
 api/tests/
 ├── unit/test_card_reading_rules.py    # step-0 shapes (synthetic), thresholds, O→0, MRZ verification
 ├── integration/test_card_reading.py   # upload → job → fields; no overwrite; retry; timeout; 404 for others

@@ -60,6 +60,21 @@ One reading runs at a time (an internal lock); further requests wait. The caller
 - Front labels: `name dad gf last mom gm gn id id2`. Back labels: `city nu_f`, plus `mrz`.
 - `valid_composite` comes from `mrzmini`, or is computed from the raw MRZ lines (R4). It is null
   when it cannot be known.
+- A back detection with both `city` and `nu_f` also carries `bands` (R13): the raw readings of
+  the printed rows located by position:
+
+  ```json
+  "bands": {
+    "issue": ["...", "..."],
+    "expiry": ["..."],
+    "birth": ["..."],
+    "authority": {"text": "...", "confidence": 0.93}
+  }
+  ```
+
+  Each date row lists up to 6 candidate texts: the Arabic recogniser and Tesseract (digits and
+  «/» only), on the whole band and on its value end. The service makes no decision about them.
+  `bands` is null when `city` or `nu_f` was not found.
 
 Errors: 400 `bad_image` (not decodable), 413 (too large), 503 `loading`, 500 `reader_error`.
 The body never echoes the image or the text.

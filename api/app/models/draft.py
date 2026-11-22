@@ -5,13 +5,14 @@ request number, and its owner may delete it. Mirrors migration 0005.
 """
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from sqlalchemy import (
     BigInteger,
     Boolean,
     CheckConstraint,
+    Date,
     DateTime,
     Float,
     ForeignKey,
@@ -55,7 +56,14 @@ CARD_FIELDS: tuple[str, ...] = (
     "mother_second_name",
     "national_id",
     "family_number",
+    # The other fields on the back (owner change, system.md v1.8, research R13).
+    "birth_date",
+    "birth_place",
+    "issue_date",
+    "expiry_date",
+    "issuing_authority",
 )
+BACK_TEXT_MAX = 100
 
 # data-model.md › drafts / draft_images — limits shared by the service and the validation.
 TEXT_LIMITS: dict[str, int] = {
@@ -144,6 +152,12 @@ class Draft(Base):
         Boolean, nullable=False, default=False, server_default=text("false")
     )
     national_id_check: Mapped[dict | None] = mapped_column(JSONB)
+    # Back of the card (migration 0008): required only for sending (system.md v1.8).
+    birth_date: Mapped[date | None] = mapped_column(Date)
+    birth_place: Mapped[str | None] = mapped_column(Text)
+    issue_date: Mapped[date | None] = mapped_column(Date)
+    expiry_date: Mapped[date | None] = mapped_column(Date)
+    issuing_authority: Mapped[str | None] = mapped_column(Text)
 
     phone_input: Mapped[str | None] = mapped_column(Text)
     phone_normalized: Mapped[str | None] = mapped_column(Text)
