@@ -32,6 +32,24 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'user.password_reset': 'تصفير كلمة السر',
   'user.archived': 'أرشفة حساب',
   'user.restored': 'استرجاع حساب من الأرشيف',
+  // Settings (specs/004 data-model.md)
+  'area.created': 'إضافة منطقة',
+  'area.updated': 'تعديل منطقة',
+  'area.deactivated': 'إيقاف منطقة',
+  'area.reactivated': 'تفعيل منطقة',
+  'area.deleted': 'حذف منطقة',
+  'tower.created': 'إضافة برج',
+  'tower.updated': 'تعديل برج',
+  'tower.deactivated': 'إيقاف برج',
+  'tower.reactivated': 'تفعيل برج',
+  'tower.deleted': 'حذف برج',
+  'plan.created': 'إضافة فئة',
+  'plan.updated': 'تعديل فئة',
+  'plan.deactivated': 'إيقاف فئة',
+  'plan.reactivated': 'تفعيل فئة',
+  'plan.deleted': 'حذف فئة',
+  'reward_tiers.updated': 'تعديل شرائح المكافآت',
+  'app_setting.updated': 'تعديل الإعدادات العامة',
 };
 
 export const AUDIT_FIELD_LABELS: Record<string, string> = {
@@ -43,6 +61,12 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   must_change_password: 'يجب تغيير كلمة السر',
   locked_until: 'مقفل حتى',
   archived: 'مؤرشف',
+  code: 'الرمز',
+  area: 'المنطقة',
+  trial_price: 'سعر الشهر التجريبي',
+  second_price: 'سعر الشهر الثاني',
+  tiers: 'الشرائح',
+  otp_validity_minutes: 'مدة صلاحية الرمز (دقيقة)',
 };
 
 export const STATE_LABELS = { active: 'فعّال', inactive: 'موقوف' } as const;

@@ -16,6 +16,8 @@ export interface AuditEntry {
   entity_type: string;
   entity_id: string;
   target: Person | null;
+  /** Settings items (004): current area/plan name or tower code. */
+  target_label: string | null;
   before: Record<string, unknown> | null;
   after: Record<string, unknown> | null;
 }

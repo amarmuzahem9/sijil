@@ -6,7 +6,7 @@ from sqlalchemy import String, and_, cast, select
 from sqlalchemy.orm import Session, aliased
 
 from app.core.timeutil import baghdad_day_bounds
-from app.models import AuditLog, User
+from app.models import Area, AuditLog, Plan, Tower, User
 from app.schemas.audit import ActorOut, AuditEntryOut, AuditPage
 
 DEFAULT_LIMIT, MAX_LIMIT = 50, 100
@@ -55,6 +55,7 @@ def list_entries(
 
     rows = db.execute(query).all()
     page = rows[:limit]
+    labels = _settings_labels(db, [entry for entry, _, _ in page])
     items = [
         AuditEntryOut(
             id=entry.id,
@@ -64,6 +65,7 @@ def list_entries(
             entity_type=entry.entity_type,
             entity_id=entry.entity_id,
             target=_person(whom),
+            target_label=labels.get((entry.entity_type, entry.entity_id)),
             before=entry.before,
             after=entry.after,
         )
@@ -73,6 +75,39 @@ def list_entries(
     return AuditPage(
         items=items, has_more=has_more, next_before_id=items[-1].id if has_more else None
     )
+
+
+# Settings entries store only the changed fields, so the item's name is looked up here.
+_LABEL_COLUMNS = {
+    "area": (Area, Area.name),
+    "tower": (Tower, Tower.code),
+    "plan": (Plan, Plan.name),
+}
+
+
+def _settings_labels(db: Session, entries: list[AuditLog]) -> dict[tuple[str, str], str]:
+    """Current label of each settings item in the page; deleted items fall back to `before`."""
+    labels: dict[tuple[str, str], str] = {}
+    for entity_type, (model, column) in _LABEL_COLUMNS.items():
+        ids = {
+            int(e.entity_id)
+            for e in entries
+            if e.entity_type == entity_type and e.entity_id.isdigit()
+        }
+        if not ids:
+            continue
+        for item_id, label in db.execute(select(model.id, column).where(model.id.in_(ids))).all():
+            labels[(entity_type, str(item_id))] = label
+    key_field = {"area": "name", "tower": "code", "plan": "name"}
+    for e in entries:
+        key = (e.entity_type, e.entity_id)
+        if e.entity_type in key_field and key not in labels:
+            stored = (e.before or {}).get(key_field[e.entity_type]) or (e.after or {}).get(
+                key_field[e.entity_type]
+            )
+            if isinstance(stored, str):
+                labels[key] = stored
+    return labels
 
 
 def list_actors(db: Session) -> list[ActorOut]:

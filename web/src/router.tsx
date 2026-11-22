@@ -20,12 +20,12 @@ import {
   AdminImport,
   AdminPending,
   AdminReports,
-  AdminSettings,
   AdminSubscribers,
 } from './pages/admin/placeholders';
 import Admins from './pages/admin/Admins';
 import Archive from './pages/admin/Archive';
 import Audit from './pages/admin/Audit';
+import Settings from './pages/admin/settings/Settings';
 import Marketers from './pages/admin/Marketers';
 import ChangePassword from './pages/ChangePassword';
 import Login from './pages/Login';
@@ -76,7 +76,7 @@ export const router = createBrowserRouter([
                   page('awaiting_link', { path: 'awaiting-link', element: <AdminAwaitingLink /> }),
                   page('subscribers', { path: 'subscribers', element: <AdminSubscribers /> }),
                   page('marketers', { path: 'marketers', element: <Marketers /> }),
-                  page('settings', { path: 'settings', element: <AdminSettings /> }),
+                  page('settings', { path: 'settings', element: <Settings /> }),
                   page('admins', { path: 'admins', element: <Admins /> }),
                   page('reports', { path: 'reports', element: <AdminReports /> }),
                   page('import', { path: 'import', element: <AdminImport /> }),

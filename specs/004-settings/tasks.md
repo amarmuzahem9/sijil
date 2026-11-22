@@ -27,12 +27,12 @@ its own.
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-- [ ] T001 [P] Create `web/src/lib/money.ts`:
+- [X] T001 [P] Create `web/src/lib/money.ts`:
   - `parseMoney(text)` accepts Arabic-Indic and Latin digits, `,` `٬` and spaces, and returns an integer or null
   - `formatMoney(n)` returns «20,000 د.ع»
   - `formatNumber(n)` returns «20,000»
   - Unit tests in `web/src/__tests__/money.test.ts`
-- [ ] T002 [P] Add the labels to `web/src/lib/labels.ts`:
+- [X] T002 [P] Add the labels to `web/src/lib/labels.ts`:
   - action labels for `area.*`, `tower.*`, `plan.*`, `reward_tiers.updated`, `app_setting.updated`
   - field labels `code`, `area`, `trial_price`, `second_price`, `tiers`, `otp_validity_minutes`
 
@@ -44,7 +44,7 @@ its own.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T003 Write the Alembic migration `api/migrations/versions/0004_settings.py`, creating:
+- [X] T003 Write the Alembic migration `api/migrations/versions/0004_settings.py`, creating:
   - `areas`, with data-model.md › `areas.name` (unique on `lower(name)`) and `areas.is_active`
   - `towers`, with data-model.md › `towers.code` (unique, CHECK `^[A-Z0-9]{2,20}$`), `towers.name`, `towers.area_id` (FK **ON DELETE RESTRICT**) and `towers.is_active`
   - `plans`, with data-model.md › `plans.name` (unique on `lower(name)`), `plans.trial_price` and `plans.second_price` (CHECK 0–10,000,000), and `plans.is_active`
@@ -52,9 +52,9 @@ its own.
   - `app_settings`, with data-model.md › `app_settings.key`, `app_settings.value` and `app_settings.updated_by`
 
   It seeds the tiers `(0,5000)`, `(30,7000)`, `(50,10000)` and `otp_validity_minutes = 60`, and has a working downgrade.
-- [ ] T004 [P] Create the SQLAlchemy models `Area`, `Tower`, `Plan`, `RewardTier` and `AppSetting` in `api/app/models/catalog.py`, mirroring T003. Export them from `api/app/models/__init__.py`.
-- [ ] T005 [P] Add the error codes of contracts/api.md › "New error codes" to `api/app/errors.py`. `invalid_name` keeps its 002 message; settings pass their own message.
-- [ ] T006 Write the shared part of `api/app/services/settings_service.py`:
+- [X] T004 [P] Create the SQLAlchemy models `Area`, `Tower`, `Plan`, `RewardTier` and `AppSetting` in `api/app/models/catalog.py`, mirroring T003. Export them from `api/app/models/__init__.py`.
+- [X] T005 [P] Add the error codes of contracts/api.md › "New error codes" to `api/app/errors.py`. `invalid_name` keeps its 002 message; settings pass their own message.
+- [X] T006 Write the shared part of `api/app/services/settings_service.py`:
   - `clean_name` (1–100 chars), `clean_code` (uppercase, regex, `invalid_code`) and `check_amount` (`invalid_amount`)
   - `_commit`, which maps unique violations to `name_taken` / `code_taken`
   - the usage registry: `register_usage_check(kind, fn)`, `usage_count(db, kind, id)`, `in_use(db, kind, id)`, pre-registered with "area has towers"
@@ -62,11 +62,11 @@ its own.
   - generic `set_active` with audit and no-op handling
 
   Depends on T004 and T005.
-- [ ] T007 [P] Add `api/app/schemas/settings.py` with the bodies (`extra="forbid"`, integers for money) and the item shapes of contracts/api.md, each with `in_use`.
-- [ ] T008 Create the router skeleton `api/app/api/settings.py` (prefix `/admin/settings`, `require_permission("settings")`) and register it in `api/app/main.py`.
-- [ ] T009 [P] Create `web/src/lib/settings.ts` with the typed API calls for areas, towers, plans, tiers, general and the catalog.
-- [ ] T010 [P] Create `web/src/components/MoneyField.tsx`: a TextField that uses `parseMoney`, shows grouping, uses LTR input, and shows an inline Arabic error.
-- [ ] T011 Create the tabbed page `web/src/pages/admin/settings/Settings.tsx` with MUI scrollable `Tabs` (المناطق، الأبراج، الفئات، الشرائح، عام) and `?tab=` kept in the URL. It replaces the `AdminSettings` placeholder in `web/src/router.tsx` and `web/src/pages/admin/placeholders.tsx`.
+- [X] T007 [P] Add `api/app/schemas/settings.py` with the bodies (`extra="forbid"`, integers for money) and the item shapes of contracts/api.md, each with `in_use`.
+- [X] T008 Create the router skeleton `api/app/api/settings.py` (prefix `/admin/settings`, `require_permission("settings")`) and register it in `api/app/main.py`.
+- [X] T009 [P] Create `web/src/lib/settings.ts` with the typed API calls for areas, towers, plans, tiers, general and the catalog.
+- [X] T010 [P] Create `web/src/components/MoneyField.tsx`: a TextField that uses `parseMoney`, shows grouping, uses LTR input, and shows an inline Arabic error.
+- [X] T011 Create the tabbed page `web/src/pages/admin/settings/Settings.tsx` with MUI scrollable `Tabs` (المناطق، الأبراج، الفئات، الشرائح، عام) and `?tab=` kept in the URL. It replaces the `AdminSettings` placeholder in `web/src/router.tsx` and `web/src/pages/admin/placeholders.tsx`.
 
 **Checkpoint**: The schema, seeds, service base and empty tabs are in place, and all 001–003 tests still pass.
 
@@ -80,7 +80,7 @@ its own.
 
 ### Tests for User Story 1
 
-- [ ] T012 [P] [US1] Write integration tests in `api/tests/integration/test_settings_areas_towers.py`:
+- [X] T012 [P] [US1] Write integration tests in `api/tests/integration/test_settings_areas_towers.py`:
   - **Permission:** a `settings` admin and the main admin pass; an admin without `settings` and a marketer get 403 on every route.
   - **Areas:** create, duplicate name ignoring spaces → 409, rename, deactivate and reactivate with audit, a no-op writes no audit, an area with towers → no delete and a direct DELETE gives 409 `item_in_use`, an unused area is deleted and audited.
   - **Tower codes:** `alm01` is stored as `ALM01`; a duplicate in any case → 409 `code_taken`; `ALM-01`, `A` and Arabic text → 422 `invalid_code`.
@@ -90,17 +90,17 @@ its own.
 
 ### Implementation for User Story 1
 
-- [ ] T013 [US1] Add the area and tower functions to `api/app/services/settings_service.py`:
+- [X] T013 [US1] Add the area and tower functions to `api/app/services/settings_service.py`:
   - list (with `in_use` and `tower_count`), create, update, deactivate, reactivate, delete
   - per data-model.md › `areas.name`, `towers.code`, `towers.area_id` and `towers.is_active`
   - research.md R5 rules: a new tower needs an active area; the code is locked while used
   - audit per data-model.md
-- [ ] T014 [US1] Add the area and tower routes of contracts/api.md to `api/app/api/settings.py`.
-- [ ] T015 [P] [US1] Build `web/src/pages/admin/settings/AreasTab.tsx`:
+- [X] T014 [US1] Add the area and tower routes of contracts/api.md to `api/app/api/settings.py`.
+- [X] T015 [P] [US1] Build `web/src/pages/admin/settings/AreasTab.tsx`:
   - list with state chip and tower count
   - add/edit dialog, deactivate/reactivate
   - «حذف» shown only when `!in_use`, behind `ConfirmDialog`
-- [ ] T016 [P] [US1] Build `web/src/pages/admin/settings/TowersTab.tsx`:
+- [X] T016 [P] [US1] Build `web/src/pages/admin/settings/TowersTab.tsx`:
   - list with «ALM01 · العلم 1 · العلم»
   - add/edit dialog: code input in LTR uppercase, area select offering only active areas for new towers, code field disabled when `in_use`
   - state actions and delete as in AreasTab
@@ -117,7 +117,7 @@ its own.
 
 ### Tests for User Story 2
 
-- [ ] T017 [P] [US2] Write integration tests in `api/tests/integration/test_settings_plans.py`:
+- [X] T017 [P] [US2] Write integration tests in `api/tests/integration/test_settings_plans.py`:
   - create PLUS 20000/35000
   - a duplicate name ignoring case → 409
   - prices of -1, 10,000,001, 1.5, `"20,000"` (a string) or missing → 422
@@ -125,26 +125,38 @@ its own.
   - deactivate and reactivate
   - delete unused → 204
   - permission matrix as in T012
-- [ ] T018 [P] [US2] Write integration tests in `api/tests/integration/test_catalog.py`:
+- [X] T018 [P] [US2] Write integration tests in `api/tests/integration/test_catalog.py`:
   - any signed-in role gets 200, an anonymous call gets 401
   - only active areas, active towers whose area is active, and active plans appear
   - fields are exactly as in contracts/api.md › "Catalog", with no `in_use` or timestamps
 
 ### Implementation for User Story 2
 
-- [ ] T019 [US2] Add the plan functions to `api/app/services/settings_service.py` per data-model.md › `plans.name`, `plans.trial_price`, `plans.second_price` and `plans.is_active`, with audit of old and new prices.
-- [ ] T020 [US2] Add the plan routes to `api/app/api/settings.py`, and create `api/app/api/catalog.py` (`GET /catalog` with `current_user`) per research.md R3. Register it in `api/app/main.py`.
-- [ ] T021 [P] [US2] Build `web/src/pages/admin/settings/PlansTab.tsx`:
+- [X] T019 [US2] Add the plan functions to `api/app/services/settings_service.py` per data-model.md › `plans.name`, `plans.trial_price`, `plans.second_price` and `plans.is_active`, with audit of old and new prices.
+- [X] T020 [US2] Add the plan routes to `api/app/api/settings.py`, and create `api/app/api/catalog.py` (`GET /catalog` with `current_user`) per research.md R3. Register it in `api/app/main.py`.
+- [X] T021 [P] [US2] Build `web/src/pages/admin/settings/PlansTab.tsx`:
   - list with `formatMoney` for both prices
   - dialog using `MoneyField` for both prices
   - state actions and delete as in AreasTab
-- [ ] T022 [US2] Move the audit display helpers into `web/src/lib/auditFormat.ts`:
+- [X] T022 [US2] Move the audit display helpers into `web/src/lib/auditFormat.ts`:
   - `entryTargetLabel(entry)`: the target user's name for `entity_type = user`; otherwise the item label from `after`, or from `before` for deletes (tower → code, area or plan → name, `reward_tiers` → «شرائح المكافآت», `app_setting` → «الإعدادات العامة»)
   - `formatAuditValue(field, value)`: money fields (`trial_price`, `second_price`, tier `rate` inside `tiers`) via `formatMoney`, plus the existing permission, boolean and role formatting
 
   Add `web/src/__tests__/audit-format.test.ts` covering each entity type, deletes reading `before`, money formatting «35,000 د.ع», and the tier list. Then use both helpers in `web/src/pages/admin/Audit.tsx` (research.md R6).
 
 **Checkpoint**: The acceptance criterion is met (US1 + US2).
+
+**Batch 1 notes (2026-11-22, T001–T022)**:
+- T022: settings audit entries store only the changed fields (e.g. `{is_active}`), so the item's name
+  is not in them. `GET /api/admin/audit` now adds `target_label` (current area/plan name or tower
+  code; for a deleted item, the label stored in `before`). `entryTargetLabel` prefers it. Tested in
+  `test_settings_audit_label.py` and `audit-format.test.ts`.
+- FK backstop test uses a real table created inside the test transaction (Postgres forbids a temp
+  table referencing a permanent one); the per-test rollback removes it.
+- Shared UI pieces for the tabs: `components/ItemList.tsx`, `components/FormDialog.tsx`,
+  `pages/admin/settings/useItemActions.ts`. The tiers and general tabs show «قريباً» until US3/US4.
+- `api/app/main.py`: the local `settings = get_settings()` was renamed `config` because it shadowed
+  the new `settings` router module.
 
 ---
 

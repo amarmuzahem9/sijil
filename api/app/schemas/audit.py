@@ -20,6 +20,8 @@ class AuditEntryOut(BaseModel):
     entity_type: str
     entity_id: str
     target: ActorOut | None
+    # Settings items (feature 004): current area/plan name or tower code; null otherwise.
+    target_label: str | None = None
     before: dict[str, Any] | None
     after: dict[str, Any] | None
 

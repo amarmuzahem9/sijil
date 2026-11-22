@@ -12,38 +12,11 @@ import Typography from '@mui/material/Typography';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
-import { ROLE_LABELS } from '../../auth/roles';
 import { auditApi, SYSTEM_ACTOR } from '../../lib/audit';
 import type { AuditEntry, AuditFilters } from '../../lib/audit';
-import { AUDIT_ACTION_LABELS, AUDIT_FIELD_LABELS, PERMISSION_LABELS } from '../../lib/labels';
-import type { Permission } from '../../lib/labels';
+import { actionLabel, entryTargetLabel, formatAuditValue } from '../../lib/auditFormat';
+import { AUDIT_FIELD_LABELS } from '../../lib/labels';
 import { formatBaghdad } from '../../lib/time';
-
-function formatValue(field: string, value: unknown): string {
-  if (value === null || value === undefined) return '—';
-  if (field === 'permissions' && Array.isArray(value)) {
-    return value.length === 0
-      ? 'بلا صلاحيات'
-      : value.map((p) => PERMISSION_LABELS[p as Permission] ?? String(p)).join('، ');
-  }
-  if (field === 'is_active' && typeof value === 'boolean') return value ? 'فعّال' : 'موقوف';
-  if (field === 'role' && typeof value === 'string' && value in ROLE_LABELS) {
-    return ROLE_LABELS[value as keyof typeof ROLE_LABELS];
-  }
-  if (field === 'locked_until' && typeof value === 'string') return formatBaghdad(value);
-  if (typeof value === 'boolean') return value ? 'نعم' : 'لا';
-  return String(value);
-}
-
-/** Arabic action label; account creation also names the role (analysis fix I3). */
-function actionLabel(entry: AuditEntry): string {
-  const label = AUDIT_ACTION_LABELS[entry.action] ?? entry.action;
-  const role = entry.after?.role;
-  if (entry.action === 'user.created' && typeof role === 'string' && role in ROLE_LABELS) {
-    return `${label} (${ROLE_LABELS[role as keyof typeof ROLE_LABELS]})`;
-  }
-  return label;
-}
 
 function Values({ title, values }: { title: string; values: Record<string, unknown> | null }) {
   if (!values || Object.keys(values).length === 0) return null;
@@ -58,9 +31,9 @@ function Values({ title, values }: { title: string; values: Record<string, unkno
             {AUDIT_FIELD_LABELS[field] ?? field}:{' '}
           </Typography>
           {field === 'phone' ? (
-            <bdi dir="ltr">{formatValue(field, value)}</bdi>
+            <bdi dir="ltr">{formatAuditValue(field, value)}</bdi>
           ) : (
-            formatValue(field, value)
+            formatAuditValue(field, value)
           )}
         </Typography>
       ))}
@@ -69,12 +42,13 @@ function Values({ title, values }: { title: string; values: Record<string, unkno
 }
 
 function EntryCard({ entry }: { entry: AuditEntry }) {
+  const target = entryTargetLabel(entry);
   return (
     <Card variant="outlined" data-testid="audit-entry">
       <CardContent>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'baseline' }}>
           <Typography sx={{ fontWeight: 700 }}>{actionLabel(entry)}</Typography>
-          {entry.target && <Typography color="text.secondary">— {entry.target.name}</Typography>}
+          {target && <Typography color="text.secondary">— {target}</Typography>}
         </Box>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
           {formatBaghdad(entry.created_at)} · {entry.actor ? entry.actor.name : 'النظام'}

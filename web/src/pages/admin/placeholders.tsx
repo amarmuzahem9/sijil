@@ -5,7 +5,6 @@ export const AdminHome = () => <ComingSoon title="الرئيسية" />;
 export const AdminPending = () => <ComingSoon title="طلبات بالانتظار" />;
 export const AdminAwaitingLink = () => <ComingSoon title="بانتظار الربط" />;
 export const AdminSubscribers = () => <ComingSoon title="المشتركون" />;
-export const AdminSettings = () => <ComingSoon title="الإعدادات" />;
 export const AdminReports = () => <ComingSoon title="التقارير والتصدير" />;
 export const AdminImport = () => <ComingSoon title="الاستيراد" />;
 export const AdminBackup = () => <ComingSoon title="النسخ الاحتياطي" />;
