@@ -14,7 +14,12 @@ import { useEffect, useState } from 'react';
 
 import { useClientConfig } from '../../../lib/clientConfig';
 import type { DraftLocation } from '../../../lib/drafts';
-import { loadGoogleMaps, type LatLngLiteral, type MapsApi } from '../../../lib/googleMaps';
+import {
+  loadGoogleMaps,
+  toLatLngLiteral,
+  type LatLngLiteral,
+  type MapsApi,
+} from '../../../lib/googleMaps';
 import type { DraftAutosave } from '../../../lib/useDraftAutosave';
 import { DraftTextField } from './DraftTextField';
 import { MapPicker } from './MapPicker';
@@ -56,7 +61,7 @@ function useMapsApi(): { state: MapState; mapId: string; center: LatLngLiteral |
   return { state, mapId: maps?.map_id ?? '', center: maps?.default_center ?? null };
 }
 
-const fmt = (n: number) => n.toFixed(6);
+const fmt = (n: number) => (Number.isFinite(n) ? n.toFixed(6) : '—');
 
 export function LocationSection({
   autosave,
@@ -70,12 +75,13 @@ export function LocationSection({
   const [geoError, setGeoError] = useState<string | null>(null);
   const [devicePos, setDevicePos] = useState<LatLngLiteral | null>(null);
 
-  const pin: LatLngLiteral | null = values.location
-    ? { lat: values.location.lat, lng: values.location.lng }
-    : null;
+  // A location without finite numbers counts as no pin (never render or send it).
+  const pin = toLatLngLiteral(values.location);
 
   function setPin(location: DraftLocation) {
-    saveNow({ location });
+    const pos = toLatLngLiteral(location);
+    if (!pos) return;
+    saveNow({ location: { ...location, lat: pos.lat, lng: pos.lng } });
   }
 
   function useMyLocation() {

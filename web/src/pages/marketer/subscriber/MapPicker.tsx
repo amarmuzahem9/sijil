@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 
 import {
   readPosition,
+  toLatLngLiteral,
   type GMap,
   type GMarker,
   type LatLngLiteral,
@@ -56,8 +57,9 @@ export function MapPicker({
       if (pos) onPinRef.current(pos);
     });
     const click = m.addListener('click', (e) => {
-      if (!e.latLng) return;
-      const pos = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+      // LatLng, literal, or nothing at all (e.g. a tap on a control): ignore what has no numbers.
+      const pos = toLatLngLiteral(e?.latLng);
+      if (!pos) return;
       mk.position = pos;
       onPinRef.current(pos);
     });

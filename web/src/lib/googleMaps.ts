@@ -17,19 +17,20 @@ interface MapsEventListener {
   remove(): void;
 }
 
-interface MapMouseEvent {
-  latLng: { lat(): number; lng(): number } | null;
+/** Event shapes vary by API version, so the position is read through `toLatLngLiteral`. */
+export interface MapMouseEvent {
+  latLng?: unknown;
 }
 
 export interface GMap {
   panTo(pos: LatLngLiteral): void;
   setZoom(zoom: number): void;
-  addListener(event: 'click', handler: (e: MapMouseEvent) => void): MapsEventListener;
+  addListener(event: 'click', handler: (e: MapMouseEvent | undefined) => void): MapsEventListener;
 }
 
 export interface GMarker {
   map: GMap | null;
-  position: LatLngLiteral | { lat(): number; lng(): number } | null;
+  position: unknown;
   gmpDraggable: boolean;
   addListener(event: 'dragend', handler: () => void): MapsEventListener;
 }
@@ -100,10 +101,30 @@ export function loadGoogleMaps(config: MapsConfig | null): Promise<MapsApi | nul
   return loading;
 }
 
+/**
+ * Turn any position the Maps API hands us into a plain `{lat, lng}`, or null when it has no usable
+ * coordinates. Google may give a `LatLng` (methods `lat()`/`lng()`), a literal, or a
+ * `LatLngAltitude` whose `lat`/`lng` are prototype getters, so a spread (`{...pos}`) would drop
+ * them. Each value is read directly and must be a finite number.
+ */
+export function toLatLngLiteral(value: unknown): LatLngLiteral | null {
+  if (value === null || typeof value !== 'object') return null;
+  const read = (key: 'lat' | 'lng'): number | null => {
+    let v: unknown;
+    try {
+      const member = (value as Record<string, unknown>)[key];
+      v = typeof member === 'function' ? (member as () => unknown).call(value) : member;
+    } catch {
+      return null;
+    }
+    return typeof v === 'number' && Number.isFinite(v) ? v : null;
+  };
+  const lat = read('lat');
+  const lng = read('lng');
+  if (lat === null || lng === null) return null;
+  return { lat, lng };
+}
+
 export function readPosition(marker: GMarker): LatLngLiteral | null {
-  const pos = marker.position;
-  if (!pos) return null;
-  return typeof pos.lat === 'function'
-    ? { lat: (pos as { lat(): number }).lat(), lng: (pos as { lng(): number }).lng() }
-    : (pos as LatLngLiteral);
+  return toLatLngLiteral(marker.position);
 }

@@ -10,6 +10,7 @@ import {
 } from './auth/guards';
 import type { PageKey } from './auth/access';
 import { ADMIN_ROLES } from './auth/roles';
+import RouteError from './components/RouteError';
 import AdminLayout from './layouts/AdminLayout';
 import MarketerLayout from './layouts/MarketerLayout';
 import AccountPanel from './pages/AccountPanel';
@@ -40,62 +41,73 @@ function page(key: PageKey, route: RouteObject): RouteObject {
 }
 
 // contracts/ui-routes.md
-export const router = createBrowserRouter([
+export const routes: RouteObject[] = [
   {
-    element: <RequireAnonymous />,
-    children: [{ path: '/login', element: <Login /> }],
-  },
-  {
-    element: <RequireAuth />,
+    // Any error thrown while rendering a page lands here (Arabic message, not the default screen).
+    errorElement: <RouteError />,
     children: [
-      { path: '/change-password', element: <ChangePassword /> },
       {
-        element: <MustChangePasswordGate />,
+        element: <RequireAnonymous />,
+        children: [{ path: '/login', element: <Login /> }],
+      },
+      {
+        element: <RequireAuth />,
         children: [
+          { path: '/change-password', element: <ChangePassword /> },
           {
-            element: <RequireRole roles={['marketer']} />,
+            element: <MustChangePasswordGate />,
             children: [
               {
-                element: <MarketerLayout />,
+                element: <RequireRole roles={['marketer']} />,
                 children: [
-                  { path: '/', element: <Dashboard /> },
-                  { path: '/requests', element: <Requests /> },
-                  // specs/005: new-subscriber form. One route for /drafts/new and /drafts/{id}, so
-                  // the form stays mounted when the URL is replaced after the first save.
-                  { path: '/drafts/:draftId', element: <SubscriberForm /> },
-                  { path: '/notifications', element: <MarketerNotifications /> },
-                  { path: '/account', element: <AccountPanel /> },
+                  {
+                    element: <MarketerLayout />,
+                    children: [
+                      { path: '/', element: <Dashboard /> },
+                      { path: '/requests', element: <Requests /> },
+                      // specs/005: new-subscriber form. One route for /drafts/new and /drafts/{id}, so
+                      // the form stays mounted when the URL is replaced after the first save.
+                      { path: '/drafts/:draftId', element: <SubscriberForm /> },
+                      { path: '/notifications', element: <MarketerNotifications /> },
+                      { path: '/account', element: <AccountPanel /> },
+                    ],
+                  },
                 ],
               },
-            ],
-          },
-          {
-            element: <RequireRole roles={ADMIN_ROLES} />,
-            children: [
               {
-                path: '/admin',
-                element: <AdminLayout />,
+                element: <RequireRole roles={ADMIN_ROLES} />,
                 children: [
-                  page('home', { index: true, element: <AdminHome /> }),
-                  page('pending', { path: 'pending', element: <AdminPending /> }),
-                  page('awaiting_link', { path: 'awaiting-link', element: <AdminAwaitingLink /> }),
-                  page('subscribers', { path: 'subscribers', element: <AdminSubscribers /> }),
-                  page('marketers', { path: 'marketers', element: <Marketers /> }),
-                  page('settings', { path: 'settings', element: <Settings /> }),
-                  page('admins', { path: 'admins', element: <Admins /> }),
-                  page('reports', { path: 'reports', element: <AdminReports /> }),
-                  page('import', { path: 'import', element: <AdminImport /> }),
-                  page('backup', { path: 'backup', element: <AdminBackup /> }),
-                  page('audit', { path: 'audit', element: <Audit /> }),
-                  page('archive', { path: 'archive', element: <Archive /> }),
-                  page('account', { path: 'account', element: <AccountPanel /> }),
+                  {
+                    path: '/admin',
+                    element: <AdminLayout />,
+                    children: [
+                      page('home', { index: true, element: <AdminHome /> }),
+                      page('pending', { path: 'pending', element: <AdminPending /> }),
+                      page('awaiting_link', {
+                        path: 'awaiting-link',
+                        element: <AdminAwaitingLink />,
+                      }),
+                      page('subscribers', { path: 'subscribers', element: <AdminSubscribers /> }),
+                      page('marketers', { path: 'marketers', element: <Marketers /> }),
+                      page('settings', { path: 'settings', element: <Settings /> }),
+                      page('admins', { path: 'admins', element: <Admins /> }),
+                      page('reports', { path: 'reports', element: <AdminReports /> }),
+                      page('import', { path: 'import', element: <AdminImport /> }),
+                      page('backup', { path: 'backup', element: <AdminBackup /> }),
+                      page('audit', { path: 'audit', element: <Audit /> }),
+                      page('archive', { path: 'archive', element: <Archive /> }),
+                      page('account', { path: 'account', element: <AccountPanel /> }),
+                    ],
+                  },
                 ],
               },
             ],
           },
         ],
       },
+      { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
-  { path: '*', element: <Navigate to="/" replace /> },
-]);
+];
+
+export const router = createBrowserRouter(routes);
