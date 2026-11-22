@@ -84,3 +84,18 @@ export const generalApi = {
 };
 
 export const catalogApi = { get: () => apiFetch<Catalog>('/api/catalog') };
+
+/**
+ * The range each tier row covers, in the rows' own order: «0 إلى 29», «50 فأكثر». Rows may be in
+ * any order while editing; a row whose count is missing or duplicated shows «—».
+ */
+export function tierRanges(counts: (number | null)[]): string[] {
+  const valid = counts.filter((c): c is number => c !== null);
+  const sorted = [...new Set(valid)].sort((a, b) => a - b);
+  const fmt = (n: number) => new Intl.NumberFormat('en-US').format(n);
+  return counts.map((c) => {
+    if (c === null || valid.indexOf(c) !== valid.lastIndexOf(c)) return '—';
+    const next = sorted.find((n) => n > c);
+    return next === undefined ? `${fmt(c)} فأكثر` : `${fmt(c)} إلى ${fmt(next - 1)}`;
+  });
+}

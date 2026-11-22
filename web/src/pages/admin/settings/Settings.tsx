@@ -4,9 +4,10 @@ import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
 import { useSearchParams } from 'react-router-dom';
 
-import { ComingSoon } from '../../../components/ComingSoon';
 import AreasTab from './AreasTab';
+import GeneralTab from './GeneralTab';
 import PlansTab from './PlansTab';
+import TiersTab from './TiersTab';
 import TowersTab from './TowersTab';
 
 const TABS = [
@@ -46,9 +47,8 @@ export default function Settings() {
       {tab === 'areas' && <AreasTab />}
       {tab === 'towers' && <TowersTab />}
       {tab === 'plans' && <PlansTab />}
-      {/* Tiers (US3) and general (US4) arrive in the next batch. */}
-      {tab === 'tiers' && <ComingSoon title="الشرائح" />}
-      {tab === 'general' && <ComingSoon title="عام" />}
+      {tab === 'tiers' && <TiersTab />}
+      {tab === 'general' && <GeneralTab />}
     </>
   );
 }

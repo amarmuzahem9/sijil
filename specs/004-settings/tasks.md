@@ -166,7 +166,7 @@ its own.
 
 **Independent Test**: See the three defaults with their ranges, add 80 → 12,000, save, and check the audit entry with the list before and after.
 
-- [ ] T023 [P] [US3] Write tests:
+- [X] T023 [P] [US3] Write tests:
   - `api/tests/unit/test_tiers.py`: list rules — the first tier must be 0, counts strictly increasing, no duplicates, 1–20 rows, rate ≥ 1
   - `api/tests/integration/test_settings_tiers.py`:
     - GET returns the seeded defaults
@@ -174,8 +174,8 @@ its own.
     - an unchanged list writes no audit entry
     - invalid lists → 422 `invalid_tiers` with a specific Arabic message
     - permission is checked
-- [ ] T024 [US3] Add `get_tiers` and `replace_tiers` to `api/app/services/settings_service.py`, per data-model.md › `reward_tiers.min_count` and `reward_tiers.rate` and the list rules. Add `GET` and `PUT /admin/settings/tiers` to `api/app/api/settings.py`.
-- [ ] T025 [US3] Build `web/src/pages/admin/settings/TiersTab.tsx`:
+- [X] T024 [US3] Add `get_tiers` and `replace_tiers` to `api/app/services/settings_service.py`, per data-model.md › `reward_tiers.min_count` and `reward_tiers.rate` and the list rules. Add `GET` and `PUT /admin/settings/tiers` to `api/app/api/settings.py`.
+- [X] T025 [US3] Build `web/src/pages/admin/settings/TiersTab.tsx`:
   - editable rows (count, `MoneyField` rate)
   - a computed range label via a helper `tierRanges()` in `web/src/lib/settings.ts`, tested in `web/src/__tests__/tiers.test.ts`
   - «إضافة شريحة», per-row «حذف», a single «حفظ», and the server error shown inline
@@ -188,19 +188,19 @@ its own.
 
 **Independent Test**: Change 60 to 30 and see 30 after a reload, with an audit entry 60 → 30. A value of 3 is refused.
 
-- [ ] T026 [P] [US4] Write integration tests in `api/tests/integration/test_settings_general.py`:
+- [X] T026 [P] [US4] Write integration tests in `api/tests/integration/test_settings_general.py`:
   - GET returns 60
   - PATCH 30 → stored, with `app_setting.updated` audit `{otp_validity_minutes: 60}` → `{30}`
   - 4, 1441, 2.5 → 422 `invalid_otp_minutes`
   - an unknown key → 422
   - permission is checked
-- [ ] T027 [US4] Add `get_general` and `update_general` (allow-list per data-model.md › `app_settings.key`, `app_settings.value` and `app_settings.updated_by`) to `api/app/services/settings_service.py`, the routes to `api/app/api/settings.py`, and `web/src/pages/admin/settings/GeneralTab.tsx` (a number field in minutes with a range hint).
+- [X] T027 [US4] Add `get_general` and `update_general` (allow-list per data-model.md › `app_settings.key`, `app_settings.value` and `app_settings.updated_by`) to `api/app/services/settings_service.py`, the routes to `api/app/api/settings.py`, and `web/src/pages/admin/settings/GeneralTab.tsx` (a number field in minutes with a range hint).
 
 ---
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T028 [P] Write the Playwright test `e2e/tests/settings-acceptance.spec.ts` (quickstart A, B, D, I):
+- [X] T028 [P] Write the Playwright test `e2e/tests/settings-acceptance.spec.ts` (quickstart A, B, D, I):
   - an admin with only «الإعدادات» (seeded through the API) adds «العلم», `alm01` and PLUS `20000` / `٣٥٬٠٠٠`
   - the lists show «ALM01» and «20,000 د.ع» / «35,000 د.ع»
   - a duplicate code is refused
@@ -208,8 +208,8 @@ its own.
   - an admin without `settings` is redirected
 
   Desktop project only.
-- [ ] T029 [P] Add 004 to the feature table in `README.md`.
-- [ ] T030 Run `scripts/test-all.sh` and fix any failure. Then run `docker compose up -d --build`, restart `web`, and verify the served `/src/pages/admin/settings/Settings.tsx` is the new one. Write the Arabic manual-test steps to `specs/004-settings/manual-test-ar.md`, including the timed check for SC-001 on a phone viewport (the e2e covers desktop only), with the measured time written into the steps.
+- [X] T029 [P] Add 004 to the feature table in `README.md`.
+- [X] T030 Run `scripts/test-all.sh` and fix any failure. Then run `docker compose up -d --build`, restart `web`, and verify the served `/src/pages/admin/settings/Settings.tsx` is the new one. Write the Arabic manual-test steps to `specs/004-settings/manual-test-ar.md`, including the timed check for SC-001 on a phone viewport (the e2e covers desktop only), with the measured time written into the steps.
 
 ---
 
@@ -262,3 +262,14 @@ Task: "T016 TowersTab.tsx"
 - Never edit recorded requests. Feature 005 implements the snapshot of data-model.md › "Request snapshot".
 - Every future FK to `areas`, `towers` or `plans` must be `ON DELETE RESTRICT` and must register a usage check.
 - Use synthetic data in tests. «العلم» and ALM01 are the owner's own examples (§2).
+
+## Batch 2 notes (2026-11-22, T023–T030)
+
+- Tiers: rows may be entered in any order; the service sorts them and refuses duplicates and a first
+  tier other than 0. The unit test that expected a "decreasing" list to fail was corrected to match.
+- Audit: `audit_service` drops any key containing `otp` (to keep OTP codes out). The setting
+  `otp_validity_minutes` is a duration, so it was added to the allow-list; a unit test checks that
+  real OTP keys are still dropped.
+- Full gate green: ruff, pytest 270, eslint (1 pre-existing warning), typecheck, vitest 99,
+  Playwright 17 (new `settings-acceptance.spec.ts`, about 6 s on desktop).
+- SC-001 on a real phone is a manual measurement; `manual-test-ar.md` leaves a blank for the owner.

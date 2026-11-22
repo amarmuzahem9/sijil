@@ -10,13 +10,13 @@ import re
 from collections.abc import Callable
 from typing import Any, Literal
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.timeutil import utc_now
 from app.errors import AppError
-from app.models import Area, Plan, Tower, User
+from app.models import AppSetting, Area, Plan, RewardTier, Tower, User
 from app.models.catalog import MAX_AMOUNT
 from app.services import audit_service
 
@@ -395,3 +395,105 @@ def catalog(db: Session) -> tuple[list[Area], list[Tower], list[Plan]]:
         db.execute(select(Plan).where(Plan.is_active.is_(True)).order_by(Plan.name)).scalars()
     )
     return areas, towers, plans
+
+
+# --- reward tiers (US3, data-model.md › reward_tiers) ---------------------------------------
+
+MAX_TIERS = 20
+MAX_TIER_COUNT = 10_000
+
+
+def _tiers_error(message: str) -> AppError:
+    return AppError("invalid_tiers", 422, message=message)
+
+
+def validate_tiers(items: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    """(min_count, rate) pairs in any order; returns them ascending. Raises invalid_tiers."""
+    if not items:
+        raise _tiers_error("أضف شريحة واحدة على الأقل")
+    if len(items) > MAX_TIERS:
+        raise _tiers_error("الحد الأقصى 20 شريحة")
+    for count, rate in items:
+        if not 0 <= count <= MAX_TIER_COUNT:
+            raise _tiers_error("أقل عدد يجب أن يكون من 0 إلى 10,000")
+        if not 1 <= rate <= MAX_AMOUNT:
+            raise _tiers_error("سعر المشترك يجب أن يكون من 1 إلى 10,000,000")
+    ordered = sorted(items, key=lambda t: t[0])
+    if ordered[0][0] != 0:
+        raise _tiers_error("الشريحة الأولى يجب أن تبدأ من 0")
+    counts = [c for c, _ in ordered]
+    if len(set(counts)) != len(counts):
+        raise _tiers_error("أقل عدد يجب أن يكون تصاعدياً بلا تكرار")
+    return ordered
+
+
+def get_tiers(db: Session) -> list[tuple[int, int]]:
+    rows = db.execute(select(RewardTier).order_by(RewardTier.min_count)).scalars()
+    return [(t.min_count, t.rate) for t in rows]
+
+
+def _tiers_json(tiers: list[tuple[int, int]]) -> list[dict[str, int]]:
+    return [{"min_count": c, "rate": r} for c, r in tiers]
+
+
+def replace_tiers(db: Session, actor: User, items: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    """Replace the whole list in one transaction. Applies to every unpaid month (§9 v1.3)."""
+    new = validate_tiers(items)
+    old = get_tiers(db)
+    if new == old:
+        return old  # no-op
+    db.execute(delete(RewardTier))
+    db.flush()
+    db.add_all([RewardTier(min_count=c, rate=r) for c, r in new])
+    audit_service.record(
+        db,
+        actor_id=actor.id,
+        action="reward_tiers.updated",
+        entity_type="reward_tiers",
+        entity_id="list",
+        before={"tiers": _tiers_json(old)},
+        after={"tiers": _tiers_json(new)},
+    )
+    _commit(db)
+    return new
+
+
+# --- general settings (US4, data-model.md › app_settings) -----------------------------------
+
+OTP_MINUTES_KEY = "otp_validity_minutes"
+OTP_MINUTES_MIN, OTP_MINUTES_MAX = 5, 1440
+_GENERAL_DEFAULTS = {OTP_MINUTES_KEY: 60}
+
+
+def get_general(db: Session) -> dict[str, Any]:
+    values = dict(_GENERAL_DEFAULTS)
+    for row in db.execute(select(AppSetting).where(AppSetting.key.in_(values))).scalars():
+        values[row.key] = row.value
+    return values
+
+
+def update_general(db: Session, actor: User, otp_validity_minutes: int) -> dict[str, Any]:
+    if not OTP_MINUTES_MIN <= otp_validity_minutes <= OTP_MINUTES_MAX:
+        raise AppError("invalid_otp_minutes", 422)
+    current = get_general(db)
+    old = current[OTP_MINUTES_KEY]
+    if old == otp_validity_minutes:
+        return current  # no-op
+    row = db.get(AppSetting, OTP_MINUTES_KEY)
+    if row is None:
+        row = AppSetting(key=OTP_MINUTES_KEY, value=otp_validity_minutes)
+        db.add(row)
+    row.value = otp_validity_minutes
+    row.updated_by = actor.id
+    row.updated_at = utc_now()
+    audit_service.record(
+        db,
+        actor_id=actor.id,
+        action="app_setting.updated",
+        entity_type="app_setting",
+        entity_id=OTP_MINUTES_KEY,
+        before={OTP_MINUTES_KEY: old},
+        after={OTP_MINUTES_KEY: otp_validity_minutes},
+    )
+    _commit(db)
+    return get_general(db)

@@ -11,9 +11,14 @@ from app.schemas.settings import (
     AreaOut,
     AreaRef,
     AreaUpdate,
+    GeneralOut,
+    GeneralUpdate,
     PlanCreate,
     PlanOut,
     PlanUpdate,
+    TierOut,
+    TiersBody,
+    TiersOut,
     TowerCreate,
     TowerOut,
     TowerUpdate,
@@ -139,6 +144,38 @@ def update_plan(
         second_price=body.second_price,
     )
     return _plan_out(plan, svc.in_use(db, "plan", plan.id))
+
+
+# --- tiers and general (US3, US4) -------------------------------------------------------------
+
+
+def _tiers_out(tiers: list[tuple[int, int]]) -> TiersOut:
+    return TiersOut(items=[TierOut(min_count=c, rate=r) for c, r in tiers])
+
+
+@router.get("/tiers", response_model=TiersOut)
+def get_tiers(_: AuthContext = Depends(_can), db: Session = Depends(get_db)) -> TiersOut:
+    return _tiers_out(svc.get_tiers(db))
+
+
+@router.put("/tiers", response_model=TiersOut)
+def replace_tiers(
+    body: TiersBody, ctx: AuthContext = Depends(_can), db: Session = Depends(get_db)
+) -> TiersOut:
+    items = [(t.min_count, t.rate) for t in body.items]
+    return _tiers_out(svc.replace_tiers(db, ctx.user, items))
+
+
+@router.get("/general", response_model=GeneralOut)
+def get_general(_: AuthContext = Depends(_can), db: Session = Depends(get_db)) -> GeneralOut:
+    return GeneralOut(**svc.get_general(db))
+
+
+@router.patch("/general", response_model=GeneralOut)
+def update_general(
+    body: GeneralUpdate, ctx: AuthContext = Depends(_can), db: Session = Depends(get_db)
+) -> GeneralOut:
+    return GeneralOut(**svc.update_general(db, ctx.user, body.otp_validity_minutes))
 
 
 # --- shared: activate / deactivate / delete -----------------------------------------------------

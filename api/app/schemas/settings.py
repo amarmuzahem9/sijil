@@ -115,3 +115,32 @@ class Catalog(BaseModel):
     areas: list[CatalogArea]
     towers: list[CatalogTower]
     plans: list[CatalogPlan]
+
+
+# --- tiers and general (US3, US4) --------------------------------------------------------------
+
+
+class TierIn(_Body):
+    min_count: StrictInt
+    rate: StrictInt
+
+
+class TiersBody(_Body):
+    items: list[TierIn]
+
+
+class TierOut(BaseModel):
+    min_count: int
+    rate: int
+
+
+class TiersOut(BaseModel):
+    items: list[TierOut]
+
+
+class GeneralUpdate(_Body):
+    otp_validity_minutes: StrictInt
+
+
+class GeneralOut(BaseModel):
+    otp_validity_minutes: int

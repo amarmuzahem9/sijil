@@ -10,7 +10,8 @@ from app.models import AuditLog
 # Any key containing one of these fragments is dropped from before/after…
 _FORBIDDEN_FRAGMENTS = ("password", "token", "otp", "secret", "hash")
 # …except these non-secret flags, which are explicitly allowed.
-_ALLOWED_KEYS = frozenset({"must_change_password"})
+# "otp_validity_minutes" is a duration setting (feature 004), not an OTP code.
+_ALLOWED_KEYS = frozenset({"must_change_password", "otp_validity_minutes"})
 
 
 def _clean(values: dict[str, Any] | None) -> dict[str, Any] | None:
