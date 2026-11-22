@@ -20,16 +20,20 @@ from datetime import timedelta
 
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.exc import StaleDataError
 
+from app.core.arabic_name import InvalidArabicName, clean_arabic_name, join_full_name
 from app.core.card_reading import READING_LIMIT_S
 from app.core.national_id import normalize_national_id
 from app.core.timeutil import utc_now
 from app.db import get_sessionmaker
 from app.models import CardReading, Draft, DraftImage, ImageAccessLog
+from app.models.draft import FULL_NAME_FIELDS, NAME_MAX
 from app.schemas.drafts import (
     CardFieldMarkOut,
     CardReadingOut,
     CardReadingSideOut,
+    CardReadingStatusOut,
     NationalIdCheckOut,
 )
 from app.services import image_store
@@ -220,9 +224,161 @@ def run(
                 outcome.reason or "",
                 elapsed_ms,
             )
+        apply_pair(db, draft_id)
     finally:
         if session is None:
             db.close()
+
+
+# --- applying a reading to the draft (research R8; data-model.md › Applying a `done` pair) -----
+
+# Front label of the reader → form field.
+FRONT_FIELD_MAP: dict[str, str] = {
+    "name": "first_name",
+    "dad": "father_name",
+    "gf": "grandfather_name",
+    "last": "surname",
+    "mom": "mother_first_name",
+    "gm": "mother_second_name",
+}
+FINISHED = ("done", "reshoot", "failed")
+
+
+def _clean_name(text: str) -> str | None:
+    try:
+        cleaned = clean_arabic_name(text)
+    except InvalidArabicName:
+        return None
+    return cleaned if cleaned and len(cleaned) <= NAME_MAX else None
+
+
+def _proposals(readings: dict[str, CardReading]) -> dict[str, dict]:
+    """What the finished readings say for each card field:
+    `{field: {value, original, confidence, from}}`, where `value` is None when the reading
+    failed the field's rules (FR-005) or did not read it."""
+    out: dict[str, dict] = {}
+    front = readings.get("front")
+    if front is not None and front.state == "done" and front.result:
+        fields = front.result.get("fields") or {}
+        for label, field in FRONT_FIELD_MAP.items():
+            item = fields.get(label) or {}
+            text = str(item.get("text") or "").strip()
+            cleaned = _clean_name(text) if text else None
+            out[field] = {
+                "value": cleaned,
+                "original": cleaned or text or None,
+                "confidence": item.get("confidence"),
+                "from": "front",
+            }
+        item = fields.get("id") or {}
+        text = str(item.get("text") or "").strip()
+        nid = normalize_national_id(text) if text else None
+        out["national_id"] = {
+            "value": nid,
+            "original": nid or text or None,
+            "confidence": item.get("confidence"),
+            "from": "front",
+        }
+    back = readings.get("back")
+    if back is not None and back.state == "done" and back.result:
+        family = back.result.get("family_number") or {}
+        text = str(family.get("text") or "").strip()
+        out["family_number"] = {
+            "value": family.get("normalized"),
+            "original": family.get("normalized") or text or None,
+            "confidence": family.get("confidence"),
+            "from": "back",
+        }
+        zone = back.result.get("mrz") or {}
+        mrz_nid = zone.get("national_id") if zone.get("verified") else None
+        if mrz_nid and not (out.get("national_id") or {}).get("value"):
+            # FR-013: the front gave no usable national ID; the verified MRZ fills it.
+            out["national_id"] = {
+                "value": mrz_nid,
+                "original": mrz_nid,
+                "confidence": None,
+                "from": "mrz",
+            }
+    return out
+
+
+def _writable(draft: Draft, field: str, marks: dict) -> bool:
+    """FR-007: a reading may write a field that came from a reading, or an empty field that
+    nobody touched. A value typed before this feature (no mark) counts as typed."""
+    if field == "surname" and draft.no_surname:
+        return False
+    mark = marks.get(field)
+    if mark is None:
+        return not getattr(draft, field)
+    return mark.get("source") == "card"
+
+
+def apply_pair(db: Session, draft_id: uuid.UUID) -> bool:
+    """Write the finished readings into the draft in one locked transaction (FR-004–FR-009).
+    Runs once no side is pending or running. Returns True when the draft was updated."""
+    draft = db.get(Draft, draft_id, with_for_update=True, populate_existing=True)
+    if draft is None:
+        db.rollback()
+        return False
+    readings = {r.side: r for r in draft.card_readings}
+    if not readings or any(r.state not in FINISHED for r in readings.values()):
+        db.rollback()
+        return False
+    proposals = _proposals(readings)
+    if not proposals:
+        db.rollback()
+        return False
+
+    marks = dict(draft.card_fields or {})
+    for field, proposal in proposals.items():
+        mark = {
+            "source": "card",
+            "original": proposal["original"],
+            "confidence": proposal["confidence"],
+            "from": proposal["from"],
+        }
+        if _writable(draft, field, marks):
+            setattr(draft, field, proposal["value"])
+            if proposal["value"] is None and proposal["original"] is None and field not in marks:
+                continue  # nothing read and nothing to remember for this field
+            marks[field] = mark
+        elif field in marks:
+            # Typed or corrected: keep the value, refresh the original reading beside it.
+            marks[field] = {**marks[field], **{k: v for k, v in mark.items() if k != "source"}}
+        else:
+            marks[field] = {**mark, "source": "edited"}
+    draft.card_fields = marks
+    draft.full_name = join_full_name([getattr(draft, f) for f in FULL_NAME_FIELDS])
+    refresh_national_id_check(draft)
+    latest = max(readings.values(), key=lambda r: r.finished_at or r.updated_at)
+    draft.last_client_id = latest.queued_by_client
+    draft.updated_at = utc_now()
+    try:
+        db.flush()  # versioned UPDATE: the page sees a new version (research R8)
+    except StaleDataError:
+        db.rollback()
+        log.warning("card reading for draft %s: draft changed while applying", draft_id)
+        return False
+    db.commit()
+    return True
+
+
+def refresh_national_id_check(draft: Draft) -> None:
+    """Placeholder until US4 (tasks T036): no cross-check is recorded yet."""
+    return None
+
+
+def status_out(db: Session, draft: Draft, client_id: uuid.UUID | None) -> CardReadingStatusOut:
+    """GET /api/drafts/{id}/card-reading: stale readings are swept first (research R5)."""
+    if sweep_stale(db, draft.id):
+        db.refresh(draft)
+    reading = reading_out(draft)
+    return CardReadingStatusOut(
+        version=draft.version,
+        same_client=client_id is not None and draft.last_client_id == client_id,
+        front=reading.front,
+        back=reading.back,
+    )
 
 
 # --- what the page sees (research R11: never the raw result) ---------------------------------

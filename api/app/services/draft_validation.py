@@ -57,6 +57,7 @@ class DraftLike(Protocol):
     tower_id: int | None
     plan_id: int | None
     phone_input: str | None
+    no_surname: bool
 
 
 def _blank(value: Any) -> bool:
@@ -75,6 +76,9 @@ def missing(draft: DraftLike, image_sides: Iterable[str]) -> list[MissingItem]:
     for name in (*REQUIRED_NAME_FIELDS, "family_number", "address", "landmark"):
         if _blank(getattr(draft, name)):
             found[name] = "required"
+    # «لا يوجد لقب على البطاقة» satisfies the required surname (specs/006 FR-017).
+    if getattr(draft, "no_surname", False):
+        found.pop("surname", None)
 
     if _blank(draft.national_id):
         found["national_id"] = "required"

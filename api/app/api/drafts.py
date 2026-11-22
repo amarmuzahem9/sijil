@@ -9,7 +9,16 @@ the same page apart from a save made on another device or another tab of the sam
 import uuid
 from typing import Literal
 
-from fastapi import APIRouter, Depends, File, Header, Request, Response, UploadFile
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    Header,
+    Request,
+    Response,
+    UploadFile,
+)
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
@@ -17,8 +26,15 @@ from app.api.deps import AuthContext, current_user, require_roles
 from app.config import get_settings
 from app.db import get_db
 from app.errors import AppError
-from app.schemas.drafts import CreateBody, DraftList, DraftOut, PatchBody, VersionOut
-from app.services import draft_service
+from app.schemas.drafts import (
+    CardReadingStatusOut,
+    CreateBody,
+    DraftList,
+    DraftOut,
+    PatchBody,
+    VersionOut,
+)
+from app.services import card_reading_service, draft_service
 
 router = APIRouter(tags=["drafts"])
 
@@ -152,13 +168,29 @@ def _body_size_guard(request: Request) -> None:
 def upload_image(
     draft_id: uuid.UUID,
     side: Literal["front", "back"],
+    background: BackgroundTasks,
     file: UploadFile = File(...),
     ctx: AuthContext = Depends(marketer_only),
     cid: uuid.UUID = Depends(client_id),
     db: Session = Depends(get_db),
 ) -> DraftOut:
     draft = draft_service.save_image(db, ctx.user, cid, draft_id, side, file)
+    # Both sides present → read the card after the response (specs/006 research R5).
+    if card_reading_service.ready_to_read(draft):
+        background.add_task(card_reading_service.submit, draft.id)
     return draft_service.to_out(draft)
+
+
+@router.get("/drafts/{draft_id}/card-reading", response_model=CardReadingStatusOut)
+def get_card_reading(
+    draft_id: uuid.UUID,
+    ctx: AuthContext = Depends(marketer_only),
+    cid: uuid.UUID | None = Depends(optional_client_id),
+    db: Session = Depends(get_db),
+) -> CardReadingStatusOut:
+    """Reading status for the 2-second poll (contracts/api.md); owner only (404 otherwise)."""
+    draft = draft_service.get_owned(db, ctx.user, draft_id)
+    return card_reading_service.status_out(db, draft, cid)
 
 
 @router.get("/draft-images/{image_id}", response_class=FileResponse)

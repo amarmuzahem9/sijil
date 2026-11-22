@@ -513,6 +513,60 @@
           "code": "required"
         }
       ]
+    },
+    {
+      "note": "no surname on the card (006 FR-017)",
+      "draft": {
+        "national_id": "199012345678",
+        "family_number": "A1B2C3",
+        "location_lat": 33.31,
+        "location_lng": 44.36,
+        "address": "حي تجريبي، شارع 1",
+        "landmark": "قرب جامع تجريبي",
+        "area_id": 1,
+        "tower_id": 1,
+        "plan_id": 1,
+        "phone_input": "07801234567",
+        "first_name": "مشترك",
+        "father_name": "تجريبي",
+        "grandfather_name": "اختبار",
+        "great_grandfather_name": "نموذج",
+        "surname": null,
+        "mother_first_name": "أم",
+        "mother_second_name": "تجريبية",
+        "no_surname": true
+      },
+      "images": ["front", "back"],
+      "missing": []
+    },
+    {
+      "note": "empty surname without the no-surname choice",
+      "draft": {
+        "national_id": "199012345678",
+        "family_number": "A1B2C3",
+        "location_lat": 33.31,
+        "location_lng": 44.36,
+        "address": "حي تجريبي، شارع 1",
+        "landmark": "قرب جامع تجريبي",
+        "area_id": 1,
+        "tower_id": 1,
+        "plan_id": 1,
+        "phone_input": "07801234567",
+        "first_name": "مشترك",
+        "father_name": "تجريبي",
+        "grandfather_name": "اختبار",
+        "great_grandfather_name": "نموذج",
+        "surname": null,
+        "mother_first_name": "أم",
+        "mother_second_name": "تجريبية"
+      },
+      "images": ["front", "back"],
+      "missing": [
+        {
+          "field": "surname",
+          "code": "required"
+        }
+      ]
     }
   ],
   "names": [

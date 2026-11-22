@@ -30,6 +30,7 @@ FIELDS = (
     "tower_id",
     "plan_id",
     "phone_input",
+    "no_surname",
 )
 
 

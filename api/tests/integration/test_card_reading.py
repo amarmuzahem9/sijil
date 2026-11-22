@@ -1,0 +1,255 @@
+"""US1 + US3: a reading fills the card fields; unclear photos ask for a re-shoot
+(specs/006 data-model.md › Applying a `done` pair, research R6, R8; tasks T018, T033).
+
+The upload queues the reading; tests run it inline with the fake reader (conftest). Images are
+synthetic (tests/helpers/card_images.py), with made-up names and numbers.
+"""
+
+import uuid
+from pathlib import Path
+
+import pytest
+from sqlalchemy import select
+
+from app.config import get_settings
+from app.models import ImageAccessLog
+from app.services.card_reader_fake_data import FAMILY, NID
+from tests.conftest import auth_header, login
+from tests.helpers.card_images import scenario_jpeg
+
+
+@pytest.fixture(autouse=True)
+def uploads(tmp_path, monkeypatch) -> Path:
+    monkeypatch.setattr(get_settings(), "uploads_dir", str(tmp_path))
+    return tmp_path
+
+
+def _headers(client, user, cid: str | None = None) -> dict[str, str]:
+    headers = auth_header(login(client, user.phone))
+    headers["X-Client-Id"] = cid or str(uuid.uuid4())
+    return headers
+
+
+@pytest.fixture
+def owner(client, make_user):
+    user = make_user("marketer")
+    return user, _headers(client, user)
+
+
+def new_draft(client, headers) -> str:
+    draft_id = str(uuid.uuid4())
+    res = client.put(f"/api/drafts/{draft_id}", json={"changes": {}}, headers=headers)
+    assert res.status_code == 201
+    return draft_id
+
+
+def upload(client, headers, draft_id: str, side: str, scenario: str) -> dict:
+    res = client.post(
+        f"/api/drafts/{draft_id}/images/{side}",
+        files={"file": (f"{side}.jpg", scenario_jpeg(scenario), "image/jpeg")},
+        headers=headers,
+    )
+    assert res.status_code == 200, res.text
+    return res.json()
+
+
+def read_card(client, headers, front="clear_front", back="clear_back") -> str:
+    draft_id = new_draft(client, headers)
+    upload(client, headers, draft_id, "front", front)
+    upload(client, headers, draft_id, "back", back)
+    return draft_id
+
+
+def get(client, headers, draft_id: str) -> dict:
+    res = client.get(f"/api/drafts/{draft_id}", headers=headers)
+    assert res.status_code == 200
+    return res.json()
+
+
+EXPECTED = {
+    "first_name": "مشترك",
+    "father_name": "تجريبي",
+    "grandfather_name": "اختبار",
+    "surname": "الوهمي",
+    "mother_first_name": "أم",
+    "mother_second_name": "تجريبية",
+    "national_id": NID,
+    "family_number": FAMILY,
+}
+
+
+# --- US1: filling -------------------------------------------------------------------------------
+
+
+def test_front_only_does_not_read(client, owner) -> None:
+    _, headers = owner
+    draft_id = new_draft(client, headers)
+    body = upload(client, headers, draft_id, "front", "clear_front")
+    assert body["card_reading"] == {
+        "front": {"state": "pending", "reason": None, "finished_at": None, "surname_empty": None},
+        "back": None,
+    }
+    assert body["first_name"] is None
+    status = client.get(f"/api/drafts/{draft_id}/card-reading", headers=headers).json()
+    assert status["front"]["state"] == "pending" and status["back"] is None
+
+
+def test_clear_card_fills_the_eight_fields_with_marks(client, owner) -> None:
+    _, headers = owner
+    draft_id = new_draft(client, headers)
+    upload(client, headers, draft_id, "front", "clear_front")
+    after_front = get(client, headers, draft_id)["version"]
+    upload(client, headers, draft_id, "back", "clear_back")
+    body = get(client, headers, draft_id)
+
+    for field, value in EXPECTED.items():
+        assert body[field] == value, field
+        mark = body["card_fields"][field]
+        assert mark["source"] == "card"
+        assert mark["original"] == value
+        assert mark["from"] == ("back" if field == "family_number" else "front")
+    assert body["card_fields"]["first_name"]["confidence"] == pytest.approx(0.97)
+    # The fourth name and the mother's third name and surname are never on the card.
+    for field in ("great_grandfather_name", "mother_third_name", "mother_surname"):
+        assert body[field] is None and field not in body["card_fields"]
+    assert body["full_name"] == "مشترك تجريبي اختبار الوهمي"
+    assert body["card_reading"]["front"]["state"] == "done"
+    assert body["card_reading"]["back"]["state"] == "done"
+    # Upload of the back (+1) and applying the reading (+1).
+    assert body["version"] == after_front + 2
+    missing = {m["field"] for m in body["missing"]}
+    assert not missing & set(EXPECTED)
+
+
+def test_reading_counts_as_a_save_of_the_uploading_page(client, owner) -> None:
+    _, headers = owner
+    draft_id = read_card(client, headers)
+    status = client.get(f"/api/drafts/{draft_id}/card-reading", headers=headers).json()
+    assert status["same_client"] is True
+    other = {**headers, "X-Client-Id": str(uuid.uuid4())}
+    assert (
+        client.get(f"/api/drafts/{draft_id}/version", headers=other).json()["same_client"] is False
+    )
+
+
+def test_name_breaking_the_rule_is_left_empty_but_its_reading_is_kept(client, owner) -> None:
+    _, headers = owner
+    body = get(client, headers, read_card(client, headers, front="front_latin_name"))
+    assert body["grandfather_name"] is None
+    assert body["card_fields"]["grandfather_name"] == {
+        "source": "card",
+        "original": "Test",
+        "confidence": pytest.approx(0.97),
+        "from": "front",
+    }
+    assert "grandfather_name" in {m["field"] for m in body["missing"]}
+
+
+def test_national_id_from_the_verified_mrz_when_the_front_has_none(client, owner) -> None:
+    _, headers = owner
+    body = get(client, headers, read_card(client, headers, front="front_no_id"))
+    assert body["national_id"] == NID
+    assert body["card_fields"]["national_id"]["from"] == "mrz"
+
+
+def test_unverified_mrz_does_not_fill_the_national_id(client, owner) -> None:
+    _, headers = owner
+    body = get(client, headers, read_card(client, headers, "front_no_id", "back_unverified"))
+    assert body["national_id"] is None
+
+
+def test_family_number_with_letter_o_is_corrected(client, owner) -> None:
+    _, headers = owner
+    body = get(client, headers, read_card(client, headers, back="back_family_o"))
+    assert body["family_number"] == "1064L00M1234567890"
+
+
+def test_empty_surname_on_the_card_is_reported_not_chosen(client, owner) -> None:
+    _, headers = owner
+    body = get(client, headers, read_card(client, headers, front="front_no_surname"))
+    assert body["surname"] is None
+    assert body["no_surname"] is False
+    assert body["card_reading"]["front"]["surname_empty"] is True
+    assert "surname" in {m["field"] for m in body["missing"]}
+
+
+def test_another_device_sees_the_reading(client, owner) -> None:
+    user, headers = owner
+    draft_id = read_card(client, headers)
+    second = _headers(client, user)
+    body = get(client, second, draft_id)
+    assert body["first_name"] == "مشترك"
+    assert body["card_fields"]["first_name"]["source"] == "card"
+
+
+def test_reading_routes_are_owner_only(client, owner, make_user) -> None:
+    _, headers = owner
+    draft_id = read_card(client, headers)
+    stranger = _headers(client, make_user("marketer"))
+    res = client.get(f"/api/drafts/{draft_id}/card-reading", headers=stranger)
+    assert res.status_code == 404
+    assert res.json()["code"] == "draft_not_found"
+
+
+def test_each_side_sent_to_the_reader_is_logged_as_ocr_access(client, db, owner) -> None:
+    user, headers = owner
+    draft_id = read_card(client, headers)
+    rows = db.scalars(
+        select(ImageAccessLog).where(ImageAccessLog.draft_id == uuid.UUID(draft_id))
+    ).all()
+    assert sorted((r.side, r.purpose, r.user_id) for r in rows) == [
+        ("back", "ocr", user.id),
+        ("front", "ocr", user.id),
+    ]
+
+
+def test_raw_reading_is_never_sent_to_the_page(client, owner) -> None:
+    _, headers = owner
+    body = client.get(f"/api/drafts/{read_card(client, headers)}", headers=headers).text
+    assert "detections" not in body and "optional1" not in body and "raw" not in body
+
+
+# --- US3: re-shoot ------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "front,reason",
+    [
+        ("no_card", "no_card"),
+        ("clear_back", "wrong_side"),
+        ("other_document", "not_unified"),
+        ("two_cards", "multiple"),
+    ],
+)
+def test_unclear_front_asks_for_a_reshoot_and_fills_nothing_from_it(
+    client, owner, front, reason
+) -> None:
+    _, headers = owner
+    body = get(client, headers, read_card(client, headers, front=front))
+    assert body["card_reading"]["front"]["state"] == "reshoot"
+    assert body["card_reading"]["front"]["reason"] == reason
+    for field in ("first_name", "father_name", "surname"):
+        assert body[field] is None
+    # The back was read normally: its family number is applied (spec edge case).
+    assert body["family_number"] == FAMILY
+    assert body["card_fields"]["family_number"]["source"] == "card"
+
+
+def test_same_card_detected_twice_is_read_normally(client, owner) -> None:
+    _, headers = owner
+    body = get(client, headers, read_card(client, headers, back="duplicate_back"))
+    assert body["card_reading"]["back"]["state"] == "done"
+    assert body["family_number"] == FAMILY
+
+
+def test_reshoot_never_blocks_typing(client, owner) -> None:
+    _, headers = owner
+    draft_id = read_card(client, headers, front="no_card")
+    version = get(client, headers, draft_id)["version"]
+    res = client.patch(
+        f"/api/drafts/{draft_id}",
+        json={"version": version, "changes": {"first_name": "مشترك"}},
+        headers=headers,
+    )
+    assert res.status_code == 200
+    assert res.json()["card_fields"]["first_name"]["source"] == "edited"

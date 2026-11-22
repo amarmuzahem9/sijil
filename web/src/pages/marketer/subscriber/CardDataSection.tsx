@@ -7,17 +7,33 @@
  * mother's names grouped under «اسم الأم».
  */
 import Box from '@mui/material/Box';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 
+import { NO_SURNAME, NO_SURNAME_HINT } from '../../../lib/cardReading';
+import type { CardField } from '../../../lib/drafts';
 import { NAME_LABELS, OPTIONAL_NAME_FIELDS, type NameField } from '../../../lib/nameFields';
 import type { DraftAutosave, TextField } from '../../../lib/useDraftAutosave';
 import { DraftTextField } from './DraftTextField';
+import { FieldSourceMark } from './FieldSourceMark';
 
 export const FOURTH_NAME_HINT = 'غير موجود على البطاقة، اسأل المشترك';
 
-type CardField = NameField | 'national_id' | 'family_number';
+type CardDataField = NameField | 'national_id' | 'family_number';
+
+// The name fields a card reading fills (the fourth name and the mother's third name and
+// surname are never on the card).
+const CARD_NAME_FIELDS = [
+  'first_name',
+  'father_name',
+  'grandfather_name',
+  'surname',
+  'mother_first_name',
+  'mother_second_name',
+] as const;
 
 function Pair({ children }: { children: ReactNode }) {
   return (
@@ -30,13 +46,23 @@ export function CardDataSection({
   errors = {},
   onCommit,
 }: {
-  autosave: Pick<DraftAutosave, 'values' | 'setText' | 'commitField'>;
-  errors?: Partial<Record<CardField, string>>;
+  autosave: Pick<DraftAutosave, 'values' | 'setText' | 'commitField' | 'serverDraft' | 'saveNow'>;
+  errors?: Partial<Record<CardDataField, string>>;
   /** Called on blur instead of `commitField` (the form marks the field as touched). */
   onCommit?: (field: TextField) => void;
 }) {
-  const { values, setText } = autosave;
+  const { values, setText, serverDraft, saveNow } = autosave;
   const commitField = onCommit ?? autosave.commitField;
+
+  // «من البطاقة» / «عُدِّل يدوياً» (specs/006 FR-008): a value changed here but not yet saved
+  // already counts as edited.
+  const mark = (field: CardField) => (
+    <FieldSourceMark
+      field={field}
+      mark={serverDraft?.card_fields?.[field]}
+      changedHere={values[field] !== (serverDraft?.[field] ?? '')}
+    />
+  );
 
   const name = (field: NameField, helperText?: string) => (
     <DraftTextField
@@ -52,8 +78,17 @@ export function CardDataSection({
       error={errors[field]}
       helperText={helperText}
       autoComplete="off"
+      adornment={
+        (CARD_NAME_FIELDS as readonly string[]).includes(field)
+          ? mark(field as CardField)
+          : undefined
+      }
+      disabled={field === 'surname' && values.no_surname}
     />
   );
+
+  const surnameEmptyOnCard =
+    serverDraft?.card_reading?.front?.surname_empty === true && !values.surname.trim();
 
   return (
     <Stack spacing={1}>
@@ -66,6 +101,28 @@ export function CardDataSection({
         {name('great_grandfather_name', FOURTH_NAME_HINT)}
       </Pair>
       {name('surname')}
+      <Box sx={{ mt: -1 }}>
+        {surnameEmptyOnCard && !values.no_surname && (
+          <Typography variant="caption" color="warning.main" data-testid="no-surname-hint">
+            {NO_SURNAME_HINT}
+          </Typography>
+        )}
+        <FormControlLabel
+          control={
+            <Checkbox
+              size="small"
+              checked={values.no_surname}
+              onChange={(e) =>
+                saveNow(
+                  e.target.checked ? { no_surname: true, surname: '' } : { no_surname: false },
+                )
+              }
+              slotProps={{ input: { 'data-testid': 'field-no_surname' } as object }}
+            />
+          }
+          label={NO_SURNAME}
+        />
+      </Box>
 
       <Box
         component="fieldset"
@@ -94,6 +151,7 @@ export function CardDataSection({
         helperText="12 رقماً"
         ltr
         inputMode="numeric"
+        adornment={mark('national_id')}
       />
       <DraftTextField
         field="family_number"
@@ -104,6 +162,7 @@ export function CardDataSection({
         error={errors.family_number}
         helperText="كما هو مكتوب على البطاقة"
         ltr
+        adornment={mark('family_number')}
       />
     </Stack>
   );

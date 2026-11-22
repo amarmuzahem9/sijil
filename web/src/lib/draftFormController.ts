@@ -8,10 +8,15 @@
  */
 import { ApiError } from './api';
 import { AutosaveQueue, type SaveState } from './autosaveQueue';
+import { fieldsToMerge, READING_POLL_MS, shouldPoll } from './cardReading';
 import {
+  CARD_FIELDS,
   createDraft,
+  getCardReadingStatus,
+  getDraft,
   getDraftVersion,
   patchDraft,
+  type CardField,
   type Draft,
   type DraftChanges,
   type DraftLocation,
@@ -35,6 +40,8 @@ export interface FormValues extends NameValues {
   tower_id: number | null;
   plan_id: number | null;
   phone_input: string;
+  /** «لا يوجد لقب على البطاقة» (specs/006 FR-017). */
+  no_surname: boolean;
 }
 
 export type TextField =
@@ -55,6 +62,7 @@ export const EMPTY_VALUES: FormValues = {
   tower_id: null,
   plan_id: null,
   phone_input: '',
+  no_surname: false,
 };
 
 export function valuesFromDraft(draft: Draft | null): FormValues {
@@ -70,6 +78,7 @@ export function valuesFromDraft(draft: Draft | null): FormValues {
     tower_id: draft.tower_id,
     plan_id: draft.plan_id,
     phone_input: draft.phone_input ?? '',
+    no_surname: draft.no_surname ?? false,
   };
 }
 
@@ -94,10 +103,13 @@ export class DraftFormController {
   private listener: FormListener | null = null;
   private newerVersion = 0;
   private touched = false;
+  /** The latest draft from the server (card reading state and marks live there). */
+  private server: Draft | null;
   readonly queue: AutosaveQueue;
 
   constructor(private readonly initial: Draft | null) {
     this.current = valuesFromDraft(initial);
+    this.server = initial;
     this.queue = new AutosaveQueue(
       {
         newId: () => crypto.randomUUID(),
@@ -146,8 +158,13 @@ export class DraftFormController {
     this.listener?.values(this.current);
   }
 
-  private onSaved(draft: Draft): void {
+  private setServer(draft: Draft): void {
+    this.server = draft;
     this.listener?.serverDraft(draft);
+  }
+
+  private onSaved(draft: Draft): void {
+    this.setServer(draft);
     if (draft.notices.length) this.listener?.notices(draft.notices);
     // The server may clear an unavailable choice (R4); adopt that unless the user changed the
     // same field meanwhile.
@@ -169,7 +186,9 @@ export class DraftFormController {
 
   /** Text typed: saved ~1 s after the last keystroke. */
   setText(field: TextField, value: string): void {
-    this.update({ [field]: value });
+    // Typing a surname clears «لا يوجد لقب على البطاقة» (the server does the same).
+    const extra = field === 'surname' && value.trim() && this.current.no_surname;
+    this.update(extra ? { [field]: value, no_surname: false } : { [field]: value });
     const timer = this.timers.get(field);
     if (timer !== undefined) clearTimeout(timer);
     this.timers.set(
@@ -194,7 +213,7 @@ export class DraftFormController {
     for (const timer of this.timers.values()) clearTimeout(timer);
     this.timers.clear();
     this.queue.reset(draft);
-    this.listener?.serverDraft(draft);
+    this.setServer(draft);
     this.listener?.notices(draft.notices);
     this.current = valuesFromDraft(draft);
     this.listener?.values(this.current);
@@ -219,7 +238,65 @@ export class DraftFormController {
   /** An upload on this page moved the version forward. */
   applyServerDraft(draft: Draft): void {
     this.queue.setVersion(draft.version);
-    this.listener?.serverDraft(draft);
+    this.setServer(draft);
+  }
+
+  /** A field with a change typed or queued on this page: a reading must not replace it. */
+  private hasLocalChange(field: CardField | 'no_surname'): boolean {
+    return this.queue.hasPendingKey(field) || this.timers.has(field as TextField);
+  }
+
+  /**
+   * A reading finished (specs/006 research R8): take the card fields and their marks from the
+   * server, except fields with a local change still waiting (the typed value wins and is sent
+   * by the queue).
+   */
+  mergeReading(draft: Draft): void {
+    if (draft.version > this.queue.currentVersion) this.queue.setVersion(draft.version);
+    this.setServer(draft);
+    const changes: Partial<FormValues> = {};
+    for (const field of fieldsToMerge(CARD_FIELDS, (f) => this.hasLocalChange(f))) {
+      const value = draft[field] ?? '';
+      if (this.current[field] !== value) changes[field] = value;
+    }
+    if (!this.hasLocalChange('no_surname') && this.current.no_surname !== draft.no_surname)
+      changes.no_surname = draft.no_surname;
+    if (Object.keys(changes).length) this.update(changes);
+  }
+
+  /**
+   * While a card reading waits or runs, poll its status every 2 s (research R5). When it
+   * finishes after an upload from this page (`same_client`), fetch the draft and merge it; a
+   * reading started elsewhere is left to the version poll and the conflict notice.
+   */
+  startReadingPoll(draftId: string): () => void {
+    let stopped = false;
+    let busy = false;
+    const check = async () => {
+      if (stopped || busy || !shouldPoll(this.server?.card_reading)) return;
+      if (['conflict', 'deleted', 'session_ended'].includes(this.queue.state)) return;
+      busy = true;
+      try {
+        const status = await getCardReadingStatus(draftId);
+        if (stopped || !this.server) return;
+        const reading = { front: status.front, back: status.back };
+        if (shouldPoll(reading)) {
+          this.setServer({ ...this.server, card_reading: reading });
+          return;
+        }
+        if (status.same_client) this.mergeReading(await getDraft(draftId));
+        else this.setServer({ ...this.server, card_reading: reading });
+      } catch {
+        // Network trouble: try again on the next tick.
+      } finally {
+        busy = false;
+      }
+    };
+    const timer = setInterval(() => void check(), READING_POLL_MS);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
   }
 
   /** Poll the version while the page is visible (R3); returns the stop function. */

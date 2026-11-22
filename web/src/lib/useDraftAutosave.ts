@@ -99,6 +99,7 @@ export function useDraftAutosave(
   );
 
   useEffect(() => (draftId ? ctl.startPolling(draftId) : undefined), [ctl, draftId]);
+  useEffect(() => (draftId ? ctl.startReadingPoll(draftId) : undefined), [ctl, draftId]);
 
   return {
     draftId,

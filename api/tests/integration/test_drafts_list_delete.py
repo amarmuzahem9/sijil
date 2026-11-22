@@ -181,8 +181,10 @@ def test_delete_removes_rows_files_and_audits_without_card_data(client, db, owne
     for secret in ("مشترك تجريبي", "199012345678", "A1B2C3", "07801234567", *names):
         assert secret not in text
 
-    # The access history survives the deletion (Principle III).
-    assert len(db.scalars(select(ImageAccessLog)).all()) == 1
+    # The access history survives the deletion (Principle III): the one opening by the marketer,
+    # plus the two sides sent to the card reader (feature 006, purpose 'ocr').
+    rows = db.scalars(select(ImageAccessLog)).all()
+    assert sorted(row.purpose for row in rows) == ["ocr", "ocr", "view"]
 
     assert client.get(f"/api/drafts/{draft_id}", headers=h).status_code == 404
     assert client.get(f"/api/drafts/{draft_id}/version", headers=h).status_code == 404

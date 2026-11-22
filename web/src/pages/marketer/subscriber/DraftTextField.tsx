@@ -1,6 +1,7 @@
 /** A text field wired to the draft autosave: debounced on typing, saved on blur. */
+import InputAdornment from '@mui/material/InputAdornment';
 import TextField from '@mui/material/TextField';
-import type { HTMLAttributes } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 
 import type { TextField as DraftField } from '../../../lib/useDraftAutosave';
 
@@ -16,6 +17,8 @@ export function DraftTextField({
   inputMode,
   multiline = false,
   autoComplete = 'off',
+  adornment,
+  disabled = false,
 }: {
   field: DraftField;
   label: string;
@@ -28,6 +31,9 @@ export function DraftTextField({
   inputMode?: HTMLAttributes<HTMLInputElement>['inputMode'];
   multiline?: boolean;
   autoComplete?: string;
+  /** Shown at the end of the input, e.g. the «من البطاقة» mark (specs/006). */
+  adornment?: ReactNode;
+  disabled?: boolean;
 }) {
   return (
     <TextField
@@ -40,10 +46,14 @@ export function DraftTextField({
       error={Boolean(error)}
       helperText={error ?? helperText ?? ' '}
       fullWidth
+      disabled={disabled}
       multiline={multiline}
       minRows={multiline ? 2 : undefined}
       autoComplete={autoComplete}
       slotProps={{
+        input: adornment
+          ? { endAdornment: <InputAdornment position="end">{adornment}</InputAdornment> }
+          : undefined,
         htmlInput: {
           dir: ltr ? 'ltr' : undefined,
           inputMode,

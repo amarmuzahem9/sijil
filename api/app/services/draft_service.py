@@ -26,7 +26,7 @@ from app.core.phone import normalize_phone, to_latin_digits
 from app.core.timeutil import utc_now
 from app.errors import AppError
 from app.models import Area, Draft, DraftImage, ImageAccessLog, Plan, Tower, User
-from app.models.draft import FULL_NAME_FIELDS, NAME_FIELDS, TEXT_LIMITS
+from app.models.draft import CARD_FIELDS, FULL_NAME_FIELDS, NAME_FIELDS, TEXT_LIMITS
 from app.schemas.drafts import (
     DraftChanges,
     DraftImages,
@@ -89,16 +89,37 @@ def apply_changes(draft: Draft, changes: DraftChanges) -> None:
     unchanged, `None` clears). Subscription ids are handled by the catalog-copy step (R4).
     `full_name` is recomputed here on every change of a name (R12)."""
     given = changes.model_fields_set
+    before = {field: getattr(draft, field) for field in CARD_FIELDS}
 
     names = {f: clean_name(f, getattr(changes, f)) for f in NAME_FIELDS if f in given}
     for field, value in names.items():
         setattr(draft, field, value)
-    if names:
-        draft.full_name = join_full_name([getattr(draft, f) for f in FULL_NAME_FIELDS])
 
     for field in TEXT_FIELDS:
         if field in given:
             setattr(draft, field, clean_text(field, getattr(changes, field)))
+
+    # «لا يوجد لقب على البطاقة» (specs/006 research R9): typing a surname clears the choice;
+    # choosing it empties the surname.
+    if draft.surname:
+        draft.no_surname = False
+    if "no_surname" in given and changes.no_surname is not None:
+        draft.no_surname = changes.no_surname
+        if changes.no_surname:
+            draft.surname = None
+    if names or "no_surname" in given:
+        draft.full_name = join_full_name([getattr(draft, f) for f in FULL_NAME_FIELDS])
+
+    # A card field changed by the marketer is «عُدِّل يدوياً» from now on (research R8); the
+    # original reading stays. Echoes of the same value (e.g. a resent save) change nothing.
+    edited = [f for f in CARD_FIELDS if getattr(draft, f) != before[f]]
+    if edited:
+        marks = dict(draft.card_fields or {})
+        for field in edited:
+            mark = dict(marks.get(field) or {"original": None, "confidence": None, "from": None})
+            mark["source"] = "edited"
+            marks[field] = mark
+        draft.card_fields = marks  # reassign: in-place JSONB changes are not tracked
 
     if "phone_input" in given:
         # Set only when §8.1 normalization succeeds; the CHECK in migration 0005 backs this up.
@@ -279,6 +300,7 @@ def save_image(
     """
     draft = get_owned(db, user, draft_id, lock=True)
     stored = image_store.save_upload(upload)
+    # The side's card reading now belongs to the new image (specs/006 research R5).
     existing = next((image for image in draft.images if image.side == side), None)
     replaced = existing.file_name if existing else None
     try:
@@ -300,6 +322,7 @@ def save_image(
             existing.height = stored.height
             existing.uploaded_by = user.id
             existing.created_at = utc_now()
+        card_reading_service.mark_pending(draft, side, stored.file_name, client_id)
         _touch(draft, client_id)
         db.flush()
         db.commit()

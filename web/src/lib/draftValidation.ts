@@ -70,6 +70,8 @@ export interface DraftFields extends Partial<Record<NameField, string | null>> {
   tower_id?: number | null;
   plan_id?: number | null;
   phone_input?: string | null;
+  /** «لا يوجد لقب على البطاقة» satisfies the required surname (specs/006 FR-017). */
+  no_surname?: boolean | null;
 }
 
 export const FIELD_LABELS: Record<MissingField, string> = {
@@ -117,6 +119,7 @@ export function computeMissing(
   for (const name of [...REQUIRED_NAME_FIELDS, 'family_number', 'address', 'landmark'] as const) {
     if (blank(draft[name])) found.set(name, 'required');
   }
+  if (draft.no_surname) found.delete('surname');
 
   if (blank(draft.national_id)) found.set('national_id', 'required');
   else if (normalizeNationalId(draft.national_id) === null)

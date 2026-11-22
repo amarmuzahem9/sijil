@@ -21,10 +21,13 @@ import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 
 import { ApiError, NETWORK_ERROR_MESSAGE } from '../../../lib/api';
+import { reshootText, RESHOOT, RESHOOT_TIPS } from '../../../lib/cardReading';
 import {
   fetchImageObjectUrl,
   uploadDraftImage,
+  type CardReadingSide,
   type Draft,
+  type ReshootReason,
   type DraftImage,
   type Side,
 } from '../../../lib/drafts';
@@ -69,12 +72,15 @@ export function ImageSlot({
   side,
   label,
   image,
+  reading = null,
   ensureCreated,
   onUploaded,
 }: {
   side: Side;
   label: string;
   image: DraftImage | null;
+  /** This side's card reading (specs/006); a `reshoot` shows the reason and the tips. */
+  reading?: CardReadingSide | null;
   ensureCreated: () => Promise<string>;
   onUploaded: (draft: Draft) => void;
 }) {
@@ -146,6 +152,10 @@ export function ImageSlot({
   }
 
   const showPickers = !thumbnail || changing;
+  const reshoot =
+    reading?.state === 'reshoot' && reading.reason && phase.kind === 'idle'
+      ? reshootText(side, reading.reason as ReshootReason)
+      : null;
 
   return (
     <Box data-testid={`image-slot-${side}`}>
@@ -171,7 +181,27 @@ export function ImageSlot({
         />
       )}
 
-      {thumbnail && !changing && !busy && (
+      {reshoot && (
+        <Alert
+          severity="warning"
+          sx={{ mb: 1 }}
+          data-testid={`image-${side}-reshoot`}
+          action={
+            !changing ? (
+              <Button color="inherit" size="small" onClick={() => setChanging(true)}>
+                {RESHOOT}
+              </Button>
+            ) : undefined
+          }
+        >
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {reshoot}
+          </Typography>
+          <Typography variant="caption">{RESHOOT_TIPS}</Typography>
+        </Alert>
+      )}
+
+      {thumbnail && !changing && !busy && !reshoot && (
         <Button size="small" onClick={() => setChanging(true)}>
           تغيير
         </Button>

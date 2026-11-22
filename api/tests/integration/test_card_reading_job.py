@@ -29,6 +29,12 @@ def uploads(tmp_path, monkeypatch) -> Path:
     return tmp_path
 
 
+@pytest.fixture(autouse=True)
+def manual_jobs(monkeypatch) -> None:
+    """These tests start the job themselves."""
+    monkeypatch.setattr(card_reading_service, "submit", lambda draft_id: None)
+
+
 @pytest.fixture
 def owner(client, make_user):
     user = make_user("marketer")

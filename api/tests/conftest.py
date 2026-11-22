@@ -80,6 +80,23 @@ def _reset_login_limiter() -> Iterator[None]:
     login_failures.reset()
 
 
+@pytest.fixture(autouse=True)
+def _card_reading_runs_inline(request, monkeypatch) -> None:
+    """A queued card reading runs at once on the test session with the fake reader, instead of
+    on a worker thread with its own connection (specs/006 research R5, R10)."""
+    if "db" not in request.fixturenames:
+        return
+    from app.services import card_reading_service
+    from app.services.card_reader import FakeCardReader
+
+    db = request.getfixturevalue("db")
+    monkeypatch.setattr(
+        card_reading_service,
+        "submit",
+        lambda draft_id: card_reading_service.run(draft_id, session=db, reader=FakeCardReader()),
+    )
+
+
 @pytest.fixture
 def client(db) -> Iterator[TestClient]:
     app.dependency_overrides[get_db] = lambda: db

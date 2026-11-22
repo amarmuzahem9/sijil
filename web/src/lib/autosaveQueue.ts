@@ -45,6 +45,8 @@ export class AutosaveQueue {
   private version: number;
   private pending: DraftChanges = {};
   private inFlight: Promise<void> | null = null;
+  /** The changes of the request in flight, until its answer is handled (specs/006 R8). */
+  private sending: DraftChanges = {};
   private failures = 0;
   private paused = false;
   private createRetried = false;
@@ -86,9 +88,10 @@ export class AutosaveQueue {
     return this.flush();
   }
 
-  /** True while a change to `key` is waiting to be sent (server values must not override it). */
+  /** True while a change to `key` is waiting to be sent or is being sent (server values, e.g. a
+   * finished card reading, must not override it). */
   hasPendingKey(key: keyof DraftChanges): boolean {
-    return key in this.pending;
+    return key in this.pending || key in this.sending;
   }
 
   /** A save made elsewhere on this page (an image upload) moved the version forward. */
@@ -171,6 +174,7 @@ export class AutosaveQueue {
   }
 
   private async send(sending: DraftChanges): Promise<void> {
+    this.sending = sending;
     try {
       let draft: Draft;
       if (this.id === null || this.version === 0) {
@@ -191,10 +195,12 @@ export class AutosaveQueue {
       this.version = draft.version;
       this.failures = 0;
       this.createRetried = false;
+      this.sending = {}; // answered: the server's values now include these changes
       this.deps.onSaved?.(draft);
       // A pause (conflict/deleted found by polling) during the request keeps its state.
       if (!this.paused) this.setState(isEmpty(this.pending) ? 'saved' : 'saving', null);
     } catch (err) {
+      this.sending = {}; // requeued into `pending` by handleError when it will be resent
       this.handleError(err, sending);
     }
   }

@@ -213,7 +213,7 @@ E, M).
 
 ### Tests for User Story 1
 
-- [ ] T018 [P] [US1] Write integration tests `api/tests/integration/test_card_reading.py` with
+- [X] T018 [P] [US1] Write integration tests `api/tests/integration/test_card_reading.py` with
   `OCR_MODE=fake`, running jobs synchronously through a test hook:
   - **Front only**: the side is `pending` and no reader call is made.
   - **Then the back**: the 8 fields are filled per data-model.md › Applying a `done` pair, with
@@ -225,7 +225,7 @@ E, M).
   - **Another marketer**: `GET …/card-reading` on that marketer's draft returns 404.
   - **Access log**: each side sent to the reader adds one `image_access_log` row with
     `purpose = 'ocr'`; viewing an image still adds `purpose = 'view'` (analysis C1).
-- [ ] T019 [P] [US1] Write tests `api/tests/integration/test_card_fields.py`, part 1, for
+- [X] T019 [P] [US1] Write tests `api/tests/integration/test_card_fields.py`, part 1, for
   `drafts.no_surname` (data-model.md › Rules on save):
   - `PATCH {no_surname: true}` clears `surname`, satisfies `missing`, and sets the surname mark
     to `edited`;
@@ -233,14 +233,14 @@ E, M).
   - the CHECK holds;
   - the front scenario with an empty surname gives `card_reading.front.surname_empty = true`,
     and does not set `no_surname`.
-- [ ] T020 [P] [US1] Write Vitest tests `web/src/__tests__/cardReading.test.ts`, part 1:
+- [X] T020 [P] [US1] Write Vitest tests `web/src/__tests__/cardReading.test.ts`, part 1:
   - polling starts while a side is `pending`/`running` and stops when none is;
   - merging after `done` fills only keys with no pending local change;
   - the marks map from `card_fields`.
 
 ### Implementation for User Story 1
 
-- [ ] T021 [US1] In `card_reading_service.py`, part 2, implement `apply_pair(db, draft_id)`. It
+- [X] T021 [US1] In `card_reading_service.py`, part 2, implement `apply_pair(db, draft_id)`. It
   takes a row lock and uses the mapping table of data-model.md › Applying a `done` pair, with
   `clean_arabic_name`, `normalize_national_id` and `normalize_family_number`. It then:
   - writes a field only when `card_fields[field]` is absent or `card` (FR-007), always updating
@@ -249,32 +249,32 @@ E, M).
   - re-evaluates `drafts.national_id_check` (the stub returns null until US4);
   - increments `version` and sets `last_client_id = card_readings.queued_by_client`.
   `run` calls it once both sides have finished.
-- [ ] T022 [US1] In `api/app/services/draft_service.py`, change `save_image` to call
+- [X] T022 [US1] In `api/app/services/draft_service.py`, change `save_image` to call
   `mark_pending` inside its transaction. In `api/app/api/drafts.py`, after the upload commits,
   call `queue_if_ready` through FastAPI `BackgroundTasks`. Add `GET
   /api/drafts/{id}/card-reading`, which uses `get_owned` and `sweep_stale` and returns
   `CardReadingStatusOut` (contracts/api.md).
-- [ ] T023 [US1] In `draft_service.apply_changes` and `draft_validation.missing`, handle
+- [X] T023 [US1] In `draft_service.apply_changes` and `draft_validation.missing`, handle
   `no_surname` (research R9, data-model.md › `drafts.no_surname`). The surname is required
   unless `no_surname`. Add the cases to `api/tests/fixtures/draft_validation_cases.json` and
   update `web/src/lib/draftValidation.ts` to match.
-- [ ] T024 [US1] In `web/src/lib/draftFormController.ts`, add the reading state:
+- [X] T024 [US1] In `web/src/lib/draftFormController.ts`, add the reading state:
   - start a 2 s `getCardReadingStatus` poll after an upload response shows `pending`, or when the
     draft opens with a `pending`/`running` side;
   - on a side reaching `done`, `reshoot` or `failed`, fetch the draft and merge the card fields,
     skipping `queue.hasPendingKey(field)`;
   - take `card_fields`, `card_reading` and `no_surname` from the server.
   Expose them through `useDraftAutosave`.
-- [ ] T025 [P] [US1] Add `web/src/pages/marketer/subscriber/FieldSourceMark.tsx`, a small chip
+- [X] T025 [P] [US1] Add `web/src/pages/marketer/subscriber/FieldSourceMark.tsx`, a small chip
   showing «من البطاقة» or «عُدِّل يدوياً». Use it in `CardDataSection.tsx` beside the eight
   fields.
-- [ ] T026 [US1] In `CardDataSection.tsx`, add the checkbox «لا يوجد لقب على البطاقة»
+- [X] T026 [US1] In `CardDataSection.tsx`, add the checkbox «لا يوجد لقب على البطاقة»
   (`saveNow({no_surname})`), which disables and clears the surname input. Show the hint from
   contracts/api.md when `card_reading.front.surname_empty`.
-- [ ] T027 [US1] In `CardSection.tsx`, show «ارفع الوجه الآخر لتبدأ قراءة البطاقة» when only one
+- [X] T027 [US1] In `CardSection.tsx`, show «ارفع الوجه الآخر لتبدأ قراءة البطاقة» when only one
   side exists, and «جارٍ قراءة البطاقة» (with a progress indicator) while a side is `pending` or
   `running`.
-- [ ] T028 [US1] Add the Playwright spec `e2e/tests/card-reading.spec.ts` with quickstart A, B,
+- [X] T028 [US1] Add the Playwright spec `e2e/tests/card-reading.spec.ts` with quickstart A, B,
   E and M. Use synthetic scenario images from `cardImages.ts`, and a second browser context for
   M.
 
@@ -291,22 +291,22 @@ and a reading never overwrites an edit.
 
 ### Tests for User Story 2
 
-- [ ] T029 [P] [US2] Write `test_card_fields.py`, part 2, for the `drafts.card_fields` provenance
+- [X] T029 [P] [US2] Write `test_card_fields.py`, part 2, for the `drafts.card_fields` provenance
   rules (data-model.md › Rules on save):
   - a PATCH of a card field sets `source = "edited"` and keeps `original`;
   - clearing a field counts as edited;
   - typing the national ID before the reading → the reading keeps it and updates `original`
     (FR-007);
   - a PATCH that tries to send `card_fields` gets 422.
-- [ ] T030 [P] [US2] Write Vitest `cardReading.test.ts`, part 2: a field typed during the reading
+- [X] T030 [P] [US2] Write Vitest `cardReading.test.ts`, part 2: a field typed during the reading
   keeps the typed value after the merge, and its mark becomes «عُدِّل يدوياً».
 
 ### Implementation for User Story 2
 
-- [ ] T031 [US2] In `draft_service.apply_changes`, mark the edited fields (research R8): any
+- [X] T031 [US2] In `draft_service.apply_changes`, mark the edited fields (research R8): any
   change to a key of `CARD_FIELDS` sets `card_fields[key].source = "edited"` and keeps
   `original`, `confidence` and `from`.
-- [ ] T032 [US2] Extend `card-reading.spec.ts` with quickstart C (edit the grandfather → the mark
+- [X] T032 [US2] Extend `card-reading.spec.ts` with quickstart C (edit the grandfather → the mark
   changes; reload → the value and mark persist).
 
 **Checkpoint**: US1 and US2 together meet the acceptance criterion «يعدّل حقلاً واحداً فتبقى
@@ -320,18 +320,29 @@ and a reading never overwrites an edit.
 
 **Independent Test**: quickstart G, H, I, J.
 
-- [ ] T033 [P] [US3] Add integration cases to `test_card_reading.py` with the fake scenarios:
+- [X] T033 [P] [US3] Add integration cases to `test_card_reading.py` with the fake scenarios:
   - `no_card`, `wrong_side`, `multiple` and `not_unified` → the side is `reshoot` with that
     reason, and no field is filled from it;
   - the duplicate detection → `done`;
   - a front `reshoot` with a back `done` → only the back's family number is applied (spec edge
     case).
-- [ ] T034 [US3] In `web/src/pages/marketer/subscriber/ImageSlot.tsx`, show the side's reason
+- [X] T034 [US3] In `web/src/pages/marketer/subscriber/ImageSlot.tsx`, show the side's reason
   text, «أعد التصوير» (opening the same camera/gallery choice) and the tips from contracts/api.md
   when `card_reading.<side>.state = reshoot`. Fields stay editable. Extend `card-reading.spec.ts`
   with quickstart G, H, I and J.
 
 **Checkpoint**: Batch 2 ends. Run all tests and report.
+
+**Batch 2 notes (2026-11-23)**:
+- `AutosaveQueue.hasPendingKey` now also covers the request in flight. Without it, a reading that
+  finished while a typed field was being saved would put the read value back on screen (the
+  server kept the typed one). Found by `cardReading.test.ts`.
+- Tests run the reading inline on the test session with the fake reader (`conftest.py`
+  `_card_reading_runs_inline`).
+- `test_drafts_list_delete` now expects the two `purpose = 'ocr'` access rows next to the
+  marketer's `view` row (analysis C1).
+- US6's "re-read only the replaced side" already holds: the job reads only `pending` sides and
+  `apply_pair` reuses the other side's `done` result (tested in `test_card_fields.py`).
 
 ---
 
