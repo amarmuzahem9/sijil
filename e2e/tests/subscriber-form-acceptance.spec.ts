@@ -21,6 +21,20 @@ const TOWER = 'FRM01';
 const PLAN = 'FORMTEST';
 const HOME = { latitude: 33.3128, longitude: 44.3615 };
 
+/** Synthetic names for the nine fields of the ministry form (system.md §5.1 v1.5). */
+const NAMES: Record<string, string> = {
+  first_name: 'مشترك',
+  father_name: 'تجريبي',
+  grandfather_name: 'اختبار',
+  great_grandfather_name: 'نموذج',
+  surname: 'الوهمي',
+  mother_first_name: 'أم',
+  mother_second_name: 'تجريبية',
+  mother_third_name: 'ثالث',
+  mother_surname: 'لقب',
+};
+const FULL_NAME = 'مشترك تجريبي اختبار نموذج الوهمي';
+
 const PROJECT_INDEX: Record<string, number> = { 'desktop-chrome': 0, 'pixel-7': 1, 'iphone-14': 2 };
 
 function marketerFor(project: string, n = 0) {
@@ -157,7 +171,10 @@ test('A, B, D: half a form on one phone, everything on the other (SC-001)', asyn
     .setInputFiles(await syntheticPhoto(page, 1200, 800, 'ظهر'));
   await expect(page.getByTestId('image-back-thumbnail')).toBeVisible({ timeout: 30_000 });
 
-  await page.getByTestId('field-subscriber_name').fill('مشترك تجريبي');
+  for (const [field, value] of Object.entries(NAMES)) {
+    await page.getByTestId(`field-${field}`).fill(value);
+  }
+  await expect(page.getByText('غير موجود على البطاقة، اسأل المشترك')).toBeVisible();
   await page.getByTestId('field-national_id').fill('199012345678');
   await page.getByTestId('field-family_number').fill('A1B2C3');
   await page.getByTestId('field-family_number').blur();
@@ -186,10 +203,12 @@ test('A, B, D: half a form on one phone, everything on the other (SC-001)', asyn
   await signIn(b, marketer.phone, NEW_PASSWORD);
   await b.getByRole('link', { name: 'الطلبات' }).first().click();
   await expect(b.getByRole('tab', { name: 'مسودات', selected: true })).toBeVisible();
-  await b.getByTestId('draft-card').filter({ hasText: 'مشترك تجريبي' }).getByRole('link').click();
+  await b.getByTestId('draft-card').filter({ hasText: FULL_NAME }).getByRole('link').click();
   await expect(b).toHaveURL(new RegExp(`/drafts/${draftId}$`));
 
-  await expect(b.getByTestId('field-subscriber_name')).toHaveValue('مشترك تجريبي');
+  for (const [field, value] of Object.entries(NAMES)) {
+    await expect(b.getByTestId(`field-${field}`)).toHaveValue(value);
+  }
   await expect(b.getByTestId('field-national_id')).toHaveValue('199012345678');
   await expect(b.getByTestId('field-family_number')).toHaveValue('A1B2C3');
   await expect(b.getByTestId('location-coords')).toHaveText('33.312800, 44.361500');
@@ -235,7 +254,16 @@ test('E, F: field checks, «النواقص» and the disabled «إرسال»', a
   await page.goto('/drafts/new');
 
   const summary = page.getByTestId('missing-summary');
-  await expect(summary).toContainText('النواقص (12)');
+  await expect(summary).toContainText('النواقص (18)');
+
+  // Names: a digit is refused at once and never saved; each missing name is listed by name.
+  await page.getByTestId('field-first_name').fill('علي2');
+  await expect(page.getByText('الاسم أحرف عربية فقط')).toBeVisible();
+  await expect(page.getByTestId('missing-great_grandfather_name')).toContainText('الاسم الرابع');
+  await page.getByTestId('field-first_name').fill('علي');
+  await expect(page.getByText('الاسم أحرف عربية فقط')).toHaveCount(0);
+  await expect(page.getByTestId('missing-first_name')).toHaveCount(0);
+  await expect(page.getByTestId('missing-mother_third_name')).toHaveCount(0); // optional
 
   await page.getByTestId('field-national_id').fill('١٢٣٤٥٦٧٨٩٠١');
   await page.getByTestId('field-national_id').blur();
@@ -272,8 +300,9 @@ test('H, I: deleting a draft, and another marketer cannot open it', async ({
   await signIn(page, owner.phone, NEW_PASSWORD);
   await expect(page).toHaveURL(/\/$/);
   await page.goto('/drafts/new');
-  await page.getByTestId('field-subscriber_name').fill('مسودة للحذف');
-  await page.getByTestId('field-subscriber_name').blur();
+  await page.getByTestId('field-first_name').fill('مسودة');
+  await page.getByTestId('field-father_name').fill('للحذف');
+  await page.getByTestId('field-father_name').blur();
   await saved(page);
   const draftUrl = new URL(page.url()).pathname;
 

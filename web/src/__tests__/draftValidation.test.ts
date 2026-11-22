@@ -7,6 +7,9 @@ import {
   TEXT_LIMITS,
   type DraftFields,
 } from '../lib/draftValidation';
+import { cleanArabicName } from '../lib/arabicName';
+import { sendable } from '../lib/draftFormController';
+import { NAME_FIELDS, REQUIRED_NAME_FIELDS } from '../lib/nameFields';
 import { normalizeNationalId } from '../lib/nationalId';
 import fixture from './fixtures/draft_validation_cases.json';
 
@@ -49,5 +52,33 @@ describe('isTooLong', () => {
     expect(isTooLong('landmark', 'أ'.repeat(201))).toBe(true);
     expect(isTooLong('landmark', `  ${'أ'.repeat(200)}  `)).toBe(false);
     expect(isTooLong('address', null)).toBe(false);
+  });
+});
+
+describe('cleanArabicName (specs/005 research.md R12)', () => {
+  it.each(
+    fixture.names as { note: string; input: string; expected: string | null; valid: boolean }[],
+  )('$note', ({ input, expected, valid }) => {
+    const result = cleanArabicName(input);
+    expect(result.ok).toBe(valid);
+    if (result.ok) expect(result.value).toBe(expected);
+  });
+
+  it('lists every required name in page order, and never the optional ones', () => {
+    const names = MISSING_ORDER.filter((f) => (NAME_FIELDS as readonly string[]).includes(f));
+    expect(names).toEqual(REQUIRED_NAME_FIELDS);
+    expect(names).not.toContain('mother_third_name');
+    expect(names).not.toContain('mother_surname');
+  });
+});
+
+describe('sendable: refused values are never sent', () => {
+  it('blocks a name with a digit or a Latin letter, and over-length text', () => {
+    expect(sendable('first_name', 'علي')).toBe(true);
+    expect(sendable('first_name', '')).toBe(true);
+    expect(sendable('first_name', 'علي2')).toBe(false);
+    expect(sendable('surname', 'Ali')).toBe(false);
+    expect(sendable('surname', 'ا'.repeat(51))).toBe(false);
+    expect(sendable('address', 'حي 12')).toBe(true); // digits are fine outside names
   });
 });

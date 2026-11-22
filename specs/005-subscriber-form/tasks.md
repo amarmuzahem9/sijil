@@ -523,6 +523,54 @@ come before US3, because the acceptance test of US3 fills both.
 - **T055**: try «تصوير» and «من المعرض» on a real Android phone. Playwright already checks that only the camera input has `capture`.
 - **Known limit**: if an admin resets the marketer's password while the form is open, signing in through the dialog then needs a password change. Saves stop with «يجب تغيير كلمة السر قبل المتابعة», and the values stay on screen until the change.
 
+## Phase 11: Change before merge — name fields of the ministry form (owner, 2026-11-22)
+
+**Goal**: Nine name fields replace the single name (system.md §5.1 v1.5, spec Clarifications, research.md R12). `full_name` is computed by the server.
+
+**Independent Test**:
+- Fill the nine names on one device; reopen the draft on another and find them all.
+- «علي2» is refused.
+- The two optional mother fields may stay empty.
+- The drafts list shows the computed full name.
+
+- [X] T057 Edit migration `api/migrations/versions/0005_drafts.py` in place (the branch is unmerged):
+  - drop `drafts.subscriber_name`
+  - add data-model.md › `drafts.first_name`, `drafts.father_name`, `drafts.grandfather_name`, `drafts.great_grandfather_name`, `drafts.surname`, `drafts.mother_first_name`, `drafts.mother_second_name`, `drafts.mother_third_name` and `drafts.mother_surname`, each with a CHECK `char_length ≤ 50`
+  - add data-model.md › `drafts.full_name`, with a CHECK `≤ 254`
+
+  Mirror the change in `api/app/models/draft.py` (`TEXT_LIMITS`, `NAME_FIELDS`, `FULL_NAME_FIELDS`). Recreate the dev and test databases.
+- [X] T058 [P] Create `api/app/core/arabic_name.py` with `clean_arabic_name(text) -> str | None`, raising `ValueError` on a disallowed character (research.md R12). Create the mirror `web/src/lib/arabicName.ts`. Both are driven by a new `names` section in the shared fixture `draft_validation_cases.json`, with unit tests in `api/tests/unit/test_arabic_name.py` and `web/src/__tests__/draftValidation.test.ts`.
+- [X] T059 Update the API, from `api/app/schemas/drafts.py` through `draft_service.py` and `draft_validation.py`:
+  - **Schemas:** `DraftChanges` takes the nine names; `DraftOut` returns them with `full_name`; `DraftListItem` returns `full_name`.
+  - **Service** (`draft_service.py`):
+    - Name fields use the name rule, giving 422 `invalid_name_text` with `field` (code added to `api/app/errors.py`).
+    - `full_name` is recomputed on every save.
+    - The list search uses `full_name`.
+  - **Validation** (`draft_validation.py`): the seven required names are separate items, in page order.
+- [X] T060 Update the API tests:
+  - `test_drafts_autosave.py`: autosave of each name field, restoring all names, the computed `full_name`, a digit or Latin letter → 422 with nothing saved, the optional fields accepting empty, and `full_name` refused from the client.
+  - `test_drafts_list_delete.py`, `test_log_safety.py`, `test_draft_validation.py`: adapt to the new fields.
+- [X] T061 Update the web client and form:
+  - **Values and validation:** `FormValues` and `TextField` (`draftFormController.ts`), `drafts.ts` types, `draftValidation.ts` (order, labels, limits).
+  - **Refusing bad values:** the controller does not send a name that breaks the name rule, or any value over its limit; the field shows the error.
+  - **Layout** (`CardDataSection.tsx`): first + second and third + fourth side by side, the surname full width, the fourth with «غير موجود على البطاقة، اسأل المشترك», and the mother's names in a group «اسم الأم» with the third and the surname marked «(اختياري)».
+  - **Other screens:** `SubscriberForm.tsx` (inline errors) and `DraftsTab.tsx` (`full_name`).
+- [X] T062 Update the e2e test `e2e/tests/subscriber-form-acceptance.spec.ts`:
+  - fill the nine names on phone A and find them on phone B
+  - «علي2» shows «الاسم أحرف عربية فقط»
+  - the drafts card shows the full name
+- [X] T063 Close the change:
+  - Run `scripts/test-all.sh`.
+  - Run `docker compose up -d --build`.
+  - Update `specs/005-subscriber-form/manual-test-ar.md` (sections أ and هـ).
+
+**Phase 11 notes (2026-11-22, T057–T063)**:
+- **Migration 0005 edited in place**, as the owner approved (the branch is unmerged). The local dev database already had 0005. Its `drafts` table was altered in place by a one-off script instead of a downgrade, so the 2 dev drafts and their 4 images were kept; the old name moved to `first_name` when valid. The test and e2e databases are recreated on every run.
+- **Name rule**: `app/core/arabic_name.py` and `web/src/lib/arabicName.ts` build their character classes from code points (see the batch 1 note on unicode escapes). Shared cases live in the fixture's `names` section.
+- **Refused, not saved**: `DraftFormController.sendable()` keeps a refused name, or any over-length value, out of every save. That includes «الإبقاء على نسختي». The field shows «الاسم أحرف عربية فقط» at once. The server refuses the same with 422 `invalid_name_text`, and the whole save is rejected.
+- **Field list**: `web/src/lib/nameFields.ts` is the single list of the nine fields, their labels and which are optional.
+- **Checks run**: full gate green (pytest 435, vitest 173, Playwright 22 passed and 26 project-scoped skips). `docker compose up -d --build --wait` was healthy.
+
 ## Dependencies & Execution Order
 
 - **Setup (Phase 1)**: none. T002–T004 can run in parallel after T001.

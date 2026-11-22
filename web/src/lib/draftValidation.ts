@@ -3,6 +3,7 @@
  * rules"). Gives instant feedback; the server's `missing` list is authoritative.
  * Both sides are tested against __tests__/fixtures/draft_validation_cases.json.
  */
+import { NAME_LABELS, NAME_MAX, REQUIRED_NAME_FIELDS, type NameField } from './nameFields';
 import { normalizeNationalId } from './nationalId';
 import { normalizePhone } from './phone';
 
@@ -10,7 +11,13 @@ import { normalizePhone } from './phone';
 export const MISSING_ORDER = [
   'image_front',
   'image_back',
-  'subscriber_name',
+  'first_name',
+  'father_name',
+  'grandfather_name',
+  'great_grandfather_name',
+  'surname',
+  'mother_first_name',
+  'mother_second_name',
   'national_id',
   'family_number',
   'location',
@@ -25,6 +32,8 @@ export const MISSING_ORDER = [
 export type MissingField = (typeof MISSING_ORDER)[number];
 export type MissingCode = 'required' | 'invalid_national_id' | 'invalid_phone';
 
+// The required names in MISSING_ORDER must match REQUIRED_NAME_FIELDS (checked by the tests).
+
 export interface MissingItem {
   field: MissingField;
   code: MissingCode;
@@ -32,7 +41,15 @@ export interface MissingItem {
 
 /** Same limits as data-model.md › drafts and api/app/models/draft.py TEXT_LIMITS. */
 export const TEXT_LIMITS = {
-  subscriber_name: 100,
+  first_name: NAME_MAX,
+  father_name: NAME_MAX,
+  grandfather_name: NAME_MAX,
+  great_grandfather_name: NAME_MAX,
+  surname: NAME_MAX,
+  mother_first_name: NAME_MAX,
+  mother_second_name: NAME_MAX,
+  mother_third_name: NAME_MAX,
+  mother_surname: NAME_MAX,
   national_id: 30,
   family_number: 30,
   address: 300,
@@ -42,8 +59,7 @@ export const TEXT_LIMITS = {
 
 export type LimitedField = keyof typeof TEXT_LIMITS;
 
-export interface DraftFields {
-  subscriber_name?: string | null;
+export interface DraftFields extends Partial<Record<NameField, string | null>> {
   national_id?: string | null;
   family_number?: string | null;
   location_lat?: number | null;
@@ -59,7 +75,13 @@ export interface DraftFields {
 export const FIELD_LABELS: Record<MissingField, string> = {
   image_front: 'وجه البطاقة',
   image_back: 'ظهر البطاقة',
-  subscriber_name: 'الاسم',
+  first_name: NAME_LABELS.first_name,
+  father_name: NAME_LABELS.father_name,
+  grandfather_name: NAME_LABELS.grandfather_name,
+  great_grandfather_name: NAME_LABELS.great_grandfather_name,
+  surname: NAME_LABELS.surname,
+  mother_first_name: NAME_LABELS.mother_first_name,
+  mother_second_name: NAME_LABELS.mother_second_name,
   national_id: 'الرقم الوطني',
   family_number: 'الرقم العائلي',
   location: 'موقع البيت على الخريطة',
@@ -71,11 +93,12 @@ export const FIELD_LABELS: Record<MissingField, string> = {
   phone: 'هاتف المشترك',
 };
 
-export const CODE_MESSAGES: Record<MissingCode | 'too_long', string> = {
+export const CODE_MESSAGES: Record<MissingCode | 'too_long' | 'invalid_name_text', string> = {
   required: 'مطلوب',
   invalid_national_id: 'الرقم الوطني 12 رقماً',
   invalid_phone: 'رقم غير صالح',
   too_long: 'النص أطول من المسموح',
+  invalid_name_text: 'الاسم أحرف عربية فقط',
 };
 
 const blank = (value: string | null | undefined): boolean => value == null || value.trim() === '';
@@ -91,7 +114,7 @@ export function computeMissing(
   if (!sides.has('front')) found.set('image_front', 'required');
   if (!sides.has('back')) found.set('image_back', 'required');
 
-  for (const name of ['subscriber_name', 'family_number', 'address', 'landmark'] as const) {
+  for (const name of [...REQUIRED_NAME_FIELDS, 'family_number', 'address', 'landmark'] as const) {
     if (blank(draft[name])) found.set(name, 'required');
   }
 

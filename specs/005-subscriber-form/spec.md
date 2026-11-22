@@ -18,7 +18,7 @@ JPEG ~0.8) مع شريط تقدّم وإعادة المحاولة. حفظ تلق
 مخزن خاص دائم يدخل في النسخ الاحتياطي، لا رابط عام، يراها صاحب الطلب والأدمن فقط. معيار القبول: مسوّق يملأ نصف
 الاستمارة على هاتف، يفتحها من هاتف آخر ويجد كل شيء محفوظاً بما فيه الصور."
 
-**System document references**: `docs/system.md` v1.4 §4.3 (requests page, «مسودات» tab), §5
+**System document references**: `docs/system.md` v1.5 §4.3 (requests page, «مسودات» tab), §5
 (intro, §5.1 items 1, 2, 5 (manual part) and 6, §5.2, §5.3, §5.4 item 1, §5.5), §7.2 (`draft`
 status and its grey color), §8.1 (phone normalization), §13 (private image storage, access
 logging), §15 (images are part of the backup); constitution Principles II, III, IV, V, IX.
@@ -40,6 +40,20 @@ log), 004 (catalog of active regions, towers and categories; FR-006 copy rule).
   draft changed.
 - The send button stays disabled in this feature; a summary of missing items is shown instead.
 
+### Session 2026-11-22 (owner change before merge: name fields)
+
+- The single name field becomes the nine name fields of the ministry form (registration by
+  the national card), system.md §5.1 v1.5: first, second, third, fourth (not on the card,
+  always typed, «غير موجود على البطاقة، اسأل المشترك»), surname, mother's first, mother's
+  second (all required), mother's third and mother's surname (optional).
+- Each name: Arabic letters and spaces only, trimmed, inner spaces collapsed, diacritics and
+  tatweel removed, at most 50 characters. A name with a digit or a non-Arabic letter is
+  refused and never saved (the screen shows the error and does not send it; the server
+  refuses it with 422).
+- `full_name` (first to surname joined by one space, empty parts skipped) is computed by the
+  server and never sent by the client; it is used for display, search and the drafts list.
+- Editing names does not send a request for review (§6.1, second note).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Fill the form and have it saved automatically (Priority: P1)
@@ -52,7 +66,7 @@ to the server as a draft shortly after it is made, and a small status line shows
 **Why this priority**: The form is the base of every request in the system; autosave is what
 makes it usable in the field on weak networks.
 
-**Independent Test**: Sign in as a marketer, start a new subscriber, type the name and the
+**Independent Test**: Sign in as a marketer, start a new subscriber, type the first name and the
 address, close the browser, reopen the draft from «الطلبات ← مسودات», and find both values.
 
 **Acceptance Scenarios**:
@@ -135,7 +149,7 @@ notice on A.
 ### User Story 4 - Drafts list and deleting a draft (Priority: P2)
 
 On «الطلبات» the «مسودات» tab lists the marketer's drafts, newest change first, each showing the
-subscriber name (or «بدون اسم»), the tower if chosen, the last save time in Baghdad time, and how
+full name (or «بدون اسم»), the tower if chosen, the last save time in Baghdad time, and how
 many items are still missing. Tapping one opens it. «حذف» removes an unsubmitted draft after a
 confirmation, and the deletion is written to «سجل العمليات».
 
@@ -184,13 +198,20 @@ field and the send button stays disabled.
    صالح».
 3. **Given** the family number, **Then** it is required and stored exactly as typed (letters and
    digits, §2).
-4. **Given** any empty or invalid item (either card image, name, national ID, family number,
+4. **Given** any empty or invalid item (either card image, each required name field by its own
+   name, national ID, family number,
    location pin, address, nearest landmark, region, tower, category, phone), **Then** it appears
    in «النواقص».
 5. **Given** a complete and valid form, **Then** «النواقص» shows «كل الحقول مكتملة» and the send
    button is still disabled in this feature.
 6. **Given** an invalid value, **Then** it is still saved in the draft (drafts may be incomplete
    or invalid), and the server repeats the same checks when it reports the missing items.
+   Exception: a name with a digit or a non-Arabic letter, or any value over its length limit,
+   is refused and not saved.
+7. **Given** a name typed as «  علي   حسن  » or with diacritics «عَلِيّ», **Then** it is saved as
+   «علي حسن» / «علي»; «علي2» or «Ali» shows «الاسم أحرف عربية فقط» and is not saved.
+8. **Given** mother's third name and mother's surname left empty, **Then** they are not
+   listed in «النواقص».
 
 ---
 
@@ -282,7 +303,7 @@ prices, change the region, and see the tower choice cleared.
 **Form**
 
 - **FR-003**: The form MUST be one page with the sections in this order: national card (front,
-  then back), card data (name, national ID, family number), house location (pin, address,
+  then back), card data (first name, second (father's) name, third (grandfather's) name, fourth name, surname, mother's first name, mother's second name, mother's third name (optional), mother's surname (optional), national ID, family number), house location (pin, address,
   nearest landmark), subscription (region, tower, category with both prices), subscriber phone.
 - **FR-004**: Card data fields MUST be entered by hand in this feature.
 
@@ -321,7 +342,13 @@ prices, change the region, and see the tower choice cleared.
 - **FR-012**: All fields of FR-003 and both card images MUST be required. The national ID MUST be
   exactly 12 digits after converting Arabic-Indic digits and removing spaces. The phone MUST be
   normalized and validated per §8.1. The family number is stored as typed. Text fields are trimmed
-  and limited to reasonable lengths (name 100, address 300, landmark 200 characters).
+  and limited to reasonable lengths (each name 50, address 300, landmark 200 characters).
+  Mother's third name and mother's surname are optional. Name fields accept Arabic letters
+  and spaces only (diacritics and tatweel removed); a digit or another letter is refused.
+- **FR-012a**: The server MUST compute `full_name` from the first five name fields (first to
+  surname, one space between, empty parts skipped) on every save; the client never sends it.
+  On a phone the name fields are laid out in pairs (first + second, third + fourth), the
+  surname on its own row, and the mother's names grouped under «اسم الأم».
 - **FR-013**: The page MUST show a «النواقص» summary listing every missing or invalid item, each
   linking to its field. The server MUST compute the same list for a draft.
 - **FR-014**: The «إرسال» button MUST be shown but disabled in this feature (it waits for 007 and
@@ -338,8 +365,8 @@ prices, change the region, and see the tower choice cleared.
   show «تغيّرت المسودة من جهاز آخر» within about 30 seconds or at its next save, pause autosave,
   and offer «تحميل الأحدث» or «الإبقاء على نسختي».
 - **FR-018**: The «مسودات» tab of «الطلبات» MUST list the marketer's own drafts, newest change
-  first, with name (or «بدون اسم»), tower, last save time in Baghdad time, number of missing
-  items, the grey draft color, and search by name or phone. Other tabs of §4.3 MAY show an empty
+  first, with the full name (or «بدون اسم»), tower, last save time in Baghdad time, number of missing
+  items, the grey draft color, and search by full name or phone. Other tabs of §4.3 MAY show an empty
   state until their features arrive.
 - **FR-019**: The marketer MUST be able to delete an unsubmitted draft after a confirmation. The
   draft and its images are removed permanently, and one audit entry records who, when and the
@@ -356,7 +383,8 @@ prices, change the region, and see the tower choice cleared.
 
 ### Key Entities
 
-- **Draft request**: owner marketer, status `draft`, subscriber name, national ID, family number,
+- **Draft request**: owner marketer, status `draft`, the nine name fields and the computed full
+  name, national ID, family number,
   location (latitude, longitude), address, nearest landmark, chosen region/tower/category with
   copies of region name, tower code, category name and both prices, subscriber phone (normalized),
   a version that changes on every save, created and last-saved times (UTC).

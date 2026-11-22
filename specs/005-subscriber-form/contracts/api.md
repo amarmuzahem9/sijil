@@ -17,6 +17,7 @@ revealed.
 | 404 | `draft_not_found` | «المسودة غير موجودة» |
 | 409 | `draft_conflict` | «تغيّرت المسودة من جهاز آخر» (+ `version`, `updated_at`, `same_client`) |
 | 422 | `too_long` | «النص أطول من المسموح» (+ `field`) |
+| 422 | `invalid_name_text` | «الاسم أحرف عربية فقط» (+ `field`) |
 | 422 | `invalid_choice` | «الاختيار غير صالح» (an id that does not exist) |
 | 413 | `image_too_large` | «حجم الصورة أكبر من 5 ميغابايت» |
 | 422 | `invalid_image` | «الملف ليس صورة صالحة» |
@@ -29,7 +30,12 @@ revealed.
 {
   "id": "3f0c…", "status": "draft", "version": 7,
   "created_at": "2026-11-22T09:10:00Z", "updated_at": "2026-11-22T09:14:02Z",
-  "subscriber_name": "…", "national_id": "…", "family_number": "…",
+  "first_name": "…", "father_name": "…", "grandfather_name": "…",
+  "great_grandfather_name": "…", "surname": "…",
+  "mother_first_name": "…", "mother_second_name": "…",
+  "mother_third_name": null, "mother_surname": null,
+  "full_name": "… … … … …",
+  "national_id": "…", "family_number": "…",
   "location": {"lat": 33.31, "lng": 44.36, "source": "map", "accuracy_m": null},
   "address": "…", "landmark": "…",
   "area_id": 1, "tower_id": 3, "plan_id": 2,
@@ -53,7 +59,7 @@ revealed.
 
 | Method & path | Who | Body | Success | Notes |
 |---|---|---|---|---|
-| `GET /api/drafts?q=` | marketer | — | 200 `{items:[{id, subscriber_name, tower_code, phone_normalized, updated_at, missing_count, has_images}]}` | Own drafts only, newest `updated_at` first. `q` matches the name (case-insensitive substring) or the phone digits |
+| `GET /api/drafts?q=` | marketer | — | 200 `{items:[{id, full_name, tower_code, phone_normalized, updated_at, missing_count, has_images}]}` | Own drafts only, newest `updated_at` first. `q` matches the full name (substring) or the phone digits |
 | `PUT /api/drafts/{id}` | marketer | `{changes}` | 201 draft (created), or 200 the existing draft unchanged (idempotent retry by the same owner) | `id` is a client UUID. Another owner's id gives 404 |
 | `GET /api/drafts/{id}` | owner | — | 200 draft with `missing` and `notices` | Read-only: notices are computed and not applied (R4) |
 | `GET /api/drafts/{id}/version` | owner | — | 200 `{version, updated_at, same_client}` | Polled every 15 s (R3). 404 after deletion |
@@ -67,7 +73,11 @@ revealed.
 
 ```json
 {
-  "subscriber_name": "string|null", "national_id": "string|null", "family_number": "string|null",
+  "first_name": "string|null", "father_name": "string|null", "grandfather_name": "string|null",
+  "great_grandfather_name": "string|null", "surname": "string|null",
+  "mother_first_name": "string|null", "mother_second_name": "string|null",
+  "mother_third_name": "string|null", "mother_surname": "string|null",
+  "national_id": "string|null", "family_number": "string|null",
   "location": {"lat": 0.0, "lng": 0.0, "source": "gps|map", "accuracy_m": 12} ,
   "address": "string|null", "landmark": "string|null",
   "area_id": 1, "tower_id": 3, "plan_id": 2,
@@ -77,7 +87,9 @@ revealed.
 
 - An omitted key is unchanged. `null` clears the field. `location: null` clears the pin.
 - Text values are trimmed. An empty value becomes `null`.
-- Prices and copies are never accepted from the client.
+- Prices, copies and `full_name` are never accepted from the client.
+- Name fields follow the name rule of data-model.md; a digit or a non-Arabic letter → 422
+  `invalid_name_text`, nothing saved.
 - Changing `area_id` clears `tower_id` unless the same PATCH sets a tower of the new area.
 
 ### Conflict response (409)

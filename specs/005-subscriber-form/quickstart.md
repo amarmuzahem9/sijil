@@ -41,7 +41,7 @@
 
 | # | Scenario | Expected |
 |---|---|---|
-| A | **Acceptance**: On phone context 1, «إضافة مشترك جديد»; upload a front and a back image; fill the name, a 12-digit national ID and the family number; «استخدم موقعي الحالي» with a granted geolocation; choose العلم / ALM01. In context 2, same account, open «الطلبات ← مسودات» and the draft | Every value, the pin coordinates and both images appear |
+| A | **Acceptance**: On phone context 1, «إضافة مشترك جديد»; upload a front and a back image; fill the nine name fields, a 12-digit national ID and the family number; «استخدم موقعي الحالي» with a granted geolocation; choose العلم / ALM01. In context 2, same account, open «الطلبات ← مسودات» and the draft | Every value, the pin coordinates and both images appear |
 | B | In context 2 change the address; wait in context 1 | Within 30 s, context 1 shows «تغيّرت المسودة من جهاز آخر». «تحميل الأحدث» shows the new address |
 | C | Throttle the network to offline while typing the address | The badge reads «غير متصل». Back online, it reads «محفوظ» and the value is on the server |
 | D | Upload a 4000×3000 synthetic photo | The progress bar runs, and the stored image is ≤ 1600 px, JPEG, and under 700 KB (SC-003). Kill the request midway: «فشل الرفع» → «إعادة المحاولة» succeeds |

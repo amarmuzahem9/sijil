@@ -26,7 +26,9 @@ import {
   type LimitedField,
   type MissingField,
 } from '../../../lib/draftValidation';
+import { cleanArabicName } from '../../../lib/arabicName';
 import { getDraft, type Draft } from '../../../lib/drafts';
+import { isNameField, NAME_FIELDS, REQUIRED_NAME_FIELDS } from '../../../lib/nameFields';
 import { useDraftAutosave, type TextField } from '../../../lib/useDraftAutosave';
 import { CardDataSection } from './CardDataSection';
 import { CardSection } from './CardSection';
@@ -40,7 +42,9 @@ import { SignInDialog } from './SignInDialog';
 import { SubscriptionSection } from './SubscriptionSection';
 
 const MISSING_KEY: Partial<Record<TextField, MissingField>> = {
-  subscriber_name: 'subscriber_name',
+  ...(Object.fromEntries(REQUIRED_NAME_FIELDS.map((f) => [f, f])) as Partial<
+    Record<TextField, MissingField>
+  >),
   national_id: 'national_id',
   family_number: 'family_number',
   phone_input: 'phone',
@@ -127,6 +131,9 @@ function DraftEditor({
 
   const errorFor = (field: TextField): string | null => {
     if (isTooLong(field as LimitedField, autosave.values[field])) return CODE_MESSAGES.too_long;
+    // A refused name shows at once: it is not saved until corrected (research.md R12).
+    if (isNameField(field) && !cleanArabicName(autosave.values[field]).ok)
+      return CODE_MESSAGES.invalid_name_text;
     if (!touched.has(field)) return null;
     const key = MISSING_KEY[field];
     const item = key && localMissing.find((m) => m.field === key);
@@ -172,11 +179,12 @@ function DraftEditor({
         <CardDataSection
           autosave={autosave}
           onCommit={onCommit}
-          errors={{
-            subscriber_name: errorFor('subscriber_name') ?? undefined,
-            national_id: errorFor('national_id') ?? undefined,
-            family_number: errorFor('family_number') ?? undefined,
-          }}
+          errors={Object.fromEntries(
+            ([...NAME_FIELDS, 'national_id', 'family_number'] as const).map((f) => [
+              f,
+              errorFor(f) ?? undefined,
+            ]),
+          )}
         />
       </FormSection>
       <FormSection id="section-location">

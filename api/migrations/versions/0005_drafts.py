@@ -19,6 +19,21 @@ depends_on = None
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
 MAX_IMAGE_EDGE = 1600
 
+# The nine name fields of the ministry form (system.md §5.1 v1.5), each at most 50 characters.
+NAME_FIELDS = (
+    "first_name",
+    "father_name",
+    "grandfather_name",
+    "great_grandfather_name",
+    "surname",
+    "mother_first_name",
+    "mother_second_name",
+    "mother_third_name",
+    "mother_surname",
+)
+NAME_MAX = 50
+FULL_NAME_MAX = 254
+
 
 def _now() -> sa.TextClause:
     return sa.text("now()")
@@ -35,7 +50,9 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("status", sa.Text(), nullable=False, server_default=sa.text("'draft'")),
-        sa.Column("subscriber_name", sa.Text(), nullable=True),
+        *[sa.Column(name, sa.Text(), nullable=True) for name in NAME_FIELDS],
+        # Computed by the server from the first five names (research.md R12).
+        sa.Column("full_name", sa.Text(), nullable=True),
         sa.Column("national_id", sa.Text(), nullable=True),
         sa.Column("family_number", sa.Text(), nullable=True),
         sa.Column("location_lat", sa.Float(), nullable=True),
@@ -76,9 +93,16 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=_now()),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=_now()),
         sa.CheckConstraint("status = 'draft'", name="drafts_status_draft"),
+        *[
+            sa.CheckConstraint(
+                f"{name} IS NULL OR char_length({name}) <= {NAME_MAX}",
+                name=f"drafts_{name}_length",
+            )
+            for name in NAME_FIELDS
+        ],
         sa.CheckConstraint(
-            "subscriber_name IS NULL OR char_length(subscriber_name) <= 100",
-            name="drafts_subscriber_name_length",
+            f"full_name IS NULL OR char_length(full_name) <= {FULL_NAME_MAX}",
+            name="drafts_full_name_length",
         ),
         sa.CheckConstraint(
             "national_id IS NULL OR char_length(national_id) <= 30",

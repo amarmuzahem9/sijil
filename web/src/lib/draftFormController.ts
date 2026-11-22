@@ -17,13 +17,15 @@ import {
   type DraftLocation,
   type DraftNotice,
 } from './drafts';
+import { isTooLong, type LimitedField } from './draftValidation';
+import { cleanArabicName } from './arabicName';
+import { isNameField, NAME_FIELDS, type NameField, type NameValues } from './nameFields';
 
 export const TEXT_DEBOUNCE_MS = 1000;
 /** Detect a save made elsewhere within 30 s (SC-004). */
 export const VERSION_POLL_MS = 15_000;
 
-export interface FormValues {
-  subscriber_name: string;
+export interface FormValues extends NameValues {
   national_id: string;
   family_number: string;
   location: DraftLocation | null;
@@ -36,12 +38,14 @@ export interface FormValues {
 }
 
 export type TextField =
-  'subscriber_name' | 'national_id' | 'family_number' | 'address' | 'landmark' | 'phone_input';
+  NameField | 'national_id' | 'family_number' | 'address' | 'landmark' | 'phone_input';
 
 const SUBSCRIPTION_KEYS = ['area_id', 'tower_id', 'plan_id'] as const;
 
+const EMPTY_NAMES = Object.fromEntries(NAME_FIELDS.map((f) => [f, ''])) as NameValues;
+
 export const EMPTY_VALUES: FormValues = {
-  subscriber_name: '',
+  ...EMPTY_NAMES,
   national_id: '',
   family_number: '',
   location: null,
@@ -56,7 +60,7 @@ export const EMPTY_VALUES: FormValues = {
 export function valuesFromDraft(draft: Draft | null): FormValues {
   if (!draft) return EMPTY_VALUES;
   return {
-    subscriber_name: draft.subscriber_name ?? '',
+    ...(Object.fromEntries(NAME_FIELDS.map((f) => [f, draft[f] ?? ''])) as NameValues),
     national_id: draft.national_id ?? '',
     family_number: draft.family_number ?? '',
     location: draft.location,
@@ -67,6 +71,13 @@ export function valuesFromDraft(draft: Draft | null): FormValues {
     plan_id: draft.plan_id,
     phone_input: draft.phone_input ?? '',
   };
+}
+
+/** False for a value the server refuses outright: a name with a digit or a non-Arabic letter,
+ * or text over its limit. Such a value stays on screen with its error and is not sent. */
+export function sendable(field: TextField, value: string): boolean {
+  if (isTooLong(field as LimitedField, value)) return false;
+  return !isNameField(field) || cleanArabicName(value).ok;
 }
 
 export interface FormListener {
@@ -118,7 +129,8 @@ export class DraftFormController {
       window.removeEventListener('online', onOnline);
       for (const [field, timer] of this.timers) {
         clearTimeout(timer);
-        void this.queue.enqueue({ [field]: this.current[field] });
+        if (sendable(field, this.current[field]))
+          void this.queue.enqueue({ [field]: this.current[field] });
       }
       this.timers.clear();
       this.listener = null;
@@ -151,6 +163,7 @@ export class DraftFormController {
     const timer = this.timers.get(field);
     if (timer !== undefined) clearTimeout(timer);
     this.timers.delete(field);
+    if (!sendable(field, this.current[field])) return; // the field shows its error
     void this.queue.enqueue({ [field]: this.current[field] });
   }
 
@@ -189,10 +202,18 @@ export class DraftFormController {
 
   /** «الإبقاء على نسختي»: every local field over the newer server version. */
   keepMine(): void {
-    void this.queue.keepMine(
-      { ...this.current },
-      Math.max(this.queue.currentVersion, this.newerVersion),
-    );
+    const mine = { ...this.current } as Record<string, unknown>;
+    for (const field of [
+      ...NAME_FIELDS,
+      'national_id',
+      'family_number',
+      'address',
+      'landmark',
+      'phone_input',
+    ] as TextField[]) {
+      if (!sendable(field, this.current[field])) delete mine[field];
+    }
+    void this.queue.keepMine(mine, Math.max(this.queue.currentVersion, this.newerVersion));
   }
 
   /** An upload on this page moved the version forward. */

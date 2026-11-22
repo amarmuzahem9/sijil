@@ -66,22 +66,22 @@ def test_list_only_own_drafts_newest_first(client, frozen_clock, make_user, owne
     from datetime import timedelta
 
     h = owner[1]
-    older = _draft(client, h, {"subscriber_name": "مشترك أول"})
+    older = _draft(client, h, {"first_name": "مشترك أول"})
     frozen_clock.advance(timedelta(minutes=5))
-    newer = _draft(client, h, {"subscriber_name": "مشترك ثاني", "phone_input": "0780 123 4567"})
+    newer = _draft(client, h, {"first_name": "مشترك ثاني", "phone_input": "0780 123 4567"})
     other = _h(login(client, make_user("marketer").phone))
-    _draft(client, other, {"subscriber_name": "مشترك غيري"})
+    _draft(client, other, {"first_name": "مشترك غيري"})
 
     items = client.get("/api/drafts", headers=h).json()["items"]
     assert [i["id"] for i in items] == [newer, older]
     first = items[0]
-    assert first["subscriber_name"] == "مشترك ثاني"
+    assert first["full_name"] == "مشترك ثاني"
     assert first["phone_normalized"] == "07801234567"
     assert first["has_images"] is False
-    assert first["missing_count"] == 10  # 12 items minus name and phone
+    assert first["missing_count"] == 16  # 18 items minus the first name and the phone
     assert set(first) == {
         "id",
-        "subscriber_name",
+        "full_name",
         "tower_code",
         "phone_normalized",
         "updated_at",
@@ -103,7 +103,7 @@ def test_list_counts_images(client, owner):
     _upload(client, h, draft_id, "front")
     item = client.get("/api/drafts", headers=h).json()["items"][0]
     assert item["has_images"] is True
-    assert item["missing_count"] == 11
+    assert item["missing_count"] == 17
 
 
 @pytest.mark.parametrize(
@@ -120,8 +120,8 @@ def test_list_counts_images(client, owner):
 )
 def test_search_by_name_or_phone(client, owner, q, expected):
     h = owner[1]
-    _draft(client, h, {"subscriber_name": "مشترك أول"})
-    _draft(client, h, {"subscriber_name": "مشترك ثاني", "phone_input": "07801234567"})
+    _draft(client, h, {"first_name": "مشترك أول"})
+    _draft(client, h, {"first_name": "مشترك ثاني", "phone_input": "07801234567"})
     res = client.get("/api/drafts", params={"q": q}, headers=h)
     assert res.status_code == 200
     assert len(res.json()["items"]) == expected
@@ -144,7 +144,7 @@ def test_delete_removes_rows_files_and_audits_without_card_data(client, db, owne
         client,
         h,
         {
-            "subscriber_name": "مشترك تجريبي",
+            "first_name": "مشترك تجريبي",
             "national_id": "199012345678",
             "family_number": "A1B2C3",
             "phone_input": "07801234567",

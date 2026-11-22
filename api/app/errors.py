@@ -38,6 +38,7 @@ MESSAGES: dict[str, str] = {
     "draft_not_found": "المسودة غير موجودة",
     "draft_conflict": "تغيّرت المسودة من جهاز آخر",
     "too_long": "النص أطول من المسموح",
+    "invalid_name_text": "الاسم أحرف عربية فقط",
     "invalid_choice": "الاختيار غير صالح",
     "image_too_large": "حجم الصورة أكبر من 5 ميغابايت",
     "invalid_image": "الملف ليس صورة صالحة",

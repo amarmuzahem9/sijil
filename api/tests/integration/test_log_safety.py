@@ -124,7 +124,7 @@ def test_no_card_data_in_logs(client, db, make_user, caplog, capsys, tmp_path, m
         f"/api/drafts/{draft_id}",
         json={
             "changes": {
-                "subscriber_name": name,
+                "first_name": name,
                 "national_id": national_id,
                 "family_number": family,
                 "phone_input": phone,

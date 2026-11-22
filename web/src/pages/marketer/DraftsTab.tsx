@@ -35,7 +35,7 @@ function DraftCard({ draft, onDelete }: { draft: DraftListItem; onDelete: () => 
         <Stack spacing={0.5}>
           <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
             <Typography sx={{ fontWeight: 600 }} data-testid="draft-name">
-              {draft.subscriber_name ?? 'بدون اسم'}
+              {draft.full_name ?? 'بدون اسم'}
             </Typography>
             <Chip
               size="small"
@@ -130,7 +130,7 @@ export default function DraftsTab() {
       <ConfirmDialog
         open={toDelete !== null}
         title="حذف المسودة نهائياً؟"
-        message={`ستُحذف المسودة «${toDelete?.subscriber_name ?? 'بدون اسم'}» وصورها ولا يمكن استرجاعها.`}
+        message={`ستُحذف المسودة «${toDelete?.full_name ?? 'بدون اسم'}» وصورها ولا يمكن استرجاعها.`}
         confirmLabel="حذف"
         busy={remove.isPending}
         onConfirm={() => toDelete && remove.mutate(toDelete.id)}

@@ -20,11 +20,12 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
 
 from app.core.access import has_any_permission
+from app.core.arabic_name import InvalidArabicName, clean_arabic_name, join_full_name
 from app.core.phone import normalize_phone, to_latin_digits
 from app.core.timeutil import utc_now
 from app.errors import AppError
 from app.models import Area, Draft, DraftImage, ImageAccessLog, Plan, Tower, User
-from app.models.draft import TEXT_LIMITS
+from app.models.draft import FULL_NAME_FIELDS, NAME_FIELDS, TEXT_LIMITS
 from app.schemas.drafts import (
     DraftChanges,
     DraftImages,
@@ -41,7 +42,6 @@ log = logging.getLogger("sijil.drafts")
 
 # Plain text columns set straight from DraftChanges (after trimming).
 TEXT_FIELDS: tuple[str, ...] = (
-    "subscriber_name",
     "national_id",
     "family_number",
     "address",
@@ -71,10 +71,29 @@ def clean_text(field: str, value: str | None) -> str | None:
     return cleaned
 
 
+def clean_name(field: str, value: str | None) -> str | None:
+    """A name field (research.md R12): Arabic letters and single spaces, ≤ 50 characters.
+    A digit or a non-Arabic letter → 422 `invalid_name_text` with `field`; nothing is saved."""
+    try:
+        cleaned = clean_arabic_name(value)
+    except InvalidArabicName:
+        raise AppError("invalid_name_text", 422, extra={"field": field}) from None
+    if cleaned is not None and len(cleaned) > TEXT_LIMITS[field]:
+        raise AppError("too_long", 422, extra={"field": field})
+    return cleaned
+
+
 def apply_changes(draft: Draft, changes: DraftChanges) -> None:
-    """Apply the text, location and phone keys present in `changes` (omitted keys are unchanged,
-    `None` clears). Subscription ids are handled by the catalog-copy step (research.md R4)."""
+    """Apply the name, text, location and phone keys present in `changes` (omitted keys are
+    unchanged, `None` clears). Subscription ids are handled by the catalog-copy step (R4).
+    `full_name` is recomputed here on every change of a name (R12)."""
     given = changes.model_fields_set
+
+    names = {f: clean_name(f, getattr(changes, f)) for f in NAME_FIELDS if f in given}
+    for field, value in names.items():
+        setattr(draft, field, value)
+    if names:
+        draft.full_name = join_full_name([getattr(draft, f) for f in FULL_NAME_FIELDS])
 
     for field in TEXT_FIELDS:
         if field in given:
@@ -126,7 +145,8 @@ def to_out(draft: Draft, notices: list[NoticeOut] | None = None) -> DraftOut:
         version=draft.version,
         created_at=draft.created_at,
         updated_at=draft.updated_at,
-        subscriber_name=draft.subscriber_name,
+        **{field: getattr(draft, field) for field in NAME_FIELDS},
+        full_name=draft.full_name,
         national_id=draft.national_id,
         family_number=draft.family_number,
         location=location,
@@ -409,7 +429,7 @@ def list_own(db: Session, user: User, q: str | None = None) -> list[DraftListIte
     stmt = select(Draft).where(Draft.marketer_id == user.id)
     text = (q or "").strip()
     if text:
-        conditions = [Draft.subscriber_name.ilike(f"%{_like_escape(text)}%", escape="\\")]
+        conditions = [Draft.full_name.ilike(f"%{_like_escape(text)}%", escape="\\")]
         digits = "".join(c for c in to_latin_digits(text) if c.isascii() and c.isdigit())
         if digits:
             conditions.append(Draft.phone_normalized.like(f"%{digits}%"))
@@ -418,7 +438,7 @@ def list_own(db: Session, user: User, q: str | None = None) -> list[DraftListIte
     return [
         DraftListItem(
             id=d.id,
-            subscriber_name=d.subscriber_name,
+            full_name=d.full_name,
             tower_code=d.tower_code,
             phone_normalized=d.phone_normalized,
             updated_at=d.updated_at,

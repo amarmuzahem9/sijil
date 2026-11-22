@@ -25,7 +25,15 @@ class LocationIn(_Body):
 
 
 class DraftChanges(_Body):
-    subscriber_name: str | None = None
+    first_name: str | None = None
+    father_name: str | None = None
+    grandfather_name: str | None = None
+    great_grandfather_name: str | None = None
+    surname: str | None = None
+    mother_first_name: str | None = None
+    mother_second_name: str | None = None
+    mother_third_name: str | None = None
+    mother_surname: str | None = None
     national_id: str | None = None
     family_number: str | None = None
     location: LocationIn | None = None
@@ -87,7 +95,16 @@ class DraftOut(BaseModel):
     version: int
     created_at: datetime
     updated_at: datetime
-    subscriber_name: str | None
+    first_name: str | None
+    father_name: str | None
+    grandfather_name: str | None
+    great_grandfather_name: str | None
+    surname: str | None
+    mother_first_name: str | None
+    mother_second_name: str | None
+    mother_third_name: str | None
+    mother_surname: str | None
+    full_name: str | None
     national_id: str | None
     family_number: str | None
     location: LocationOut | None
@@ -110,7 +127,7 @@ class DraftOut(BaseModel):
 
 class DraftListItem(BaseModel):
     id: uuid.UUID
-    subscriber_name: str | None
+    full_name: str | None
     tower_code: str | None
     phone_normalized: str | None
     updated_at: datetime

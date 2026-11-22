@@ -215,8 +215,8 @@ deletion with files, the satellite map, catalog reconciliation, and the tests in
     `api/tests/fixtures/draft_validation_cases.json`, copied to
     `web/src/__tests__/fixtures/`. This follows the existing `phone_cases.json` pattern.
   - The server result is authoritative.
-- **Lengths**: name 100, address 300, landmark 200, family number 30, phone input 30, national ID
-  input 30.
+- **Lengths**: each name field 50, address 300, landmark 200, family number 30, phone input 30,
+  national ID input 30.
 
 ## R10. Map configuration at runtime
 
@@ -258,6 +258,30 @@ deletion with files, the satellite map, catalog reconciliation, and the tests in
     checked by hand on staging (T054), with no CSP errors in the browser console.
 - **e2e**: There is no key in e2e. Playwright checks the «الخريطة غير متوفرة حالياً» path and
   sets the pin through a granted, mocked geolocation.
+
+## R12. Name fields of the ministry form (owner change before merge)
+
+- **Decision**: Nine name columns replace `subscriber_name` (system.md §5.1 v1.5), in the order of
+  the ministry's registration form. Migration 0005 is edited in place: the branch is not merged
+  or deployed.
+- **`full_name`**: computed in `draft_service` on every save from the first five fields, stored
+  in its own column so the drafts list and search stay one indexed column. The client never
+  sends it (`DraftChanges` has no such key, `extra="forbid"`).
+- **Name rule** (`app/core/arabic_name.py`, mirror `web/src/lib/arabicName.ts`, shared fixture):
+  - NFC; remove diacritics (U+064B–U+065F, U+0670) and tatweel (U+0640); collapse whitespace;
+    trim; empty → null.
+  - Allowed: Arabic letters U+0621–U+063A, U+0641–U+064A, U+0671–U+06D3 (Iraqi names use
+    گ چ پ ڤ), and single spaces («عبد الله»). Anything else (digits of any script, Latin
+    letters, symbols) → 422 `invalid_name_text`.
+  - The patterns are built from code points in code (not literal characters), because the editing
+    tools turn `\u` escapes into invisible characters (batch 1 note).
+- **Refused, not saved** (owner decision): unlike other invalid values, a bad name never reaches
+  the draft. The client shows «الاسم أحرف عربية فقط» at once and does not send the value; the
+  server refuses it anyway. The same applies to over-length values.
+- **Missing items**: each of the seven required names is its own item in «النواقص», in page
+  order; the two optional mother fields are never listed.
+- **Review**: editing names never sends a request for review (§6.1, second note); feature 008
+  compares only the phone, national ID and family number.
 
 ## R11. Pages and routes (marketer)
 

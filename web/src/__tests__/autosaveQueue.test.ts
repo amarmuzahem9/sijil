@@ -52,9 +52,9 @@ describe('AutosaveQueue', () => {
   it('creates the draft on the first change with a client UUID', async () => {
     const { deps, queue } = setup({ id: null, version: 0 });
     deps.create.mockResolvedValue(draft(1));
-    await queue.enqueue({ subscriber_name: 'مشترك' });
+    await queue.enqueue({ first_name: 'مشترك' });
     expect(deps.onCreated).toHaveBeenCalledWith('new-id');
-    expect(deps.create).toHaveBeenCalledWith('new-id', { subscriber_name: 'مشترك' });
+    expect(deps.create).toHaveBeenCalledWith('new-id', { first_name: 'مشترك' });
     expect(queue.currentVersion).toBe(1);
     expect(queue.state).toBe('saved');
   });
@@ -120,7 +120,7 @@ describe('AutosaveQueue', () => {
 
     // «الإبقاء على نسختي»: every local field on top of the server's version.
     deps.patch.mockResolvedValueOnce(draft(6));
-    const all: DraftChanges = { address: 'أ', landmark: 'ب', subscriber_name: 'مشترك' };
+    const all: DraftChanges = { address: 'أ', landmark: 'ب', first_name: 'مشترك' };
     await queue.keepMine(all, 5);
     expect(deps.patch).toHaveBeenLastCalledWith('d1', 5, all);
     expect(queue.state).toBe('saved');

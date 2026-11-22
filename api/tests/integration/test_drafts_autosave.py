@@ -34,13 +34,13 @@ def _create(client, h, changes=None, draft_id=None):
 
 
 def test_put_creates_draft_with_version_1(client, h) -> None:
-    draft_id, res = _create(client, h, {"subscriber_name": "  مشترك تجريبي  "})
+    draft_id, res = _create(client, h, {"first_name": "  مشترك تجريبي  "})
     assert res.status_code == 201
     body = res.json()
     assert body["id"] == draft_id
     assert body["version"] == 1
     assert body["status"] == "draft"
-    assert body["subscriber_name"] == "مشترك تجريبي"
+    assert body["first_name"] == "مشترك تجريبي"
     assert body["images"] == {"front": None, "back": None}
     assert body["missing"][0] == {"field": "image_front", "code": "required"}
 
@@ -93,7 +93,7 @@ def test_missing_or_malformed_client_id_is_422(client, marketer, value) -> None:
 
 
 def test_patch_updates_only_given_keys_and_bumps_version(client, h) -> None:
-    draft_id, created = _create(client, h, {"subscriber_name": "مشترك", "address": "حي"})
+    draft_id, created = _create(client, h, {"first_name": "مشترك", "address": "حي"})
     before = created.json()
     res = client.patch(
         f"/api/drafts/{draft_id}",
@@ -104,18 +104,18 @@ def test_patch_updates_only_given_keys_and_bumps_version(client, h) -> None:
     body = res.json()
     assert body["version"] == 2
     assert body["address"] == "حي جديد"
-    assert body["subscriber_name"] == "مشترك"
+    assert body["first_name"] == "مشترك"
     assert body["updated_at"] >= before["updated_at"]
 
 
 def test_patch_null_clears_and_empty_becomes_null(client, h) -> None:
-    draft_id, _ = _create(client, h, {"subscriber_name": "مشترك", "address": "حي"})
+    draft_id, _ = _create(client, h, {"first_name": "مشترك", "address": "حي"})
     res = client.patch(
         f"/api/drafts/{draft_id}",
-        json={"version": 1, "changes": {"subscriber_name": None, "address": "   "}},
+        json={"version": 1, "changes": {"first_name": None, "address": "   "}},
         headers=h,
     )
-    assert res.json()["subscriber_name"] is None
+    assert res.json()["first_name"] is None
     assert res.json()["address"] is None
 
 
@@ -287,7 +287,13 @@ def test_version_endpoint(client, marketer) -> None:
 PAGE_ORDER = [
     "image_front",
     "image_back",
-    "subscriber_name",
+    "first_name",
+    "father_name",
+    "grandfather_name",
+    "great_grandfather_name",
+    "surname",
+    "mother_first_name",
+    "mother_second_name",
     "national_id",
     "family_number",
     "location",
@@ -347,7 +353,13 @@ def test_complete_draft_has_no_missing_items(client, db, h, make_user, tmp_path,
         client,
         h,
         {
-            "subscriber_name": "مشترك تجريبي",
+            "first_name": "مشترك",
+            "father_name": "تجريبي",
+            "grandfather_name": "اختبار",
+            "great_grandfather_name": "نموذج",
+            "surname": "الوهمي",
+            "mother_first_name": "أم",
+            "mother_second_name": "تجريبية",
             "national_id": "199012345678",
             "family_number": "A1B2C3",
             "location": {"lat": 33.3, "lng": 44.4, "source": "map"},

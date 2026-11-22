@@ -27,9 +27,26 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.timeutil import utc_now
 from app.models.base import Base
 
+# The nine name fields of the ministry form, in page order (system.md §5.1 v1.5).
+NAME_FIELDS: tuple[str, ...] = (
+    "first_name",
+    "father_name",
+    "grandfather_name",
+    "great_grandfather_name",
+    "surname",
+    "mother_first_name",
+    "mother_second_name",
+    "mother_third_name",
+    "mother_surname",
+)
+# `full_name` = these five, joined by one space, empty parts skipped (research.md R12).
+FULL_NAME_FIELDS: tuple[str, ...] = NAME_FIELDS[:5]
+OPTIONAL_NAME_FIELDS: tuple[str, ...] = ("mother_third_name", "mother_surname")
+NAME_MAX = 50
+
 # data-model.md › drafts / draft_images — limits shared by the service and the validation.
 TEXT_LIMITS: dict[str, int] = {
-    "subscriber_name": 100,
+    **{name: NAME_MAX for name in NAME_FIELDS},
     "national_id": 30,
     "family_number": 30,
     "address": 300,
@@ -68,7 +85,17 @@ class Draft(Base):
         Text, nullable=False, default="draft", server_default=text("'draft'")
     )
 
-    subscriber_name: Mapped[str | None] = mapped_column(Text)
+    first_name: Mapped[str | None] = mapped_column(Text)
+    father_name: Mapped[str | None] = mapped_column(Text)
+    grandfather_name: Mapped[str | None] = mapped_column(Text)
+    great_grandfather_name: Mapped[str | None] = mapped_column(Text)
+    surname: Mapped[str | None] = mapped_column(Text)
+    mother_first_name: Mapped[str | None] = mapped_column(Text)
+    mother_second_name: Mapped[str | None] = mapped_column(Text)
+    mother_third_name: Mapped[str | None] = mapped_column(Text)
+    mother_surname: Mapped[str | None] = mapped_column(Text)
+    # Computed by draft_service on every save; never accepted from the client.
+    full_name: Mapped[str | None] = mapped_column(Text)
     national_id: Mapped[str | None] = mapped_column(Text)
     family_number: Mapped[str | None] = mapped_column(Text)
 

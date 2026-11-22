@@ -1,7 +1,15 @@
 {
  "_comment": "Shared by api/tests and web/src/__tests__ (copy kept identical). Synthetic data only.",
  "limits": {
-  "subscriber_name": 100,
+  "first_name": 50,
+  "father_name": 50,
+  "grandfather_name": 50,
+  "great_grandfather_name": 50,
+  "surname": 50,
+  "mother_first_name": 50,
+  "mother_second_name": 50,
+  "mother_third_name": 50,
+  "mother_surname": 50,
   "national_id": 30,
   "family_number": 30,
   "address": 300,
@@ -11,7 +19,13 @@
  "missing_order": [
   "image_front",
   "image_back",
-  "subscriber_name",
+  "first_name",
+  "father_name",
+  "grandfather_name",
+  "great_grandfather_name",
+  "surname",
+  "mother_first_name",
+  "mother_second_name",
   "national_id",
   "family_number",
   "location",
@@ -94,7 +108,31 @@
      "code": "required"
     },
     {
-     "field": "subscriber_name",
+     "field": "first_name",
+     "code": "required"
+    },
+    {
+     "field": "father_name",
+     "code": "required"
+    },
+    {
+     "field": "grandfather_name",
+     "code": "required"
+    },
+    {
+     "field": "great_grandfather_name",
+     "code": "required"
+    },
+    {
+     "field": "surname",
+     "code": "required"
+    },
+    {
+     "field": "mother_first_name",
+     "code": "required"
+    },
+    {
+     "field": "mother_second_name",
      "code": "required"
     },
     {
@@ -138,7 +176,6 @@
   {
    "note": "complete draft",
    "draft": {
-    "subscriber_name": "مشترك تجريبي",
     "national_id": "199012345678",
     "family_number": "A1B2C3",
     "location_lat": 33.31,
@@ -148,7 +185,14 @@
     "area_id": 1,
     "tower_id": 1,
     "plan_id": 1,
-    "phone_input": "07801234567"
+    "phone_input": "07801234567",
+    "first_name": "مشترك",
+    "father_name": "تجريبي",
+    "grandfather_name": "اختبار",
+    "great_grandfather_name": "نموذج",
+    "surname": "الوهمي",
+    "mother_first_name": "أم",
+    "mother_second_name": "تجريبية"
    },
    "images": [
     "front",
@@ -159,7 +203,6 @@
   {
    "note": "back image only",
    "draft": {
-    "subscriber_name": "مشترك تجريبي",
     "national_id": "199012345678",
     "family_number": "A1B2C3",
     "location_lat": 33.31,
@@ -169,7 +212,14 @@
     "area_id": 1,
     "tower_id": 1,
     "plan_id": 1,
-    "phone_input": "07801234567"
+    "phone_input": "07801234567",
+    "first_name": "مشترك",
+    "father_name": "تجريبي",
+    "grandfather_name": "اختبار",
+    "great_grandfather_name": "نموذج",
+    "surname": "الوهمي",
+    "mother_first_name": "أم",
+    "mother_second_name": "تجريبية"
    },
    "images": [
     "back"
@@ -182,9 +232,8 @@
    ]
   },
   {
-   "note": "whitespace-only name",
+   "note": "whitespace-only first name",
    "draft": {
-    "subscriber_name": "   ",
     "national_id": "199012345678",
     "family_number": "A1B2C3",
     "location_lat": 33.31,
@@ -194,7 +243,14 @@
     "area_id": 1,
     "tower_id": 1,
     "plan_id": 1,
-    "phone_input": "07801234567"
+    "phone_input": "07801234567",
+    "first_name": "   ",
+    "father_name": "تجريبي",
+    "grandfather_name": "اختبار",
+    "great_grandfather_name": "نموذج",
+    "surname": "الوهمي",
+    "mother_first_name": "أم",
+    "mother_second_name": "تجريبية"
    },
    "images": [
     "front",
@@ -202,7 +258,7 @@
    ],
    "missing": [
     {
-     "field": "subscriber_name",
+     "field": "first_name",
      "code": "required"
     }
    ]
@@ -210,7 +266,6 @@
   {
    "note": "11-digit national id",
    "draft": {
-    "subscriber_name": "مشترك تجريبي",
     "national_id": "19901234567",
     "family_number": "A1B2C3",
     "location_lat": 33.31,
@@ -220,7 +275,14 @@
     "area_id": 1,
     "tower_id": 1,
     "plan_id": 1,
-    "phone_input": "07801234567"
+    "phone_input": "07801234567",
+    "first_name": "مشترك",
+    "father_name": "تجريبي",
+    "grandfather_name": "اختبار",
+    "great_grandfather_name": "نموذج",
+    "surname": "الوهمي",
+    "mother_first_name": "أم",
+    "mother_second_name": "تجريبية"
    },
    "images": [
     "front",
@@ -236,7 +298,6 @@
   {
    "note": "Arabic-Indic national id is valid",
    "draft": {
-    "subscriber_name": "مشترك تجريبي",
     "national_id": "١٩٩٠١٢٣٤٥٦٧٨",
     "family_number": "A1B2C3",
     "location_lat": 33.31,
@@ -246,7 +307,14 @@
     "area_id": 1,
     "tower_id": 1,
     "plan_id": 1,
-    "phone_input": "07801234567"
+    "phone_input": "07801234567",
+    "first_name": "مشترك",
+    "father_name": "تجريبي",
+    "grandfather_name": "اختبار",
+    "great_grandfather_name": "نموذج",
+    "surname": "الوهمي",
+    "mother_first_name": "أم",
+    "mother_second_name": "تجريبية"
    },
    "images": [
     "front",
@@ -257,7 +325,6 @@
   {
    "note": "invalid phone",
    "draft": {
-    "subscriber_name": "مشترك تجريبي",
     "national_id": "199012345678",
     "family_number": "A1B2C3",
     "location_lat": 33.31,
@@ -267,7 +334,14 @@
     "area_id": 1,
     "tower_id": 1,
     "plan_id": 1,
-    "phone_input": "0780123"
+    "phone_input": "0780123",
+    "first_name": "مشترك",
+    "father_name": "تجريبي",
+    "grandfather_name": "اختبار",
+    "great_grandfather_name": "نموذج",
+    "surname": "الوهمي",
+    "mother_first_name": "أم",
+    "mother_second_name": "تجريبية"
    },
    "images": [
     "front",
@@ -283,7 +357,6 @@
   {
    "note": "+964 phone with spaces is valid",
    "draft": {
-    "subscriber_name": "مشترك تجريبي",
     "national_id": "199012345678",
     "family_number": "A1B2C3",
     "location_lat": 33.31,
@@ -293,7 +366,14 @@
     "area_id": 1,
     "tower_id": 1,
     "plan_id": 1,
-    "phone_input": "+964 780 123 4567"
+    "phone_input": "+964 780 123 4567",
+    "first_name": "مشترك",
+    "father_name": "تجريبي",
+    "grandfather_name": "اختبار",
+    "great_grandfather_name": "نموذج",
+    "surname": "الوهمي",
+    "mother_first_name": "أم",
+    "mother_second_name": "تجريبية"
    },
    "images": [
     "front",
@@ -304,7 +384,6 @@
   {
    "note": "no location",
    "draft": {
-    "subscriber_name": "مشترك تجريبي",
     "national_id": "199012345678",
     "family_number": "A1B2C3",
     "location_lat": null,
@@ -314,7 +393,14 @@
     "area_id": 1,
     "tower_id": 1,
     "plan_id": 1,
-    "phone_input": "07801234567"
+    "phone_input": "07801234567",
+    "first_name": "مشترك",
+    "father_name": "تجريبي",
+    "grandfather_name": "اختبار",
+    "great_grandfather_name": "نموذج",
+    "surname": "الوهمي",
+    "mother_first_name": "أم",
+    "mother_second_name": "تجريبية"
    },
    "images": [
     "front",
@@ -330,7 +416,6 @@
   {
    "note": "family number kept as typed",
    "draft": {
-    "subscriber_name": "مشترك تجريبي",
     "national_id": "199012345678",
     "family_number": "ab 12/3",
     "location_lat": 33.31,
@@ -340,7 +425,14 @@
     "area_id": 1,
     "tower_id": 1,
     "plan_id": 1,
-    "phone_input": "07801234567"
+    "phone_input": "07801234567",
+    "first_name": "مشترك",
+    "father_name": "تجريبي",
+    "grandfather_name": "اختبار",
+    "great_grandfather_name": "نموذج",
+    "surname": "الوهمي",
+    "mother_first_name": "أم",
+    "mother_second_name": "تجريبية"
    },
    "images": [
     "front",
@@ -351,7 +443,6 @@
   {
    "note": "no tower, no plan, empty landmark",
    "draft": {
-    "subscriber_name": "مشترك تجريبي",
     "national_id": "199012345678",
     "family_number": "A1B2C3",
     "location_lat": 33.31,
@@ -361,7 +452,14 @@
     "area_id": 1,
     "tower_id": null,
     "plan_id": null,
-    "phone_input": "07801234567"
+    "phone_input": "07801234567",
+    "first_name": "مشترك",
+    "father_name": "تجريبي",
+    "grandfather_name": "اختبار",
+    "great_grandfather_name": "نموذج",
+    "surname": "الوهمي",
+    "mother_first_name": "أم",
+    "mother_second_name": "تجريبية"
    },
    "images": [
     "front",
@@ -381,6 +479,161 @@
      "code": "required"
     }
    ]
+  },
+  {
+   "note": "optional mother names may stay empty",
+   "draft": {
+    "national_id": "199012345678",
+    "family_number": "A1B2C3",
+    "location_lat": 33.31,
+    "location_lng": 44.36,
+    "address": "حي تجريبي، شارع 1",
+    "landmark": "قرب جامع تجريبي",
+    "area_id": 1,
+    "tower_id": 1,
+    "plan_id": 1,
+    "phone_input": "07801234567",
+    "first_name": "مشترك",
+    "father_name": "تجريبي",
+    "grandfather_name": "اختبار",
+    "great_grandfather_name": "نموذج",
+    "surname": "الوهمي",
+    "mother_first_name": "أم",
+    "mother_second_name": "تجريبية",
+    "mother_third_name": null,
+    "mother_surname": ""
+   },
+   "images": [
+    "front",
+    "back"
+   ],
+   "missing": []
+  },
+  {
+   "note": "each missing required name is its own item",
+   "draft": {
+    "national_id": "199012345678",
+    "family_number": "A1B2C3",
+    "location_lat": 33.31,
+    "location_lng": 44.36,
+    "address": "حي تجريبي، شارع 1",
+    "landmark": "قرب جامع تجريبي",
+    "area_id": 1,
+    "tower_id": 1,
+    "plan_id": 1,
+    "phone_input": "07801234567",
+    "first_name": "مشترك",
+    "father_name": null,
+    "grandfather_name": "اختبار",
+    "great_grandfather_name": "",
+    "surname": "الوهمي",
+    "mother_first_name": "أم",
+    "mother_second_name": null
+   },
+   "images": [
+    "front",
+    "back"
+   ],
+   "missing": [
+    {
+     "field": "father_name",
+     "code": "required"
+    },
+    {
+     "field": "great_grandfather_name",
+     "code": "required"
+    },
+    {
+     "field": "mother_second_name",
+     "code": "required"
+    }
+   ]
+  }
+ ],
+ "names": [
+  {
+   "note": "plain",
+   "input": "علي",
+   "expected": "علي",
+   "valid": true
+  },
+  {
+   "note": "trim and collapse spaces",
+   "input": "  عبد   الله  ",
+   "expected": "عبد الله",
+   "valid": true
+  },
+  {
+   "note": "diacritics removed",
+   "input": "عَلِيّ",
+   "expected": "علي",
+   "valid": true
+  },
+  {
+   "note": "tatweel removed",
+   "input": "علـــي",
+   "expected": "علي",
+   "valid": true
+  },
+  {
+   "note": "direction mark removed",
+   "input": "‏حسن‏",
+   "expected": "حسن",
+   "valid": true
+  },
+  {
+   "note": "Iraqi letters gaf and che",
+   "input": "گاطع چاسب",
+   "expected": "گاطع چاسب",
+   "valid": true
+  },
+  {
+   "note": "hamza forms",
+   "input": "أحمد إبراهيم آمنة مؤمن رئيس",
+   "expected": "أحمد إبراهيم آمنة مؤمن رئيس",
+   "valid": true
+  },
+  {
+   "note": "empty",
+   "input": "   ",
+   "expected": null,
+   "valid": true
+  },
+  {
+   "note": "Latin digit",
+   "input": "علي2",
+   "expected": null,
+   "valid": false
+  },
+  {
+   "note": "Arabic-Indic digit",
+   "input": "٣علي",
+   "expected": null,
+   "valid": false
+  },
+  {
+   "note": "Latin letters",
+   "input": "Ali",
+   "expected": null,
+   "valid": false
+  },
+  {
+   "note": "mixed Latin",
+   "input": "علي A",
+   "expected": null,
+   "valid": false
+  },
+  {
+   "note": "dash",
+   "input": "علي-حسن",
+   "expected": null,
+   "valid": false
+  },
+  {
+   "note": "dot",
+   "input": "م.علي",
+   "expected": null,
+   "valid": false
   }
  ]
 }

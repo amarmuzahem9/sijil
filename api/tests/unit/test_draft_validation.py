@@ -11,7 +11,15 @@ FIXTURE = json.loads(
     (Path(__file__).parent.parent / "fixtures" / "draft_validation_cases.json").read_text("utf-8")
 )
 FIELDS = (
-    "subscriber_name",
+    "first_name",
+    "father_name",
+    "grandfather_name",
+    "great_grandfather_name",
+    "surname",
+    "mother_first_name",
+    "mother_second_name",
+    "mother_third_name",
+    "mother_surname",
     "national_id",
     "family_number",
     "location_lat",

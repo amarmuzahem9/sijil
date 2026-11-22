@@ -17,6 +17,7 @@ import {
   reportAuthError,
 } from './api';
 import type { MissingItem } from './draftValidation';
+import type { NullableNames } from './nameFields';
 
 export const clientId: string = crypto.randomUUID();
 
@@ -47,13 +48,14 @@ export interface DraftNotice {
   new?: { trial_price: number; second_price: number } | null;
 }
 
-export interface Draft {
+export interface Draft extends NullableNames {
   id: string;
   status: 'draft';
   version: number;
   created_at: string;
   updated_at: string;
-  subscriber_name: string | null;
+  /** Computed by the server from the first five names (R12). */
+  full_name: string | null;
   national_id: string | null;
   family_number: string | null;
   location: DraftLocation | null;
@@ -74,9 +76,9 @@ export interface Draft {
   notices: DraftNotice[];
 }
 
-/** Partial update: an omitted key is unchanged, `null` clears. Prices are never sent. */
-export interface DraftChanges {
-  subscriber_name?: string | null;
+/** Partial update: an omitted key is unchanged, `null` clears. Prices and `full_name` are
+ * never sent. */
+export interface DraftChanges extends Partial<NullableNames> {
   national_id?: string | null;
   family_number?: string | null;
   location?: DraftLocation | null;
@@ -90,7 +92,7 @@ export interface DraftChanges {
 
 export interface DraftListItem {
   id: string;
-  subscriber_name: string | null;
+  full_name: string | null;
   tower_code: string | null;
   phone_normalized: string | null;
   updated_at: string;
