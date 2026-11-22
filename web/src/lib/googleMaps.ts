@@ -32,7 +32,10 @@ export interface GMarker {
   map: GMap | null;
   position: unknown;
   gmpDraggable: boolean;
-  addListener(event: 'dragend', handler: () => void): MapsEventListener;
+  /** The marker is a DOM element: Google asks for `addEventListener` with `gmp-` events. The
+   * events carry no position; read `position` instead. */
+  addEventListener(event: 'gmp-dragend', handler: () => void): void;
+  removeEventListener(event: 'gmp-dragend', handler: () => void): void;
 }
 
 export interface MapsApi {

@@ -154,9 +154,8 @@ function installFakeGoogle() {
       this.map = opts.map;
       this.position = opts.position;
     }
-    addListener() {
-      return { remove() {} };
-    }
+    addEventListener() {}
+    removeEventListener() {}
   }
   class LatLng {
     constructor(

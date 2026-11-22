@@ -96,9 +96,12 @@ function fakeApi() {
     AdvancedMarkerElement: vi.fn(function (opts: Record<string, unknown>) {
       marker.position = opts.position;
       return Object.assign(marker, {
-        addListener: (_: string, h: () => void) => {
-          handlers.dragend = h;
-          return { remove: vi.fn() };
+        addEventListener: (event: string, h: () => void) => {
+          if (event === 'gmp-dragend') handlers.dragend = h;
+        },
+        removeEventListener: vi.fn(),
+        addListener: () => {
+          throw new Error('the marker must use addEventListener with gmp- events');
         },
       });
     }),

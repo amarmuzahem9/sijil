@@ -52,10 +52,11 @@ export function MapPicker({
       gmpDraggable: true,
       title: 'البيت',
     });
-    const drag = mk.addListener('dragend', () => {
+    const onDragEnd = () => {
       const pos = readPosition(mk);
       if (pos) onPinRef.current(pos);
-    });
+    };
+    mk.addEventListener('gmp-dragend', onDragEnd);
     const click = m.addListener('click', (e) => {
       // LatLng, literal, or nothing at all (e.g. a tap on a control): ignore what has no numbers.
       const pos = toLatLngLiteral(e?.latLng);
@@ -66,7 +67,7 @@ export function MapPicker({
     map.current = m;
     marker.current = mk;
     return () => {
-      drag.remove();
+      mk.removeEventListener('gmp-dragend', onDragEnd);
       click.remove();
       mk.map = null;
       map.current = null;
