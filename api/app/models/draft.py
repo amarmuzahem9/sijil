@@ -73,6 +73,9 @@ TEXT_LIMITS: dict[str, int] = {
     "address": 300,
     "landmark": 200,
     "phone_input": 30,
+    # Back of the card (owner change, system.md v1.8).
+    "birth_place": 100,
+    "issuing_authority": 100,
 }
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
 MAX_IMAGE_EDGE = 1600

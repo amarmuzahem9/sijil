@@ -36,3 +36,26 @@ export function cleanArabicName(raw: string | null | undefined): NameResult {
   if (!text) return { ok: true, value: null };
   return VALID.test(text) ? { ok: true, value: text } : { ok: false };
 }
+
+export const INVALID_PLACE_MESSAGE = 'محل الولادة أحرف عربية فقط';
+
+/** A place name such as «تكريت-صلاح الدين» (specs/006 FR-028): Arabic words separated by
+ * spaces, «-» or «/»; `ok: false` when the server would refuse it. */
+export function cleanPlaceText(raw: string | null | undefined): NameResult {
+  if (raw == null || !raw.trim()) return { ok: true, value: null };
+  const parts = raw.trim().split(/\s*([-/])\s*/);
+  const out: string[] = [];
+  for (const part of parts) {
+    if (part === '-' || part === '/') {
+      if (!out.length || out[out.length - 1] === '-' || out[out.length - 1] === '/')
+        return { ok: false };
+      out.push(part);
+      continue;
+    }
+    const cleaned = cleanArabicName(part);
+    if (!cleaned.ok || cleaned.value === null) return { ok: false };
+    out.push(cleaned.value);
+  }
+  if (out[out.length - 1] === '-' || out[out.length - 1] === '/') return { ok: false };
+  return { ok: true, value: out.join('') };
+}

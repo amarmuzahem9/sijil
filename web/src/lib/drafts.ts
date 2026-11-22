@@ -59,6 +59,12 @@ export const CARD_FIELDS = [
   'mother_second_name',
   'national_id',
   'family_number',
+  // Back of the card (owner change, system.md v1.8).
+  'birth_date',
+  'birth_place',
+  'issue_date',
+  'expiry_date',
+  'issuing_authority',
 ] as const;
 export type CardField = (typeof CARD_FIELDS)[number];
 
@@ -116,6 +122,12 @@ export interface Draft extends NullableNames {
   second_price: number | null;
   phone_input: string | null;
   phone_normalized: string | null;
+  /** Back of the card: ISO dates (YYYY-MM-DD) and text. */
+  birth_date: string | null;
+  birth_place: string | null;
+  issue_date: string | null;
+  expiry_date: string | null;
+  issuing_authority: string | null;
   images: { front: DraftImage | null; back: DraftImage | null };
   /** Feature 006 (contracts/api.md › DraftOut). */
   no_surname: boolean;
@@ -142,6 +154,11 @@ export interface DraftChanges extends Partial<NullableNames> {
   no_surname?: boolean;
   /** Confirms the current national ID against the verified MRZ (FR-012). */
   national_id_confirmed?: boolean;
+  birth_date?: string | null;
+  birth_place?: string | null;
+  issue_date?: string | null;
+  expiry_date?: string | null;
+  issuing_authority?: string | null;
 }
 
 export interface DraftListItem {

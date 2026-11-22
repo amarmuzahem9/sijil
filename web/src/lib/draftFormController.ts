@@ -23,7 +23,7 @@ import {
   type DraftNotice,
 } from './drafts';
 import { isTooLong, type LimitedField } from './draftValidation';
-import { cleanArabicName } from './arabicName';
+import { cleanArabicName, cleanPlaceText } from './arabicName';
 import { isNameField, NAME_FIELDS, type NameField, type NameValues } from './nameFields';
 
 export const TEXT_DEBOUNCE_MS = 1000;
@@ -42,10 +42,23 @@ export interface FormValues extends NameValues {
   phone_input: string;
   /** «لا يوجد لقب على البطاقة» (specs/006 FR-017). */
   no_surname: boolean;
+  /** Back of the card: dates as YYYY-MM-DD ('' when empty) and text. */
+  birth_date: string;
+  birth_place: string;
+  issue_date: string;
+  expiry_date: string;
+  issuing_authority: string;
 }
 
 export type TextField =
-  NameField | 'national_id' | 'family_number' | 'address' | 'landmark' | 'phone_input';
+  | NameField
+  | 'national_id'
+  | 'family_number'
+  | 'address'
+  | 'landmark'
+  | 'phone_input'
+  | 'birth_place'
+  | 'issuing_authority';
 
 const SUBSCRIPTION_KEYS = ['area_id', 'tower_id', 'plan_id'] as const;
 
@@ -63,6 +76,11 @@ export const EMPTY_VALUES: FormValues = {
   plan_id: null,
   phone_input: '',
   no_surname: false,
+  birth_date: '',
+  birth_place: '',
+  issue_date: '',
+  expiry_date: '',
+  issuing_authority: '',
 };
 
 export function valuesFromDraft(draft: Draft | null): FormValues {
@@ -79,6 +97,11 @@ export function valuesFromDraft(draft: Draft | null): FormValues {
     plan_id: draft.plan_id,
     phone_input: draft.phone_input ?? '',
     no_surname: draft.no_surname ?? false,
+    birth_date: draft.birth_date ?? '',
+    birth_place: draft.birth_place ?? '',
+    issue_date: draft.issue_date ?? '',
+    expiry_date: draft.expiry_date ?? '',
+    issuing_authority: draft.issuing_authority ?? '',
   };
 }
 
@@ -86,7 +109,17 @@ export function valuesFromDraft(draft: Draft | null): FormValues {
  * or text over its limit. Such a value stays on screen with its error and is not sent. */
 export function sendable(field: TextField, value: string): boolean {
   if (isTooLong(field as LimitedField, value)) return false;
+  if (field === 'birth_place') return cleanPlaceText(value).ok;
   return !isNameField(field) || cleanArabicName(value).ok;
+}
+
+/** The back-of-card dates: '' on screen, null for the server (specs/006, system.md v1.8). */
+export const DATE_FIELDS = ['birth_date', 'issue_date', 'expiry_date'] as const;
+
+function toChanges(values: Partial<FormValues>): DraftChanges {
+  const changes = { ...values } as Record<string, unknown>;
+  for (const field of DATE_FIELDS) if (changes[field] === '') changes[field] = null;
+  return changes as DraftChanges;
 }
 
 export interface FormListener {
@@ -205,7 +238,7 @@ export class DraftFormController {
   /** Selects, the pin and buttons: save immediately. */
   saveNow(changes: Partial<FormValues>): void {
     this.update(changes);
-    void this.queue.enqueue(changes as DraftChanges);
+    void this.queue.enqueue(toChanges(changes));
   }
 
   /** «تحميل الأحدث». */
@@ -229,10 +262,15 @@ export class DraftFormController {
       'address',
       'landmark',
       'phone_input',
+      'birth_place',
+      'issuing_authority',
     ] as TextField[]) {
       if (!sendable(field, this.current[field])) delete mine[field];
     }
-    void this.queue.keepMine(mine, Math.max(this.queue.currentVersion, this.newerVersion));
+    void this.queue.keepMine(
+      toChanges(mine as Partial<FormValues>) as Record<string, unknown>,
+      Math.max(this.queue.currentVersion, this.newerVersion),
+    );
   }
 
   /** An upload on this page moved the version forward. */

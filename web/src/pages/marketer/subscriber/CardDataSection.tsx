@@ -13,7 +13,18 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 
-import { NO_SURNAME, NO_SURNAME_HINT } from '../../../lib/cardReading';
+import Alert from '@mui/material/Alert';
+import MuiTextField from '@mui/material/TextField';
+
+import {
+  BIRTH_YEAR_MISMATCH,
+  birthYearMismatch,
+  CARD_EXPIRED,
+  isExpired,
+  NO_SURNAME,
+  NO_SURNAME_HINT,
+} from '../../../lib/cardReading';
+import { baghdadToday } from '../../../lib/draftValidation';
 import type { CardField } from '../../../lib/drafts';
 import { NAME_LABELS, OPTIONAL_NAME_FIELDS, type NameField } from '../../../lib/nameFields';
 import type { DraftAutosave, TextField } from '../../../lib/useDraftAutosave';
@@ -22,7 +33,10 @@ import { FieldSourceMark } from './FieldSourceMark';
 
 export const FOURTH_NAME_HINT = 'غير موجود على البطاقة، اسأل المشترك';
 
-type CardDataField = NameField | 'national_id' | 'family_number';
+type CardDataField =
+  NameField | 'national_id' | 'family_number' | 'birth_place' | 'issuing_authority';
+
+type DateField = 'birth_date' | 'issue_date' | 'expiry_date';
 
 // The name fields a card reading fills (the fourth name and the mother's third name and
 // surname are never on the card).
@@ -84,6 +98,24 @@ export function CardDataSection({
           : undefined
       }
       disabled={field === 'surname' && values.no_surname}
+    />
+  );
+
+  // Dates: the phone's date picker; saved as soon as a date is picked.
+  const date = (field: DateField, label: string) => (
+    <MuiTextField
+      id={`field-${field}`}
+      type="date"
+      label={label}
+      value={values[field]}
+      onChange={(e) => saveNow({ [field]: e.target.value })}
+      fullWidth
+      helperText=" "
+      slotProps={{
+        inputLabel: { shrink: true },
+        input: { endAdornment: mark(field) },
+        htmlInput: { 'data-testid': `field-${field}`, dir: 'ltr' },
+      }}
     />
   );
 
@@ -163,6 +195,43 @@ export function CardDataSection({
         helperText="كما هو مكتوب على البطاقة"
         ltr
         adornment={mark('family_number')}
+      />
+
+      {/* Back of the card (specs/006 owner change, system.md v1.8): all required. */}
+      <Pair>
+        {date('birth_date', 'تاريخ الميلاد *')}
+        <DraftTextField
+          field="birth_place"
+          label="محل الولادة *"
+          value={values.birth_place}
+          onText={setText}
+          onCommit={commitField}
+          error={errors.birth_place}
+          adornment={mark('birth_place')}
+        />
+      </Pair>
+      {birthYearMismatch(values.birth_date, values.national_id) && (
+        <Alert severity="warning" data-testid="birth-year-mismatch" sx={{ mb: 1 }}>
+          {BIRTH_YEAR_MISMATCH}
+        </Alert>
+      )}
+      <Pair>
+        {date('issue_date', 'تاريخ الإصدار *')}
+        {date('expiry_date', 'تاريخ النفاذ *')}
+      </Pair>
+      {isExpired(values.expiry_date, baghdadToday()) && (
+        <Alert severity="error" data-testid="card-expired" sx={{ mb: 1 }}>
+          {CARD_EXPIRED}
+        </Alert>
+      )}
+      <DraftTextField
+        field="issuing_authority"
+        label="جهة الإصدار *"
+        value={values.issuing_authority}
+        onText={setText}
+        onCommit={commitField}
+        error={errors.issuing_authority}
+        adornment={mark('issuing_authority')}
       />
     </Stack>
   );

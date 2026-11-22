@@ -36,6 +36,11 @@ def _set_clock_for_tests(value: datetime | None) -> None:
     _override = value.astimezone(UTC) if value is not None else None
 
 
+def baghdad_today() -> date:
+    """Today's date in Baghdad (card expiry, specs/006 FR-030)."""
+    return utc_now().astimezone(BAGHDAD).date()
+
+
 def baghdad_month_bounds(at: datetime | None = None) -> tuple[datetime, datetime]:
     """[start, end) of the Baghdad calendar month containing `at`, returned in UTC."""
     local = (at or utc_now()).astimezone(BAGHDAD)

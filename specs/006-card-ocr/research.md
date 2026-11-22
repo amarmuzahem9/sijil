@@ -335,3 +335,10 @@ Evaluated in `api/app/services/card_reading_rules.py` on the reader's raw detect
 - **Alternatives**:
   - MRZ only, with issue date and authority typed: simpler, but 4 fields typed by hand.
   - Training a new detector: needs many labelled real cards.
+- **Second private check (4 new cards: a woman born 2001, men born 2000 and 2005, two cards
+  issued at ages 13 and 15)**: the national ID's first four digits = birth year in all 4; expiry =
+  issue + 10 y − 1 d in all 4. National ID, birth, expiry, issue and authority all right (4/4).
+  The place of birth was imperfect on all 4: the recogniser drops «-», reads «/» as «ا», and
+  sometimes drops a letter. Owner decision (option 1): fill it as read after restoring the
+  separators (`fix_place_separators`), keep it marked «من البطاقة». Back reading time is now
+  6.4–8.2 s on 2 CPUs (front 2.8–3.4 s), about 10 s for both sides, accepted by the owner.

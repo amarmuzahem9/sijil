@@ -20,7 +20,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
 
 from app.core.access import has_any_permission
-from app.core.arabic_name import InvalidArabicName, clean_arabic_name, join_full_name
+from app.core.arabic_name import (
+    InvalidArabicName,
+    clean_arabic_name,
+    clean_place_text,
+    join_full_name,
+)
+from app.core.card_reading import AUTHORITY_MAX, BIRTH_PLACE_MAX
 from app.core.iraq_bounds import in_iraq
 from app.core.phone import normalize_phone, to_latin_digits
 from app.core.timeutil import utc_now
@@ -98,6 +104,24 @@ def apply_changes(draft: Draft, changes: DraftChanges) -> None:
     for field in TEXT_FIELDS:
         if field in given:
             setattr(draft, field, clean_text(field, getattr(changes, field)))
+
+    # Back of the card (owner change, system.md v1.8).
+    for field in ("birth_date", "issue_date", "expiry_date"):
+        if field in given:
+            setattr(draft, field, getattr(changes, field))
+    if "birth_place" in given:
+        try:
+            place = clean_place_text(changes.birth_place)
+        except InvalidArabicName:
+            raise AppError("invalid_place_text", 422, extra={"field": "birth_place"}) from None
+        if place is not None and len(place) > BIRTH_PLACE_MAX:
+            raise AppError("too_long", 422, extra={"field": "birth_place"})
+        draft.birth_place = place
+    if "issuing_authority" in given:
+        authority = (changes.issuing_authority or "").strip() or None
+        if authority is not None and len(authority) > AUTHORITY_MAX:
+            raise AppError("too_long", 422, extra={"field": "issuing_authority"})
+        draft.issuing_authority = authority
 
     # «لا يوجد لقب على البطاقة» (specs/006 research R9): typing a surname clears the choice;
     # choosing it empties the surname.
@@ -187,6 +211,11 @@ def to_out(draft: Draft, notices: list[NoticeOut] | None = None) -> DraftOut:
         second_price=draft.second_price,
         phone_input=draft.phone_input,
         phone_normalized=draft.phone_normalized,
+        birth_date=draft.birth_date,
+        birth_place=draft.birth_place,
+        issue_date=draft.issue_date,
+        expiry_date=draft.expiry_date,
+        issuing_authority=draft.issuing_authority,
         images=DraftImages(front=image_out("front"), back=image_out("back")),
         no_surname=draft.no_surname,
         card_fields=card_reading_service.card_fields_out(draft),

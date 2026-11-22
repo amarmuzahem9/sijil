@@ -257,3 +257,126 @@ def test_unverified_zone_gives_no_national_id_in_the_result() -> None:
     out = evaluate_side(raw(back(zone=mrz(composite=None))), "back")
     assert out.result["mrz"]["verified"] is False
     assert out.result["mrz"]["national_id"] is None
+
+
+# --- back fields (owner change; research R13, FR-026–FR-028) -----------------------------------
+
+from datetime import date  # noqa: E402
+
+from app.core.arabic_name import InvalidArabicName, clean_place_text  # noqa: E402
+from app.services.card_reading_rules import resolve_back_fields  # noqa: E402
+
+TODAY = date(2026, 11, 23)
+
+
+def raw_back(**overrides):
+    base = {
+        "mrz_birth": "990101",
+        "mrz_expiry": "300101",
+        "birth_place": {"text": "مدينة-تجريبية", "confidence": 0.93},
+        "issue": ["2020/01/02", "2020/0l/02"],
+        "expiry": ["2030/01/01"],
+        "birth": ["1999/01/01"],
+        "authority": {"text": "مديرية الجنسية والمعلومات المدنيه", "confidence": 0.9},
+    }
+    return {**base, **overrides}
+
+
+def values(out):
+    return {field: p["value"] for field, p in out.items()}
+
+
+def test_clear_back_fields_are_accepted() -> None:
+    out = resolve_back_fields(raw_back(), NID, TODAY)
+    assert values(out) == {
+        "birth_date": date(1999, 1, 1),
+        "expiry_date": date(2030, 1, 1),
+        "issue_date": date(2020, 1, 2),
+        "birth_place": "مدينة-تجريبية",
+        "issuing_authority": "مديرية الجنسية والمعلومات المدنية",
+    }
+    assert out["birth_date"]["from"] == "mrz" and out["expiry_date"]["from"] == "mrz"
+    assert out["issue_date"]["from"] == "back"
+    assert out["birth_date"]["original"] == "1999-01-01"
+
+
+def test_birth_century_comes_from_the_national_id() -> None:
+    out = resolve_back_fields(raw_back(mrz_birth="050314"), "200512345678", TODAY)
+    assert out["birth_date"]["value"] == date(2005, 3, 14)
+    out = resolve_back_fields(raw_back(mrz_birth="530101"), "195312345678", TODAY)
+    assert out["birth_date"]["value"] == date(1953, 1, 1)
+
+
+def test_printed_birth_needs_two_agreeing_readings_and_the_id_year() -> None:
+    two = raw_back(mrz_birth=None, birth=["1999/01/01", "1999/07/01", "1999/01/01"])
+    assert resolve_back_fields(two, NID, TODAY)["birth_date"]["value"] == date(1999, 1, 1)
+    one = raw_back(mrz_birth=None, birth=["1999/01/01", "1999/07/01"])
+    assert resolve_back_fields(one, NID, TODAY)["birth_date"]["value"] is None
+    wrong_year = raw_back(mrz_birth=None, birth=["1998/01/01", "1998/01/01"])
+    out = resolve_back_fields(wrong_year, NID, TODAY)
+    assert out["birth_date"]["value"] is None
+    assert out["birth_date"]["original"] == "1998/01/01"  # the raw reading is kept
+
+
+def test_issue_date_must_match_the_expiry() -> None:
+    out = resolve_back_fields(raw_back(issue=["2021/05/05"]), NID, TODAY)
+    assert out["issue_date"]["value"] is None
+    assert out["issue_date"]["original"] == "2021/05/05"
+    assert out["expiry_date"]["value"] == date(2030, 1, 1)
+
+
+def test_printed_expiry_needs_a_matching_printed_issue() -> None:
+    both = raw_back(mrz_expiry=None, expiry=["2034/13/40", "2030/01/01"])
+    out = resolve_back_fields(both, NID, TODAY)
+    assert out["expiry_date"]["value"] == date(2030, 1, 1)
+    assert out["expiry_date"]["from"] == "back"
+    assert out["issue_date"]["value"] == date(2020, 1, 2)
+    alone = raw_back(mrz_expiry=None, issue=["2021/05/05"])
+    out = resolve_back_fields(alone, NID, TODAY)
+    assert out["expiry_date"]["value"] is None and out["issue_date"]["value"] is None
+
+
+def test_authority_is_snapped_only_when_similar() -> None:
+    far = raw_back(authority={"text": "نص آخر تماما", "confidence": 0.9})
+    out = resolve_back_fields(far, NID, TODAY)
+    assert out["issuing_authority"] == {
+        "value": None,
+        "original": "نص آخر تماما",
+        "confidence": 0.9,
+        "from": "back",
+    }
+
+
+def test_place_of_birth_rule() -> None:
+    assert clean_place_text("  تكريت - صلاح  الدين ") == "تكريت-صلاح الدين"
+    assert clean_place_text("بغداد/الكرخ") == "بغداد/الكرخ"
+    assert clean_place_text("") is None
+    for bad in ("Baghdad", "بغداد 1", "-بغداد", "بغداد--الكرخ"):
+        with pytest.raises(InvalidArabicName):
+            clean_place_text(bad)
+    out = resolve_back_fields(
+        raw_back(birth_place={"text": "Tikrit", "confidence": 0.5}), NID, TODAY
+    )
+    assert out["birth_place"]["value"] is None and out["birth_place"]["original"] == "Tikrit"
+
+
+def test_nothing_read_gives_nothing() -> None:
+    assert resolve_back_fields(None, NID, TODAY) == {}
+
+
+@pytest.mark.parametrize(
+    "read,expected",
+    [
+        # Shapes seen on real cards, with generic place names.
+        ("بلدصلاح الدين", "بلد-صلاح الدين"),
+        ("تكريتصلاح الدين", "تكريت-صلاح الدين"),
+        ("حي تجريبي ا الكرخ ا بغداد", "حي تجريبي/الكرخ/بغداد"),
+        ("العلم-تكريت-صلاح الدين", "العلم-تكريت-صلاح الدين"),  # already right
+        ("مدينة تجريبية", "مدينة تجريبية"),
+        ("بغدادي", "بغدادي"),  # a word that merely starts with a place name is left alone
+    ],
+)
+def test_place_separators_are_restored(read, expected) -> None:
+    from app.core.card_reading import fix_place_separators
+
+    assert clean_place_text(fix_place_separators(read)) == expected

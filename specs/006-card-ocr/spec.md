@@ -449,7 +449,10 @@ among the missing items.
   the same rule. Anything unconfirmed stays empty, with its raw reading kept.
 - **FR-028**: The place of birth MUST be Arabic letters, spaces, «-» and «/», at most 100
   characters. The issuing authority MUST be snapped to the known text «مديرية الجنسية والمعلومات
-  المدنية» when the reading is similar enough (≥ 0.70); otherwise it stays empty.
+  المدنية» when the reading is similar enough (≥ 0.70); otherwise it stays empty. The place of
+  birth is filled as read after restoring lost separators (owner decision, option 1): a lone
+  «ا» between two words becomes «/», and a known governorate or main city glued to the
+  previous letter gets a «-». It stays marked «من البطاقة» for the marketer to check.
 - **FR-029**: The five fields are required (missing items). Dates are entered with a date picker
   and stored as dates; a typed date must be a real date.
 - **FR-030**: An expiry date before today in Baghdad time MUST show «البطاقة منتهية الصلاحية»

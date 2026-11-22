@@ -26,7 +26,7 @@ import {
   type LimitedField,
   type MissingField,
 } from '../../../lib/draftValidation';
-import { cleanArabicName } from '../../../lib/arabicName';
+import { cleanArabicName, cleanPlaceText, INVALID_PLACE_MESSAGE } from '../../../lib/arabicName';
 import { getDraft, type Draft } from '../../../lib/drafts';
 import { isNameField, NAME_FIELDS, REQUIRED_NAME_FIELDS } from '../../../lib/nameFields';
 import { useDraftAutosave, type TextField } from '../../../lib/useDraftAutosave';
@@ -48,6 +48,8 @@ const MISSING_KEY: Partial<Record<TextField, MissingField>> = {
   national_id: 'national_id',
   family_number: 'family_number',
   phone_input: 'phone',
+  birth_place: 'birth_place',
+  issuing_authority: 'issuing_authority',
 };
 
 const TITLES = Object.fromEntries(SECTIONS.map((s) => [s.id, s.title])) as Record<
@@ -134,6 +136,8 @@ function DraftEditor({
     // A refused name shows at once: it is not saved until corrected (research.md R12).
     if (isNameField(field) && !cleanArabicName(autosave.values[field]).ok)
       return CODE_MESSAGES.invalid_name_text;
+    if (field === 'birth_place' && !cleanPlaceText(autosave.values.birth_place).ok)
+      return INVALID_PLACE_MESSAGE;
     if (!touched.has(field)) return null;
     const key = MISSING_KEY[field];
     const item = key && localMissing.find((m) => m.field === key);
@@ -180,10 +184,15 @@ function DraftEditor({
           autosave={autosave}
           onCommit={onCommit}
           errors={Object.fromEntries(
-            ([...NAME_FIELDS, 'national_id', 'family_number'] as const).map((f) => [
-              f,
-              errorFor(f) ?? undefined,
-            ]),
+            (
+              [
+                ...NAME_FIELDS,
+                'national_id',
+                'family_number',
+                'birth_place',
+                'issuing_authority',
+              ] as const
+            ).map((f) => [f, errorFor(f) ?? undefined]),
           )}
         />
       </FormSection>

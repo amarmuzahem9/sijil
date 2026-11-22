@@ -254,7 +254,9 @@ test('E, F: field checks, «النواقص» and the disabled «إرسال»', a
   await page.goto('/drafts/new');
 
   const summary = page.getByTestId('missing-summary');
-  await expect(summary).toContainText('النواقص (18)');
+  // 18 items of 005 + the five required back-of-card fields (006, system.md v1.8).
+  await expect(summary).toContainText('النواقص (23)');
+  await expect(page.getByTestId('missing-expiry_date')).toContainText('تاريخ النفاذ');
 
   // Names: a digit is refused at once and never saved; each missing name is listed by name.
   await page.getByTestId('field-first_name').fill('علي2');

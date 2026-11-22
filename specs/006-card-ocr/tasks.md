@@ -358,7 +358,7 @@ back → «البطاقة منتهية الصلاحية» in the missing items.
 
 ### Tests for User Story 7
 
-- [ ] T056 [P] [US7] Add unit tests to `api/tests/unit/test_card_reading_rules.py` for the
+- [X] T056 [P] [US7] Add unit tests to `api/tests/unit/test_card_reading_rules.py` for the
   back-field rules (research R13, data-model.md › Applying a `done` pair). Use synthetic dates
   only:
   - **MRZ dates**: the MRZ birth date with its own check digit is accepted, and the century comes
@@ -372,7 +372,7 @@ back → «البطاقة منتهية الصلاحية» in the missing items.
   - **Invalid dates**: dates such as `2034/13/40` are rejected.
   - **Authority**: snapped to the known text at a similarity of 0.70 or more; empty below that.
   - **Place of birth**: the text rule.
-- [ ] T057 [P] [US7] Add integration tests to `api/tests/integration/test_card_reading.py` and
+- [X] T057 [P] [US7] Add integration tests to `api/tests/integration/test_card_reading.py` and
   `test_card_fields.py` with new fake scenarios: `clear_back` with bands, `back_birth_print`
   (MRZ birth wrong, printed agrees), `back_issue_mismatch`, `back_expired`:
   - **Filling**: the five fields fill with marks and `original`.
@@ -381,7 +381,7 @@ back → «البطاقة منتهية الصلاحية» in the missing items.
   - **Variety (owner request)**: synthetic cases include a female card and a birth after
     2000 (century from the national ID «20…»).
   - **Bad values**: a PATCH with a bad date or a Latin place of birth gets 422.
-- [ ] T058 [P] [US7] Extend the shared fixture `draft_validation_cases.json` (api and web
+- [X] T058 [P] [US7] Extend the shared fixture `draft_validation_cases.json` (api and web
   copies): the five required back fields, plus `card_expired` judged against a fixed «today»
   given in the case.
 
@@ -392,27 +392,27 @@ back → «البطاقة منتهية الصلاحية» in the missing items.
   - `drafts.birth_date`, `drafts.issue_date` and `drafts.expiry_date` (date);
   - `drafts.birth_place` and `drafts.issuing_authority` (text, CHECK ≤ 100);
   - `CARD_FIELDS` gains the five keys.
-- [ ] T060 [US7] Read the printed rows of the back in `ocr/service/reader.py` (research R13,
+- [X] T060 [US7] Read the printed rows of the back in `ocr/service/reader.py` (research R13,
   contracts/ocr-service.md › `bands`):
   - **Locating**: rows by geometry from `city`/`nu_f`.
   - **Reading**: the Arabic recogniser and Tesseract candidates.
   - **Output**: `bands` on back detections.
   - **Tests**: extend `ocr/tests/test_service.py` (a synthetic back is not detected, so `bands`
     is absent; plus a unit test of the row geometry on fixed boxes). Rebuild the image.
-- [ ] T061 [US7] Add the back-field rules to `api/app/services/card_reading_rules.py` (R13 rules
+- [X] T061 [US7] Add the back-field rules to `api/app/services/card_reading_rules.py` (R13 rules
   1–5): `_back_result` gains `dates: {birth, expiry, issue}`, each with `value`, `original` and
   `from`, plus `birth_place` and `authority`. Put the constants in `api/app/core/card_reading.py`
   (data-model.md › Constants). The national ID used for the century and the year check is the
   front's normalized ID, or the verified MRZ ID, passed in by `apply_pair`.
-- [ ] T062 [US7] Map the five fields in `card_reading_service.apply_pair` (data-model.md ›
+- [X] T062 [US7] Map the five fields in `card_reading_service.apply_pair` (data-model.md ›
   Applying a `done` pair) with the FR-007 rules. In `draft_service.apply_changes`, add the PATCH
   keys: ISO dates; `birth_place` checked by `clean_place_text` (Arabic letters, spaces, «-»,
   «/»), with 422 `invalid_place_text`; `issuing_authority` limited to ≤ 100. Add these to
   `DraftChanges`/`DraftOut` and to the edited marks.
-- [ ] T063 [US7] In `draft_validation.missing` (api) and `computeMissing` (web), make the five
+- [X] T063 [US7] In `draft_validation.missing` (api) and `computeMissing` (web), make the five
   fields required and add `card_expired`: `expiry_date` before today in Baghdad
   (`app.core.timeutil`). The page passes its Baghdad «today».
-- [ ] T064 [US7] Web: add the five fields to the «بيانات البطاقة» section after the family number,
+- [X] T064 [US7] Web: add the five fields to the «بيانات البطاقة» section after the family number,
   plus the FR-032 warning «سنة الميلاد لا تطابق الرقم الوطني، تأكد منهما» (warning only, not a
   missing item):
   - **Dates**: native date inputs, saved immediately.
@@ -421,17 +421,29 @@ back → «البطاقة منتهية الصلاحية» in the missing items.
   - **Expired card**: an «البطاقة منتهية الصلاحية» alert.
 
   Add them to `FormValues`, `valuesFromDraft`, `CARD_FIELDS` (web) and the missing-summary labels.
-- [ ] T065 [US7] Update the fake reader data (`card_reader_fake_data.py`): synthetic bands and
+- [X] T065 [US7] Update the fake reader data (`card_reader_fake_data.py`): synthetic bands and
   MRZ dates for the clear back, plus the new scenarios of T057. Regenerate
   `e2e/tests/fixtures/ocr-scenarios.json`.
-- [ ] T066 [US7] Extend `e2e/tests/card-reading.spec.ts`:
+- [X] T066 [US7] Extend `e2e/tests/card-reading.spec.ts`:
   - quickstart B checks the five back fields and their marks;
   - an expired back shows «البطاقة منتهية الصلاحية» and lists it in «النواقص».
-- [ ] T067 [US7] Re-run the owner's private check (T050 method, outside the repository) with the
+- [X] T067 [US7] Re-run the owner's private check (T050 method, outside the repository) with the
   real reader on `test-cards/`. Report per-field correct, empty and wrong counts and the time per
   back. Accept only 0 wrong values.
 
 **Checkpoint**: Batch 2b ends. Run all tests and report.
+
+**Batch 2b notes (2026-11-23)**:
+- Owner: place of birth option 1 (`fix_place_separators`: a lone «ا» between words → «/», a known
+  governorate or city glued to the previous letter gets «-»); ~10 s per card accepted; the
+  reading attempts stay as they are.
+- 005 tests updated for the five new required items (missing counts 18 → 23, complete-draft
+  fixtures).
+- T067 (15 private cards, final code, nothing kept): birth 15/15, expiry 15/15, issue 14 right +
+  1 empty, authority 14 right + 1 empty, **0 wrong dates**. National ID right on all 15. Place of
+  birth exact on 3/15: the recogniser mostly turns «-» and «/» into spaces (no rule can tell
+  which one was printed) and sometimes drops a letter, so it stays a «من البطاقة» value to
+  check. Back reading 3.2–11.5 s on 2 CPUs.
 
 ---
 

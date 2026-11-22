@@ -24,6 +24,14 @@ const READ = {
   family_number: '1064L00M1234567890',
 } as const;
 
+const BACK = {
+  birth_date: '1999-01-01',
+  birth_place: 'مدينة-تجريبية',
+  issue_date: '2020-01-02',
+  expiry_date: '2030-01-01',
+  issuing_authority: 'مديرية الجنسية والمعلومات المدنية',
+} as const;
+
 async function marketer(request: APIRequestContext, project: string) {
   const i = PROJECT_INDEX[project] ?? 3;
   const m = { name: `مسوّق القراءة ${i}`, phone: `0770000050${i}` };
@@ -74,6 +82,13 @@ test('A, B, C, M: a clear card fills the form; an edit keeps the original; a sec
     await expect(field(page, name)).toHaveValue(value, { timeout: 20_000 });
     await expect(mark(page, name)).toHaveText('من البطاقة');
   }
+  // US7: the back fields (owner change, system.md v1.8).
+  for (const [name, value] of Object.entries(BACK)) {
+    await expect(field(page, name)).toHaveValue(value);
+    await expect(mark(page, name)).toHaveText('من البطاقة');
+  }
+  await expect(page.getByTestId('card-expired')).toHaveCount(0);
+  await expect(page.getByTestId('birth-year-mismatch')).toHaveCount(0);
   await expect(page.getByTestId('reading-running')).toHaveCount(0);
   await expect(field(page, 'great_grandfather_name')).toHaveValue('');
   await saved(page);
@@ -169,4 +184,29 @@ test('J: the same card detected twice is read normally', async ({ page, request 
   await uploadSide(page, 'back', 'duplicate_back');
   await expect(field(page, 'family_number')).toHaveValue(READ.family_number, { timeout: 20_000 });
   await expect(page.getByTestId('image-back-reshoot')).toHaveCount(0);
+});
+
+test('US7: an expired card and a birth year that does not match the national ID', async ({
+  page,
+  request,
+}, testInfo) => {
+  test.setTimeout(120_000);
+  const m = await marketer(request, testInfo.project.name);
+  await openNewForm(page, m.phone);
+  await uploadSide(page, 'front', 'clear_front');
+  await uploadSide(page, 'back', 'back_expired');
+
+  await expect(field(page, 'expiry_date')).toHaveValue('2025-01-01', { timeout: 20_000 });
+  await expect(page.getByTestId('card-expired')).toHaveText('البطاقة منتهية الصلاحية');
+  await saved(page);
+  await expect(page.getByTestId('missing-card_expired')).toBeVisible();
+
+  // FR-032: a typed birth year that differs from the national ID only warns.
+  await field(page, 'birth_date').fill('1998-01-01');
+  await expect(page.getByTestId('birth-year-mismatch')).toHaveText(
+    'سنة الميلاد لا تطابق الرقم الوطني، تأكد منهما',
+  );
+  await expect(mark(page, 'birth_date')).toHaveText('عُدِّل يدوياً');
+  await saved(page);
+  await expect(page.getByTestId('missing-birth_date')).toHaveCount(0);
 });

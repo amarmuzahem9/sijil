@@ -4,8 +4,11 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { cleanPlaceText } from '../lib/arabicName';
 import {
   anyFailed,
+  birthYearMismatch,
+  isExpired,
   fieldsToMerge,
   MARK_EDITED,
   MARK_FROM_CARD,
@@ -49,6 +52,11 @@ function draft(overrides: Partial<Draft> = {}): Draft {
     second_price: null,
     phone_input: null,
     phone_normalized: null,
+    birth_date: null,
+    birth_place: null,
+    issue_date: null,
+    expiry_date: null,
+    issuing_authority: null,
     images: { front: null, back: null },
     no_surname: false,
     card_fields: {},
@@ -114,7 +122,7 @@ describe('reading status helpers', () => {
 
   it('skips fields with a local change', () => {
     expect(fieldsToMerge(CARD_FIELDS, (f) => f === 'surname')).not.toContain('surname');
-    expect(fieldsToMerge(CARD_FIELDS, () => false)).toHaveLength(8);
+    expect(fieldsToMerge(CARD_FIELDS, () => false)).toHaveLength(13);
   });
 });
 
@@ -177,5 +185,40 @@ describe('merging a finished reading into the form', () => {
     expect(ctl.values.no_surname).toBe(true);
     ctl.setText('surname', 'الوهمي');
     expect(ctl.values.no_surname).toBe(false);
+  });
+});
+
+describe('back of the card (owner change)', () => {
+  it('warns when the birth year differs from the national ID (FR-032)', () => {
+    expect(birthYearMismatch('1999-01-01', '199912345678')).toBe(false);
+    expect(birthYearMismatch('2005-03-14', '200512345678')).toBe(false);
+    expect(birthYearMismatch('1998-01-01', '199912345678')).toBe(true);
+    expect(birthYearMismatch('', '199912345678')).toBe(false);
+    expect(birthYearMismatch('1998-01-01', '1999')).toBe(false); // no full ID yet
+  });
+
+  it('treats a card expiring before today as expired, not one expiring today (FR-030)', () => {
+    expect(isExpired('2026-11-22', '2026-11-23')).toBe(true);
+    expect(isExpired('2026-11-23', '2026-11-23')).toBe(false);
+    expect(isExpired('', '2026-11-23')).toBe(false);
+  });
+
+  it('cleans a place of birth like the server (FR-028)', () => {
+    expect(cleanPlaceText('  تكريت - صلاح  الدين ')).toEqual({
+      ok: true,
+      value: 'تكريت-صلاح الدين',
+    });
+    expect(cleanPlaceText('')).toEqual({ ok: true, value: null });
+    for (const bad of ['Baghdad', 'بغداد 1', '-بغداد', 'بغداد--الكرخ'])
+      expect(cleanPlaceText(bad)).toEqual({ ok: false });
+  });
+
+  it('sends an emptied date as null', () => {
+    vi.useFakeTimers();
+    const ctl = new DraftFormController(draft({ expiry_date: '2030-01-01' }));
+    const spy = vi.spyOn(ctl.queue, 'enqueue').mockResolvedValue(undefined);
+    ctl.saveNow({ expiry_date: '' });
+    expect(spy).toHaveBeenCalledWith({ expiry_date: null });
+    vi.useRealTimers();
   });
 });

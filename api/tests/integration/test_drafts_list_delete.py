@@ -78,7 +78,8 @@ def test_list_only_own_drafts_newest_first(client, frozen_clock, make_user, owne
     assert first["full_name"] == "مشترك ثاني"
     assert first["phone_normalized"] == "07801234567"
     assert first["has_images"] is False
-    assert first["missing_count"] == 16  # 18 items minus the first name and the phone
+    # 23 items (18 of 005 + 5 back-of-card fields of 006) minus the first name and the phone.
+    assert first["missing_count"] == 21
     assert set(first) == {
         "id",
         "full_name",
@@ -103,7 +104,7 @@ def test_list_counts_images(client, owner):
     _upload(client, h, draft_id, "front")
     item = client.get("/api/drafts", headers=h).json()["items"][0]
     assert item["has_images"] is True
-    assert item["missing_count"] == 17
+    assert item["missing_count"] == 22
 
 
 @pytest.mark.parametrize(

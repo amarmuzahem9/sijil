@@ -253,3 +253,63 @@ def test_reshoot_never_blocks_typing(client, owner) -> None:
     )
     assert res.status_code == 200
     assert res.json()["card_fields"]["first_name"]["source"] == "edited"
+
+
+# --- US7: back fields (owner change, research R13) ----------------------------------------------
+
+BACK_EXPECTED = {
+    "birth_date": "1999-01-01",
+    "birth_place": "مدينة-تجريبية",
+    "issue_date": "2020-01-02",
+    "expiry_date": "2030-01-01",
+    "issuing_authority": "مديرية الجنسية والمعلومات المدنية",
+}
+
+
+def test_clear_back_fills_the_five_back_fields(client, owner) -> None:
+    _, headers = owner
+    body = get(client, headers, read_card(client, headers))
+    for field, value in BACK_EXPECTED.items():
+        assert body[field] == value, field
+        assert body["card_fields"][field]["source"] == "card", field
+    assert body["card_fields"]["birth_date"]["from"] == "mrz"
+    assert body["card_fields"]["issue_date"]["from"] == "back"
+    # The misread authority is snapped; its original is the snapped text.
+    assert (
+        body["card_fields"]["issuing_authority"]["original"] == BACK_EXPECTED["issuing_authority"]
+    )
+    missing = {m["field"] for m in body["missing"]}
+    assert not missing & {*BACK_EXPECTED, "card_expired"}
+
+
+def test_printed_birth_date_when_the_mrz_birth_is_wrong(client, owner) -> None:
+    _, headers = owner
+    body = get(client, headers, read_card(client, headers, back="back_birth_print"))
+    assert body["birth_date"] == "1999-01-01"
+    assert body["card_fields"]["birth_date"]["from"] == "back"
+
+
+def test_issue_date_that_does_not_match_stays_empty(client, owner) -> None:
+    _, headers = owner
+    body = get(client, headers, read_card(client, headers, back="back_issue_mismatch"))
+    assert body["issue_date"] is None
+    assert body["card_fields"]["issue_date"]["original"] == "2021/05/05"
+    assert "issue_date" in {m["field"] for m in body["missing"]}
+    assert body["expiry_date"] == "2030-01-01"
+
+
+def test_expired_card_is_a_missing_item_but_saves(client, owner) -> None:
+    _, headers = owner
+    body = get(client, headers, read_card(client, headers, back="back_expired"))
+    assert body["expiry_date"] == "2025-01-01"
+    assert body["issue_date"] == "2015-01-02"
+    assert {"field": "card_expired", "code": "card_expired"} in body["missing"]
+
+
+def test_woman_born_after_2000(client, owner) -> None:
+    _, headers = owner
+    body = get(client, headers, read_card(client, headers, "front_female_2000", "back_2000"))
+    assert body["first_name"] == "مشتركة"
+    assert body["national_id"] == "200512345678"
+    assert body["birth_date"] == "2005-03-14"
+    assert body["national_id_check"] is None or not body["national_id_check"]["mismatch"]

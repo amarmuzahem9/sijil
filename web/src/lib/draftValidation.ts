@@ -20,6 +20,13 @@ export const MISSING_ORDER = [
   'mother_second_name',
   'national_id',
   'family_number',
+  // Back of the card (specs/006 owner change, system.md v1.8).
+  'birth_date',
+  'birth_place',
+  'issue_date',
+  'expiry_date',
+  'card_expired',
+  'issuing_authority',
   'location',
   'address',
   'landmark',
@@ -30,7 +37,7 @@ export const MISSING_ORDER = [
 ] as const;
 
 export type MissingField = (typeof MISSING_ORDER)[number];
-export type MissingCode = 'required' | 'invalid_national_id' | 'invalid_phone';
+export type MissingCode = 'required' | 'invalid_national_id' | 'invalid_phone' | 'card_expired';
 
 // The required names in MISSING_ORDER must match REQUIRED_NAME_FIELDS (checked by the tests).
 
@@ -55,6 +62,8 @@ export const TEXT_LIMITS = {
   address: 300,
   landmark: 200,
   phone_input: 30,
+  birth_place: 100,
+  issuing_authority: 100,
 } as const;
 
 export type LimitedField = keyof typeof TEXT_LIMITS;
@@ -72,6 +81,12 @@ export interface DraftFields extends Partial<Record<NameField, string | null>> {
   phone_input?: string | null;
   /** «لا يوجد لقب على البطاقة» satisfies the required surname (specs/006 FR-017). */
   no_surname?: boolean | null;
+  /** ISO dates (YYYY-MM-DD) and text of the back of the card. */
+  birth_date?: string | null;
+  birth_place?: string | null;
+  issue_date?: string | null;
+  expiry_date?: string | null;
+  issuing_authority?: string | null;
 }
 
 export const FIELD_LABELS: Record<MissingField, string> = {
@@ -86,6 +101,12 @@ export const FIELD_LABELS: Record<MissingField, string> = {
   mother_second_name: NAME_LABELS.mother_second_name,
   national_id: 'الرقم الوطني',
   family_number: 'الرقم العائلي',
+  birth_date: 'تاريخ الميلاد',
+  birth_place: 'محل الولادة',
+  issue_date: 'تاريخ الإصدار',
+  expiry_date: 'تاريخ النفاذ',
+  card_expired: 'البطاقة منتهية الصلاحية',
+  issuing_authority: 'جهة الإصدار',
   location: 'موقع البيت على الخريطة',
   address: 'العنوان',
   landmark: 'أقرب نقطة دالّة',
@@ -99,6 +120,7 @@ export const CODE_MESSAGES: Record<MissingCode | 'too_long' | 'invalid_name_text
   required: 'مطلوب',
   invalid_national_id: 'الرقم الوطني 12 رقماً',
   invalid_phone: 'رقم غير صالح',
+  card_expired: 'البطاقة منتهية الصلاحية',
   too_long: 'النص أطول من المسموح',
   invalid_name_text: 'الاسم أحرف عربية فقط',
 };
@@ -106,9 +128,15 @@ export const CODE_MESSAGES: Record<MissingCode | 'too_long' | 'invalid_name_text
 const blank = (value: string | null | undefined): boolean => value == null || value.trim() === '';
 
 /** Every empty or invalid item, in MISSING_ORDER. An empty list means complete. */
+/** Today's date in Baghdad as YYYY-MM-DD (card expiry, specs/006 FR-030). */
+export function baghdadToday(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Baghdad' }).format(now);
+}
+
 export function computeMissing(
   draft: DraftFields,
   imageSides: Iterable<'front' | 'back'>,
+  today: string = baghdadToday(),
 ): MissingItem[] {
   const sides = new Set(imageSides);
   const found = new Map<MissingField, MissingCode>();
@@ -120,6 +148,16 @@ export function computeMissing(
     if (blank(draft[name])) found.set(name, 'required');
   }
   if (draft.no_surname) found.delete('surname');
+  for (const name of [
+    'birth_date',
+    'birth_place',
+    'issue_date',
+    'expiry_date',
+    'issuing_authority',
+  ] as const) {
+    if (blank(draft[name])) found.set(name, 'required');
+  }
+  if (draft.expiry_date && draft.expiry_date < today) found.set('card_expired', 'card_expired');
 
   if (blank(draft.national_id)) found.set('national_id', 'required');
   else if (normalizeNationalId(draft.national_id) === null)

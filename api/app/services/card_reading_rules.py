@@ -13,22 +13,33 @@ These pure functions decide what that photo means for the slot it was uploaded t
 No card content is logged here.
 """
 
+from collections import Counter
 from dataclasses import dataclass
+from datetime import date
 from typing import Any
 
+from app.core.arabic_name import InvalidArabicName, clean_place_text
 from app.core.card_reading import (
     BACK_CLASS,
+    BIRTH_PLACE_MAX,
     DUPLICATE_IOU,
     FRONT_CLASS,
     FRONT_LABELS,
     OTHER_DOC_MIN,
     OTHER_DOCUMENT_CLASSES,
+    PRINTED_BIRTH_MIN_AGREEMENT,
     SECOND_DOC_HIGH,
     SECOND_PASS_MIN,
     SIDE_CLASS,
+    birth_century,
+    fix_place_separators,
+    issue_for_expiry,
+    mrz_date,
     mrz_national_id,
     mrz_verified,
     normalize_family_number,
+    parse_printed_date,
+    snap_authority,
 )
 
 
@@ -145,7 +156,101 @@ def _back_result(detection: dict[str, Any]) -> dict[str, Any]:
             if zone
             else None
         ),
+        # Raw material for the back fields (R13); accepted later with the national ID.
+        "back_fields": _back_fields_raw(detection),
     }
+
+
+def _back_fields_raw(detection: dict[str, Any]) -> dict[str, Any]:
+    zone = detection.get("mrz") or {}
+    city = (detection.get("fields") or {}).get("city") or {}
+    bands = detection.get("bands") or {}
+    return {
+        "mrz_birth": zone.get("date_of_birth") if zone.get("valid_date_of_birth") else None,
+        "mrz_expiry": zone.get("expiration_date") if zone.get("valid_expiration_date") else None,
+        "birth_place": {
+            "text": str(city.get("text") or "").strip(),
+            "confidence": city.get("confidence"),
+        },
+        "issue": [str(t) for t in bands.get("issue") or []],
+        "expiry": [str(t) for t in bands.get("expiry") or []],
+        "birth": [str(t) for t in bands.get("birth") or []],
+        "authority": bands.get("authority") or None,
+    }
+
+
+def _proposal(value: Any, original: Any, source: str, confidence: float | None = None) -> dict:
+    return {
+        "value": value,
+        "original": original.isoformat() if isinstance(original, date) else original,
+        "confidence": confidence,
+        "from": source,
+    }
+
+
+def resolve_back_fields(
+    raw: dict[str, Any] | None, national_id: str | None, today: date
+) -> dict[str, dict]:
+    """Accept the back fields only when cross-checked (research R13, FR-026–FR-028).
+
+    Returns `{field: {value, original, confidence, from}}`; `value` is None when the reading was
+    not confirmed (the marketer types it), and `original` keeps what was read.
+    """
+    if not raw:
+        return {}
+    out: dict[str, dict] = {}
+    issue_c = [d for d in (parse_printed_date(t) for t in raw.get("issue") or []) if d]
+    expiry_c = [d for d in (parse_printed_date(t) for t in raw.get("expiry") or []) if d]
+    birth_c = [d for d in (parse_printed_date(t) for t in raw.get("birth") or []) if d]
+
+    # Expiry: MRZ (own check digit, 20xx), else printed and confirmed by a printed issue date.
+    expiry = mrz_date(raw.get("mrz_expiry"), "20")
+    expiry_from = "mrz" if expiry else None
+    issue = None
+    if expiry is None:
+        for candidate in expiry_c:
+            if issue_for_expiry(candidate) in issue_c:
+                expiry, issue, expiry_from = candidate, issue_for_expiry(candidate), "back"
+                break
+    elif issue_for_expiry(expiry) in issue_c:
+        issue = issue_for_expiry(expiry)
+    out["expiry_date"] = _proposal(
+        expiry, expiry or (raw.get("expiry") or [None])[0], expiry_from or "back"
+    )
+    out["issue_date"] = _proposal(issue, issue or (raw.get("issue") or [None])[0], "back")
+
+    # Birth: MRZ (own check digit; century from the national ID), else printed with agreement
+    # and the national ID's birth year.
+    birth, birth_from = None, "back"
+    yymmdd = raw.get("mrz_birth")
+    if yymmdd and len(yymmdd) == 6 and yymmdd.isdigit():
+        birth = mrz_date(yymmdd, birth_century(national_id, yymmdd[:2], today))
+        birth_from = "mrz" if birth else "back"
+    if birth is None and national_id and len(national_id) == 12:
+        counts = Counter(d for d in birth_c if str(d.year) == national_id[:4])
+        agreed = [d for d, n in counts.items() if n >= PRINTED_BIRTH_MIN_AGREEMENT]
+        birth = agreed[0] if len(agreed) == 1 else None
+    out["birth_date"] = _proposal(birth, birth or (raw.get("birth") or [None])[0], birth_from)
+
+    place = raw.get("birth_place") or {}
+    text = str(place.get("text") or "").strip()
+    try:
+        cleaned = clean_place_text(fix_place_separators(text))
+    except InvalidArabicName:
+        cleaned = None
+    if cleaned and len(cleaned) > BIRTH_PLACE_MAX:
+        cleaned = None
+    if text:
+        out["birth_place"] = _proposal(cleaned, cleaned or text, "back", place.get("confidence"))
+
+    authority = raw.get("authority") or {}
+    text = str(authority.get("text") or "").strip()
+    if text:
+        snapped = snap_authority(text)
+        out["issuing_authority"] = _proposal(
+            snapped, snapped or text, "back", authority.get("confidence")
+        )
+    return {field: p for field, p in out.items() if p["value"] is not None or p["original"]}
 
 
 def evaluate_side(raw: dict[str, Any], side: str) -> SideOutcome:

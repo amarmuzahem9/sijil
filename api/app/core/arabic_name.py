@@ -48,6 +48,31 @@ def clean_arabic_name(raw: str | None) -> str | None:
     return text
 
 
+_PLACE_SEPARATORS = re.compile(r"\s*([-/])\s*")
+
+
+def clean_place_text(raw: str | None) -> str | None:
+    """A place name such as «تكريت-صلاح الدين» (specs/006 FR-028): Arabic words separated by
+    spaces, «-» or «/». Returns the cleaned text, None when empty, or raises InvalidArabicName."""
+    if raw is None or not raw.strip():
+        return None
+    parts = _PLACE_SEPARATORS.split(raw.strip())
+    out: list[str] = []
+    for part in parts:
+        if part in ("-", "/"):
+            if not out or out[-1] in ("-", "/"):
+                raise InvalidArabicName(raw)
+            out.append(part)
+            continue
+        cleaned = clean_arabic_name(part)
+        if cleaned is None:
+            raise InvalidArabicName(raw)
+        out.append(cleaned)
+    if out[-1] in ("-", "/"):
+        raise InvalidArabicName(raw)
+    return "".join(out)
+
+
 def join_full_name(parts: list[str | None]) -> str | None:
     """`full_name`: the given parts joined by one space, empty parts skipped; None if all empty."""
     words = [p for p in parts if p]

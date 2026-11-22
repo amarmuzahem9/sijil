@@ -7,7 +7,7 @@ returns `too_long` with the field name.
 """
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StrictInt
@@ -48,6 +48,12 @@ class DraftChanges(_Body):
     # that differs from the verified MRZ. Provenance and readings are never accepted.
     no_surname: bool | None = None
     national_id_confirmed: bool | None = None
+    # Back of the card (owner change, system.md v1.8): ISO dates and text.
+    birth_date: date | None = None
+    birth_place: str | None = None
+    issue_date: date | None = None
+    expiry_date: date | None = None
+    issuing_authority: str | None = None
 
 
 class CreateBody(_Body):
@@ -162,6 +168,11 @@ class DraftOut(BaseModel):
     second_price: int | None
     phone_input: str | None
     phone_normalized: str | None
+    birth_date: date | None = None
+    birth_place: str | None = None
+    issue_date: date | None = None
+    expiry_date: date | None = None
+    issuing_authority: str | None = None
     images: DraftImages
     no_surname: bool = False
     card_fields: dict[str, CardFieldMarkOut] = Field(default_factory=dict)

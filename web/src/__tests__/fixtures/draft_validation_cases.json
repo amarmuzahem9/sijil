@@ -14,7 +14,9 @@
     "family_number": 30,
     "address": 300,
     "landmark": 200,
-    "phone_input": 30
+    "phone_input": 30,
+    "birth_place": 100,
+    "issuing_authority": 100
   },
   "missing_order": [
     "image_front",
@@ -28,6 +30,12 @@
     "mother_second_name",
     "national_id",
     "family_number",
+    "birth_date",
+    "birth_place",
+    "issue_date",
+    "expiry_date",
+    "card_expired",
+    "issuing_authority",
     "location",
     "address",
     "landmark",
@@ -144,6 +152,26 @@
           "code": "required"
         },
         {
+          "field": "birth_date",
+          "code": "required"
+        },
+        {
+          "field": "birth_place",
+          "code": "required"
+        },
+        {
+          "field": "issue_date",
+          "code": "required"
+        },
+        {
+          "field": "expiry_date",
+          "code": "required"
+        },
+        {
+          "field": "issuing_authority",
+          "code": "required"
+        },
+        {
           "field": "location",
           "code": "required"
         },
@@ -192,7 +220,12 @@
         "great_grandfather_name": "نموذج",
         "surname": "الوهمي",
         "mother_first_name": "أم",
-        "mother_second_name": "تجريبية"
+        "mother_second_name": "تجريبية",
+        "birth_date": "1990-01-01",
+        "birth_place": "مدينة تجريبية",
+        "issue_date": "2023-01-01",
+        "expiry_date": "2032-12-31",
+        "issuing_authority": "مديرية الجنسية والمعلومات المدنية"
       },
       "images": ["front", "back"],
       "missing": []
@@ -216,7 +249,12 @@
         "great_grandfather_name": "نموذج",
         "surname": "الوهمي",
         "mother_first_name": "أم",
-        "mother_second_name": "تجريبية"
+        "mother_second_name": "تجريبية",
+        "birth_date": "1990-01-01",
+        "birth_place": "مدينة تجريبية",
+        "issue_date": "2023-01-01",
+        "expiry_date": "2032-12-31",
+        "issuing_authority": "مديرية الجنسية والمعلومات المدنية"
       },
       "images": ["back"],
       "missing": [
@@ -245,7 +283,12 @@
         "great_grandfather_name": "نموذج",
         "surname": "الوهمي",
         "mother_first_name": "أم",
-        "mother_second_name": "تجريبية"
+        "mother_second_name": "تجريبية",
+        "birth_date": "1990-01-01",
+        "birth_place": "مدينة تجريبية",
+        "issue_date": "2023-01-01",
+        "expiry_date": "2032-12-31",
+        "issuing_authority": "مديرية الجنسية والمعلومات المدنية"
       },
       "images": ["front", "back"],
       "missing": [
@@ -274,7 +317,12 @@
         "great_grandfather_name": "نموذج",
         "surname": "الوهمي",
         "mother_first_name": "أم",
-        "mother_second_name": "تجريبية"
+        "mother_second_name": "تجريبية",
+        "birth_date": "1990-01-01",
+        "birth_place": "مدينة تجريبية",
+        "issue_date": "2023-01-01",
+        "expiry_date": "2032-12-31",
+        "issuing_authority": "مديرية الجنسية والمعلومات المدنية"
       },
       "images": ["front", "back"],
       "missing": [
@@ -303,7 +351,12 @@
         "great_grandfather_name": "نموذج",
         "surname": "الوهمي",
         "mother_first_name": "أم",
-        "mother_second_name": "تجريبية"
+        "mother_second_name": "تجريبية",
+        "birth_date": "1990-01-01",
+        "birth_place": "مدينة تجريبية",
+        "issue_date": "2023-01-01",
+        "expiry_date": "2032-12-31",
+        "issuing_authority": "مديرية الجنسية والمعلومات المدنية"
       },
       "images": ["front", "back"],
       "missing": []
@@ -327,7 +380,12 @@
         "great_grandfather_name": "نموذج",
         "surname": "الوهمي",
         "mother_first_name": "أم",
-        "mother_second_name": "تجريبية"
+        "mother_second_name": "تجريبية",
+        "birth_date": "1990-01-01",
+        "birth_place": "مدينة تجريبية",
+        "issue_date": "2023-01-01",
+        "expiry_date": "2032-12-31",
+        "issuing_authority": "مديرية الجنسية والمعلومات المدنية"
       },
       "images": ["front", "back"],
       "missing": [
@@ -356,7 +414,12 @@
         "great_grandfather_name": "نموذج",
         "surname": "الوهمي",
         "mother_first_name": "أم",
-        "mother_second_name": "تجريبية"
+        "mother_second_name": "تجريبية",
+        "birth_date": "1990-01-01",
+        "birth_place": "مدينة تجريبية",
+        "issue_date": "2023-01-01",
+        "expiry_date": "2032-12-31",
+        "issuing_authority": "مديرية الجنسية والمعلومات المدنية"
       },
       "images": ["front", "back"],
       "missing": []
@@ -380,7 +443,12 @@
         "great_grandfather_name": "نموذج",
         "surname": "الوهمي",
         "mother_first_name": "أم",
-        "mother_second_name": "تجريبية"
+        "mother_second_name": "تجريبية",
+        "birth_date": "1990-01-01",
+        "birth_place": "مدينة تجريبية",
+        "issue_date": "2023-01-01",
+        "expiry_date": "2032-12-31",
+        "issuing_authority": "مديرية الجنسية والمعلومات المدنية"
       },
       "images": ["front", "back"],
       "missing": [
@@ -409,7 +477,12 @@
         "great_grandfather_name": "نموذج",
         "surname": "الوهمي",
         "mother_first_name": "أم",
-        "mother_second_name": "تجريبية"
+        "mother_second_name": "تجريبية",
+        "birth_date": "1990-01-01",
+        "birth_place": "مدينة تجريبية",
+        "issue_date": "2023-01-01",
+        "expiry_date": "2032-12-31",
+        "issuing_authority": "مديرية الجنسية والمعلومات المدنية"
       },
       "images": ["front", "back"],
       "missing": []
@@ -433,7 +506,12 @@
         "great_grandfather_name": "نموذج",
         "surname": "الوهمي",
         "mother_first_name": "أم",
-        "mother_second_name": "تجريبية"
+        "mother_second_name": "تجريبية",
+        "birth_date": "1990-01-01",
+        "birth_place": "مدينة تجريبية",
+        "issue_date": "2023-01-01",
+        "expiry_date": "2032-12-31",
+        "issuing_authority": "مديرية الجنسية والمعلومات المدنية"
       },
       "images": ["front", "back"],
       "missing": [
@@ -472,7 +550,12 @@
         "mother_first_name": "أم",
         "mother_second_name": "تجريبية",
         "mother_third_name": null,
-        "mother_surname": ""
+        "mother_surname": "",
+        "birth_date": "1990-01-01",
+        "birth_place": "مدينة تجريبية",
+        "issue_date": "2023-01-01",
+        "expiry_date": "2032-12-31",
+        "issuing_authority": "مديرية الجنسية والمعلومات المدنية"
       },
       "images": ["front", "back"],
       "missing": []
@@ -496,7 +579,12 @@
         "great_grandfather_name": "",
         "surname": "الوهمي",
         "mother_first_name": "أم",
-        "mother_second_name": null
+        "mother_second_name": null,
+        "birth_date": "1990-01-01",
+        "birth_place": "مدينة تجريبية",
+        "issue_date": "2023-01-01",
+        "expiry_date": "2032-12-31",
+        "issuing_authority": "مديرية الجنسية والمعلومات المدنية"
       },
       "images": ["front", "back"],
       "missing": [
@@ -534,7 +622,12 @@
         "surname": null,
         "mother_first_name": "أم",
         "mother_second_name": "تجريبية",
-        "no_surname": true
+        "no_surname": true,
+        "birth_date": "1990-01-01",
+        "birth_place": "مدينة تجريبية",
+        "issue_date": "2023-01-01",
+        "expiry_date": "2032-12-31",
+        "issuing_authority": "مديرية الجنسية والمعلومات المدنية"
       },
       "images": ["front", "back"],
       "missing": []
@@ -558,12 +651,130 @@
         "great_grandfather_name": "نموذج",
         "surname": null,
         "mother_first_name": "أم",
-        "mother_second_name": "تجريبية"
+        "mother_second_name": "تجريبية",
+        "birth_date": "1990-01-01",
+        "birth_place": "مدينة تجريبية",
+        "issue_date": "2023-01-01",
+        "expiry_date": "2032-12-31",
+        "issuing_authority": "مديرية الجنسية والمعلومات المدنية"
       },
       "images": ["front", "back"],
       "missing": [
         {
           "field": "surname",
+          "code": "required"
+        }
+      ]
+    },
+    {
+      "note": "expired card (006 FR-030)",
+      "draft": {
+        "national_id": "199012345678",
+        "family_number": "A1B2C3",
+        "location_lat": 33.31,
+        "location_lng": 44.36,
+        "address": "حي تجريبي، شارع 1",
+        "landmark": "قرب جامع تجريبي",
+        "area_id": 1,
+        "tower_id": 1,
+        "plan_id": 1,
+        "phone_input": "07801234567",
+        "first_name": "مشترك",
+        "father_name": "تجريبي",
+        "grandfather_name": "اختبار",
+        "great_grandfather_name": "نموذج",
+        "surname": "الوهمي",
+        "mother_first_name": "أم",
+        "mother_second_name": "تجريبية",
+        "birth_date": "1990-01-01",
+        "birth_place": "مدينة تجريبية",
+        "issue_date": "2023-01-01",
+        "expiry_date": "2026-11-22",
+        "issuing_authority": "مديرية الجنسية والمعلومات المدنية"
+      },
+      "images": ["front", "back"],
+      "missing": [
+        {
+          "field": "card_expired",
+          "code": "card_expired"
+        }
+      ]
+    },
+    {
+      "note": "card expiring today is still valid",
+      "draft": {
+        "national_id": "199012345678",
+        "family_number": "A1B2C3",
+        "location_lat": 33.31,
+        "location_lng": 44.36,
+        "address": "حي تجريبي، شارع 1",
+        "landmark": "قرب جامع تجريبي",
+        "area_id": 1,
+        "tower_id": 1,
+        "plan_id": 1,
+        "phone_input": "07801234567",
+        "first_name": "مشترك",
+        "father_name": "تجريبي",
+        "grandfather_name": "اختبار",
+        "great_grandfather_name": "نموذج",
+        "surname": "الوهمي",
+        "mother_first_name": "أم",
+        "mother_second_name": "تجريبية",
+        "birth_date": "1990-01-01",
+        "birth_place": "مدينة تجريبية",
+        "issue_date": "2023-01-01",
+        "expiry_date": "2026-11-23",
+        "issuing_authority": "مديرية الجنسية والمعلومات المدنية"
+      },
+      "images": ["front", "back"],
+      "missing": []
+    },
+    {
+      "note": "back fields missing (006 FR-029)",
+      "draft": {
+        "national_id": "199012345678",
+        "family_number": "A1B2C3",
+        "location_lat": 33.31,
+        "location_lng": 44.36,
+        "address": "حي تجريبي، شارع 1",
+        "landmark": "قرب جامع تجريبي",
+        "area_id": 1,
+        "tower_id": 1,
+        "plan_id": 1,
+        "phone_input": "07801234567",
+        "first_name": "مشترك",
+        "father_name": "تجريبي",
+        "grandfather_name": "اختبار",
+        "great_grandfather_name": "نموذج",
+        "surname": "الوهمي",
+        "mother_first_name": "أم",
+        "mother_second_name": "تجريبية",
+        "birth_date": null,
+        "birth_place": null,
+        "issue_date": null,
+        "expiry_date": null,
+        "issuing_authority": null
+      },
+      "images": ["front", "back"],
+      "missing": [
+        {
+          "field": "birth_date",
+          "code": "required"
+        },
+        {
+          "field": "birth_place",
+          "code": "required"
+        },
+        {
+          "field": "issue_date",
+          "code": "required"
+        },
+        {
+          "field": "expiry_date",
+          "code": "required"
+        },
+        {
+          "field": "issuing_authority",
           "code": "required"
         }
       ]
@@ -654,5 +865,6 @@
       "expected": null,
       "valid": false
     }
-  ]
+  ],
+  "today": "2026-11-23"
 }

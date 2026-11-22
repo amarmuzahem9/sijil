@@ -172,3 +172,44 @@ def test_apply_without_finished_readings_does_nothing(client, db, owner) -> None
     assert card_reading_service.apply_pair(db, uuid.UUID(draft_id)) is False
     card_reading_service.run(uuid.UUID(draft_id), session=db, reader=FakeCardReader())
     assert get(client, headers, draft_id)["first_name"] is None
+
+
+# --- US7: back fields typed or corrected (owner change) -----------------------------------------
+
+
+def test_typed_back_fields_are_saved_and_validated(client, owner) -> None:
+    _, headers = owner
+    draft_id = new_draft(client, headers)
+    body = patch(
+        client,
+        headers,
+        draft_id,
+        {
+            "birth_date": "1990-12-29",
+            "birth_place": " تكريت - صلاح الدين ",
+            "issue_date": "2023-06-15",
+            "expiry_date": "2033-06-14",
+            "issuing_authority": "مديرية الجنسية والمعلومات المدنية",
+        },
+    ).json()
+    assert body["birth_place"] == "تكريت-صلاح الدين"
+    assert body["expiry_date"] == "2033-06-14"
+    assert patch(client, headers, draft_id, {"birth_place": "Tikrit"}).json()["code"] == (
+        "invalid_place_text"
+    )
+    assert patch(client, headers, draft_id, {"birth_date": "2023-02-30"}).status_code == 422
+    assert patch(client, headers, draft_id, {"issuing_authority": "م" * 101}).json()["code"] == (
+        "too_long"
+    )
+
+
+def test_corrected_date_is_kept_on_a_new_reading(client, owner) -> None:
+    _, headers = owner
+    draft_id = read_card(client, headers)
+    body = patch(client, headers, draft_id, {"issue_date": "2020-01-03"}).json()
+    assert body["card_fields"]["issue_date"]["source"] == "edited"
+    assert body["card_fields"]["issue_date"]["original"] == "2020-01-02"
+    upload(client, headers, draft_id, "back", "clear_back")
+    body = get(client, headers, draft_id)
+    assert body["issue_date"] == "2020-01-03"
+    assert body["card_fields"]["issue_date"]["source"] == "edited"

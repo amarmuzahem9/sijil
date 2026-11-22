@@ -37,7 +37,7 @@ describe('normalizeNationalId', () => {
 
 describe('computeMissing', () => {
   it.each(fixture.drafts as DraftCase[])('$note', ({ draft, images, missing }) => {
-    expect(computeMissing(draft, images)).toEqual(missing);
+    expect(computeMissing(draft, images, fixture.today)).toEqual(missing);
   });
 
   it('uses the same page order and limits as the server', () => {

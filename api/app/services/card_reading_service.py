@@ -25,7 +25,7 @@ from sqlalchemy.orm.exc import StaleDataError
 from app.core.arabic_name import InvalidArabicName, clean_arabic_name, join_full_name
 from app.core.card_reading import READING_LIMIT_S
 from app.core.national_id import normalize_national_id
-from app.core.timeutil import utc_now
+from app.core.timeutil import baghdad_today, utc_now
 from app.db import get_sessionmaker
 from app.models import CardReading, Draft, DraftImage, ImageAccessLog
 from app.models.draft import FULL_NAME_FIELDS, NAME_MAX
@@ -38,7 +38,7 @@ from app.schemas.drafts import (
 )
 from app.services import image_store
 from app.services.card_reader import CardReader, ReaderError, get_card_reader
-from app.services.card_reading_rules import evaluate_side
+from app.services.card_reading_rules import evaluate_side, resolve_back_fields
 
 log = logging.getLogger("sijil.card_reading")
 
@@ -299,6 +299,9 @@ def _proposals(readings: dict[str, CardReading]) -> dict[str, dict]:
                 "confidence": None,
                 "from": "mrz",
             }
+        # The other back fields (R13), checked with the national ID's birth year.
+        nid = (out.get("national_id") or {}).get("value") or mrz_nid
+        out.update(resolve_back_fields(back.result.get("back_fields"), nid, baghdad_today()))
     return out
 
 

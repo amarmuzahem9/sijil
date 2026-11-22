@@ -3,10 +3,13 @@
 No card content is ever logged from here.
 """
 
+import difflib
 import re
+from datetime import date, timedelta
 from typing import Any
 
 from app.core.national_id import normalize_national_id
+from app.core.phone import to_latin_digits
 
 # --- Detection classes of the reader (contracts/ocr-service.md) ---------------------------------
 FRONT_CLASS = "iraq id card"
@@ -26,6 +29,14 @@ READER_HTTP_TIMEOUT_S = 45  # R5
 FRONT_LABELS = ("name", "dad", "gf", "last", "mom", "gm", "gn", "id", "id2")
 
 FAMILY_NUMBER_RE = re.compile(r"\d{4}[A-Z][0-9A-Z]{13}")
+
+# --- Back fields (owner change; research R13, system.md v1.8) -----------------------------------
+CARD_VALIDITY_YEARS = 10  # expiry = issue + 10 years - 1 day (all sample cards)
+KNOWN_AUTHORITIES = ("مديرية الجنسية والمعلومات المدنية",)
+AUTHORITY_MIN_SIMILARITY = 0.70
+BIRTH_PLACE_MAX = 100
+AUTHORITY_MAX = 100
+PRINTED_BIRTH_MIN_AGREEMENT = 2
 
 
 def mrz_check_digit(data: str) -> str:
@@ -65,3 +76,120 @@ def normalize_family_number(text: str | None) -> str | None:
     value = re.sub(r"\s+", "", text).upper()
     value = "".join("0" if c == "O" and i != 4 else c for i, c in enumerate(value))
     return value if value.isascii() and FAMILY_NUMBER_RE.fullmatch(value) else None
+
+
+_DATE_TEXT = re.compile(r"(\d{4})\D{0,2}(\d{1,2})\D{0,2}(\d{1,2})")
+
+
+def parse_printed_date(text: str | None) -> date | None:
+    """A printed date such as `2023/06/15` (Arabic-Indic digits accepted), else None."""
+    if not text:
+        return None
+    cleaned = to_latin_digits(text).replace(" ", "")
+    match = _DATE_TEXT.search(cleaned)
+    if not match:
+        return None
+    try:
+        return date(int(match.group(1)), int(match.group(2)), int(match.group(3)))
+    except ValueError:
+        return None
+
+
+def mrz_date(yymmdd: str | None, century: str) -> date | None:
+    """`YYMMDD` from the MRZ with the given century (`"19"` or `"20"`), else None."""
+    if not yymmdd or len(yymmdd) != 6 or not yymmdd.isdigit():
+        return None
+    try:
+        return date(int(century + yymmdd[:2]), int(yymmdd[2:4]), int(yymmdd[4:6]))
+    except ValueError:
+        return None
+
+
+def issue_for_expiry(expiry: date) -> date | None:
+    """The issue date implied by an expiry date: expiry - 10 years + 1 day (R13)."""
+    try:
+        return expiry.replace(year=expiry.year - CARD_VALIDITY_YEARS) + timedelta(days=1)
+    except ValueError:  # 29 February
+        return date(expiry.year - CARD_VALIDITY_YEARS, 3, 1)
+
+
+def birth_century(national_id: str | None, yy: str, today: date) -> str:
+    """Century of a two-digit birth year: from the national ID's first two digits, else the
+    usual rule (a year after this year's two digits is 19xx)."""
+    if national_id and len(national_id) == 12 and national_id[:2] in ("19", "20"):
+        return national_id[:2]
+    return "19" if int(yy) > today.year % 100 else "20"
+
+
+def snap_authority(text: str | None) -> str | None:
+    """The known issuing authority the text is similar enough to (≥ 0.70), else None."""
+    if not text or not text.strip():
+        return None
+    best = max(
+        KNOWN_AUTHORITIES,
+        key=lambda known: difflib.SequenceMatcher(None, text.strip(), known).ratio(),
+    )
+    ratio = difflib.SequenceMatcher(None, text.strip(), best).ratio()
+    return best if ratio >= AUTHORITY_MIN_SIMILARITY else None
+
+
+# Governorates and their main cities: a known place glued to the word before it gets the «-»
+# the recogniser dropped (owner decision, option 1; research R13).
+KNOWN_PLACES = (
+    "صلاح الدين",
+    "بغداد",
+    "البصرة",
+    "نينوى",
+    "اربيل",
+    "السليمانية",
+    "دهوك",
+    "كركوك",
+    "الانبار",
+    "ديالى",
+    "بابل",
+    "كربلاء",
+    "النجف",
+    "واسط",
+    "القادسية",
+    "ذي قار",
+    "ميسان",
+    "المثنى",
+    "تكريت",
+    "الموصل",
+    "الرمادي",
+    "الفلوجة",
+    "بعقوبة",
+    "الحلة",
+    "الكوت",
+    "الديوانية",
+    "الناصرية",
+    "العمارة",
+    "السماوة",
+    "سامراء",
+    "بيجي",
+)
+_ARABIC_LETTER = re.compile(r"[\u0621-\u064A]")
+
+
+def fix_place_separators(text: str | None) -> str | None:
+    """Put back the separators the recogniser loses in a place of birth (FR-028, option 1):
+    a lone «ا» between two words was a «/», and a known place glued to the previous letter gets
+    a «-». A dropped letter cannot be fixed; the marketer checks the «من البطاقة» value."""
+    if not text:
+        return text
+    words = text.split()
+    for i in range(1, len(words) - 1):
+        if words[i] == "ا":
+            words[i] = "/"
+    fixed = " ".join(words)
+    for place in sorted(KNOWN_PLACES, key=len, reverse=True):
+        start = 0
+        while (index := fixed.find(place, start)) != -1:
+            end = index + len(place)
+            glued = index > 0 and _ARABIC_LETTER.match(fixed[index - 1])
+            whole = end == len(fixed) or not _ARABIC_LETTER.match(fixed[end])
+            if glued and whole:
+                fixed = fixed[:index] + "-" + fixed[index:]
+                end += 1
+            start = end
+    return fixed

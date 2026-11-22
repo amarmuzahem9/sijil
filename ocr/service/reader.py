@@ -166,7 +166,7 @@ def _read_card(models: Models, card_image: np.ndarray, card_class: str) -> dict[
     crops, mrz_crop = split_mrz_crop(crop_detections(card, detections))
     fields = recognize_fields(models.recognizer, crops)
     mrz = read_mrz(mrz_crop["crop"], s.tesseract_cmd) if mrz_crop is not None else None
-    return {
+    out = {
         "orientation": (orientation or {}).get("decision"),
         "fields": {
             label: {"text": item.text, "confidence": round(float(item.confidence), 4)}
@@ -174,6 +174,97 @@ def _read_card(models: Models, card_image: np.ndarray, card_class: str) -> dict[
         },
         "mrz": _mrz_out(mrz),
     }
+    if cls == BACK_CLASS:
+        out["bands"] = _read_bands(models, card, detections)
+    return out
+
+
+# --- printed rows of the back (research R13) ---------------------------------------------------
+
+# Rows of the back, top → bottom: authority, issue, expiry, place of birth (`city` box), birth,
+# family number (`nu_f` box). Offsets in row pitches from the `city` row.
+BAND_OFFSETS = {"authority": -3.0, "issue": -2.0, "expiry": -1.0, "birth": 1.0}
+DATE_BANDS = ("issue", "expiry", "birth")
+_TESSERACT_DATE = "--psm 7 -c tessedit_char_whitelist=0123456789/"
+
+
+def band_boxes(
+    detections: list[dict[str, Any]], width: int, height: int
+) -> dict[str, tuple[int, int, int, int]] | None:
+    """Pixel boxes (x1, y1, x2, y2) of the printed rows, located from the `city` and `nu_f`
+    boxes of a straightened back (the card layout is fixed). None if either box is missing."""
+    by_label: dict[str, dict[str, Any]] = {}
+    for d in detections:
+        if d["label"] in ("city", "nu_f") and (
+            d["label"] not in by_label or d["confidence"] > by_label[d["label"]]["confidence"]
+        ):
+            by_label[d["label"]] = d
+    if "city" not in by_label or "nu_f" not in by_label:
+        return None
+    city, family = by_label["city"], by_label["nu_f"]
+    pitch = (family["cy"] - city["cy"]) / 2
+    if pitch <= 0:
+        return None
+    right = min(width, int(max(city["x2"], family["x2"]) + 0.01 * width))
+    left = int(0.02 * width)
+    boxes = {}
+    for name, offset in BAND_OFFSETS.items():
+        cy = city["cy"] + offset * pitch
+        y1, y2 = int(max(0, cy - 0.55 * pitch)), int(min(height, cy + 0.55 * pitch))
+        if y2 - y1 >= 4 and right - left >= 4:
+            boxes[name] = (left, y1, right, y2)
+    return boxes
+
+
+def _tesseract_dates(crop: np.ndarray, tesseract_cmd: str | None) -> list[str]:
+    import pytesseract
+
+    if tesseract_cmd:
+        pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
+    gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY) if crop.ndim == 3 else crop
+    gray = cv2.resize(gray, None, fx=2.5, fy=2.5, interpolation=cv2.INTER_CUBIC)
+    otsu = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+    texts = []
+    for image in (gray, otsu):
+        try:
+            texts.append(pytesseract.image_to_string(image, config=_TESSERACT_DATE).strip())
+        except Exception as exc:  # a missing binary must not fail the reading
+            log.warning("tesseract failed: %s", type(exc).__name__)
+    return texts
+
+
+def _read_bands(models: Models, card: np.ndarray, detections: list[dict[str, Any]]):
+    """Raw candidate texts of the printed rows; the app decides what to accept (R13)."""
+    from idcard_extractor.ocr.text_reader import recognize_fields
+
+    h, w = card.shape[:2]
+    boxes = band_boxes(detections, w, h)
+    if not boxes:
+        return None
+    out: dict[str, Any] = {}
+    for name, (x1, y1, x2, y2) in boxes.items():
+        band = card[y1:y2, x1:x2]
+        if name == "authority":
+            item = recognize_fields(
+                models.recognizer, {"a": {"crop": band, "confidence": 1.0, "bbox": None}}
+            ).get("a")
+            out[name] = (
+                {"text": item.text, "confidence": round(float(item.confidence), 4)}
+                if item
+                else None
+            )
+            continue
+        candidates: list[str] = []
+        for x0 in (0, int(band.shape[1] * 0.45)):  # the whole row, and its value end only
+            part = band[:, x0:]
+            item = recognize_fields(
+                models.recognizer, {"v": {"crop": part, "confidence": 1.0, "bbox": None}}
+            ).get("v")
+            if item and item.text:
+                candidates.append(item.text)
+            candidates.extend(t for t in _tesseract_dates(part, models.settings.tesseract_cmd) if t)
+        out[name] = candidates
+    return out
 
 
 def read(models: Models, image: np.ndarray) -> dict[str, Any]:

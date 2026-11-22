@@ -84,3 +84,24 @@ def test_composite_check_from_raw_lines() -> None:
     assert len(short) == 28
     assert reader.composite_from_raw("\n".join((l1, short, l3))) is True
     assert reader.composite_from_raw("\n".join((l1, body[:18] + body[20:] + wrong, l3))) is False
+
+
+def test_band_boxes_from_city_and_family_number() -> None:
+    # Synthetic boxes on a 1000×630 straightened back: city row at y=300, family number at y=400.
+    detections = [
+        {"label": "city", "confidence": 0.9, "cy": 300.0, "x2": 600.0},
+        {"label": "nu_f", "confidence": 0.9, "cy": 400.0, "x2": 620.0},
+        {"label": "MRZ", "confidence": 0.9, "cy": 550.0, "x2": 900.0},
+    ]
+    boxes = reader.band_boxes(detections, 1000, 630)
+    pitch = 50
+    assert set(boxes) == {"authority", "issue", "expiry", "birth"}
+    for name, offset in reader.BAND_OFFSETS.items():
+        x1, y1, x2, y2 = boxes[name]
+        centre = 300 + offset * pitch
+        assert abs((y1 + y2) / 2 - centre) <= 1
+        assert (x1, x2) == (20, 630)
+
+
+def test_band_boxes_need_both_boxes() -> None:
+    assert reader.band_boxes([{"label": "city", "confidence": 0.9, "cy": 300.0, "x2": 600.0}], 1000, 630) is None

@@ -64,6 +64,31 @@
     255,
     0
   ],
+  "back_birth_print": [
+    139,
+    69,
+    19
+  ],
+  "back_issue_mismatch": [
+    128,
+    128,
+    0
+  ],
+  "back_expired": [
+    0,
+    0,
+    128
+  ],
+  "front_female_2000": [
+    255,
+    180,
+    120
+  ],
+  "back_2000": [
+    120,
+    200,
+    200
+  ],
   "reader_failure": [
     80,
     0,

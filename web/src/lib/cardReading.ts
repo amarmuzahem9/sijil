@@ -5,6 +5,7 @@
  * finished reading may update on this page. Card data is never stored on the device.
  */
 import type { CardField, CardReading, CardReadingSide, ReshootReason, Side } from './drafts';
+import { normalizeNationalId } from './nationalId';
 
 export const READING_POLL_MS = 2000;
 
@@ -22,6 +23,8 @@ export const NATIONAL_ID_CHECK = 'تأكد من الرقم الوطني';
 export const NATIONAL_ID_CURRENT = 'الرقم الحالي';
 export const NATIONAL_ID_MRZ = 'في الشريط الآلي';
 export const NATIONAL_ID_ADOPT = 'اعتماد هذا الرقم';
+export const CARD_EXPIRED = 'البطاقة منتهية الصلاحية';
+export const BIRTH_YEAR_MISMATCH = 'سنة الميلاد لا تطابق الرقم الوطني، تأكد منهما';
 
 const SIDE_NAME: Record<Side, string> = { front: 'وجه', back: 'ظهر' };
 const OTHER_SIDE_NAME: Record<Side, string> = { front: 'الظهر', back: 'الوجه' };
@@ -69,3 +72,17 @@ export function fieldsToMerge(
 ): CardField[] {
   return fields.filter((field) => !hasPendingKey(field));
 }
+
+/**
+ * FR-032: the national ID's first four digits are the birth year. A different year (typed or
+ * read) shows a warning only; it never blocks saving or sending.
+ */
+export function birthYearMismatch(birthDate: string, nationalId: string): boolean {
+  const id = normalizeNationalId(nationalId);
+  if (!id || !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) return false;
+  return birthDate.slice(0, 4) !== id.slice(0, 4);
+}
+
+/** FR-030: an expiry date before today in Baghdad. */
+export const isExpired = (expiryDate: string, today: string): boolean =>
+  /^\d{4}-\d{2}-\d{2}$/.test(expiryDate) && expiryDate < today;

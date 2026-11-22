@@ -1,4 +1,5 @@
 import json
+from datetime import date
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -31,6 +32,11 @@ FIELDS = (
     "plan_id",
     "phone_input",
     "no_surname",
+    "birth_date",
+    "birth_place",
+    "issue_date",
+    "expiry_date",
+    "issuing_authority",
 )
 
 
@@ -40,7 +46,8 @@ def _draft(values: dict) -> SimpleNamespace:
 
 @pytest.mark.parametrize("case", FIXTURE["drafts"], ids=[c["note"] for c in FIXTURE["drafts"]])
 def test_missing(case: dict) -> None:
-    assert missing(_draft(case["draft"]), case["images"]) == case["missing"]
+    today = date.fromisoformat(FIXTURE["today"])
+    assert missing(_draft(case["draft"]), case["images"], today=today) == case["missing"]
 
 
 def test_order_matches_fixture() -> None:
@@ -54,5 +61,6 @@ def test_limits_match_fixture() -> None:
 
 def test_empty_draft_lists_everything_in_page_order() -> None:
     result = missing(_draft({}), [])
-    assert [item["field"] for item in result] == list(MISSING_ORDER)
+    # Everything but `card_expired`, which needs an expiry date.
+    assert [item["field"] for item in result] == [f for f in MISSING_ORDER if f != "card_expired"]
     assert {item["code"] for item in result} == {"required"}
