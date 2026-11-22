@@ -247,8 +247,11 @@ prices, change the region, and see the tower choice cleared.
 
 ### Edge Cases
 
-- The marketer's session expires mid-form: values stay on screen, saving resumes after signing
-  in again, and nothing typed is lost on that device.
+- The marketer's session expires mid-form: a sign-in dialog opens over the form, values stay on
+  screen, saving resumes after signing in again as the same account, and nothing typed is lost
+  on that device.
+- Two tabs of the same draft on one phone behave like two devices: the outdated tab shows the
+  change notice.
 - Slow upload and autosave at the same time: text fields keep saving independently of image
   uploads.
 - Leaving the page during an upload: the app warns «يوجد رفع غير مكتمل»; if the marketer leaves
@@ -281,8 +284,7 @@ prices, change the region, and see the tower choice cleared.
 - **FR-003**: The form MUST be one page with the sections in this order: national card (front,
   then back), card data (name, national ID, family number), house location (pin, address,
   nearest landmark), subscription (region, tower, category with both prices), subscriber phone.
-- **FR-004**: Card data fields MUST be entered by hand in this feature; the form MUST keep space
-  for the original card reading that feature 006 will add (§5.1 item 5).
+- **FR-004**: Card data fields MUST be entered by hand in this feature.
 
 **Images**
 
@@ -293,7 +295,8 @@ prices, change the region, and see the tower choice cleared.
 - **FR-006**: Uploads MUST show progress and MUST allow retry of a failed upload without picking
   the image again. The server MUST accept only images and MUST refuse files over 5 MB.
 - **FR-007**: Card images MUST be stored in private, persistent server storage outside the web
-  root that is included in the nightly backup (§15), and MUST NOT be reachable by any public or
+  root that is included in the backups (§15; the nightly job itself is feature 015, and until then
+  the volume is backed up by the documented manual command), and MUST NOT be reachable by any public or
   guessable link.
 
 **Location**

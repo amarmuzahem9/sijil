@@ -16,7 +16,8 @@
     So do an admin without `review` and an anonymous caller. The owner, the main admin and a
     `review` admin can open the image, and each open writes one `image_access_log` row.
   - **Version**: PATCH with a stale `version` returns 409 `draft_conflict` with
-    `same_session=false` from another session, and `true` from the same session. A current
+    `same_client=false` from another `X-Client-Id` (including another tab of the same session),
+    and `true` from the same `X-Client-Id`. A current
     `version` saves and increases it by 1. An image upload increases it too.
   - **Delete**: the files of both sides are gone from `UPLOADS_DIR` and the rows are gone. One
     `draft.deleted` audit entry exists, and it holds no name, national ID, family number or
@@ -43,7 +44,7 @@
 | A | **Acceptance**: On phone context 1, «إضافة مشترك جديد»; upload a front and a back image; fill the name, a 12-digit national ID and the family number; «استخدم موقعي الحالي» with a granted geolocation; choose العلم / ALM01. In context 2, same account, open «الطلبات ← مسودات» and the draft | Every value, the pin coordinates and both images appear |
 | B | In context 2 change the address; wait in context 1 | Within 30 s, context 1 shows «تغيّرت المسودة من جهاز آخر». «تحميل الأحدث» shows the new address |
 | C | Throttle the network to offline while typing the address | The badge reads «غير متصل». Back online, it reads «محفوظ» and the value is on the server |
-| D | Upload a 4000×3000 synthetic photo | The progress bar runs, and the stored image is ≤ 1600 px and JPEG. Kill the request midway: «فشل الرفع» → «إعادة المحاولة» succeeds |
+| D | Upload a 4000×3000 synthetic photo | The progress bar runs, and the stored image is ≤ 1600 px, JPEG, and under 700 KB (SC-003). Kill the request midway: «فشل الرفع» → «إعادة المحاولة» succeeds |
 | E | Type the national ID `١٢٣٤٥٦٧٨٩٠١` (11 digits) and the phone `+964 780 123 4567` | «الرقم الوطني 12 رقماً» appears. The phone is accepted as 07801234567. «النواقص» lists the ID |
 | F | A complete form | «النواقص»: «كل الحقول مكتملة». «إرسال» stays disabled with its note |
 | G | Choose PLUS; as admin change its second price to 40,000; reopen the draft | «تغيّر السعر» shows, and the price line shows 40,000 |

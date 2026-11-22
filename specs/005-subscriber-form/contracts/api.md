@@ -3,7 +3,10 @@
 This contract follows the conventions of [004 api.md](../../004-settings/contracts/api.md). Errors
 use the shape `{code, message}` with an Arabic message.
 
-Draft routes use `require_roles("marketer")` and the owner check. A draft that does not exist and
+Draft routes use `require_roles("marketer")` and the owner check. Every draft call (PUT, PATCH,
+image upload, version poll) sends the header `X-Client-Id: <uuid>`, one per page load of the form
+(research R3). It is required on writes; a missing or malformed value gets 422
+`validation_error`. A draft that does not exist and
 a draft owned by someone else both return 404 `draft_not_found`, so its existence is never
 revealed.
 
@@ -12,7 +15,7 @@ revealed.
 | HTTP | code | message |
 |---|---|---|
 | 404 | `draft_not_found` | «المسودة غير موجودة» |
-| 409 | `draft_conflict` | «تغيّرت المسودة من جهاز آخر» (+ `version`, `updated_at`, `same_session`) |
+| 409 | `draft_conflict` | «تغيّرت المسودة من جهاز آخر» (+ `version`, `updated_at`, `same_client`) |
 | 422 | `too_long` | «النص أطول من المسموح» (+ `field`) |
 | 422 | `invalid_choice` | «الاختيار غير صالح» (an id that does not exist) |
 | 413 | `image_too_large` | «حجم الصورة أكبر من 5 ميغابايت» |
@@ -53,7 +56,7 @@ revealed.
 | `GET /api/drafts?q=` | marketer | — | 200 `{items:[{id, subscriber_name, tower_code, phone_normalized, updated_at, missing_count, has_images}]}` | Own drafts only, newest `updated_at` first. `q` matches the name (case-insensitive substring) or the phone digits |
 | `PUT /api/drafts/{id}` | marketer | `{changes}` | 201 draft (created), or 200 the existing draft unchanged (idempotent retry by the same owner) | `id` is a client UUID. Another owner's id gives 404 |
 | `GET /api/drafts/{id}` | owner | — | 200 draft with `missing` and `notices` | Read-only: notices are computed and not applied (R4) |
-| `GET /api/drafts/{id}/version` | owner | — | 200 `{version, updated_at, same_session}` | Polled every 15 s (R3). 404 after deletion |
+| `GET /api/drafts/{id}/version` | owner | — | 200 `{version, updated_at, same_client}` | Polled every 15 s (R3). 404 after deletion |
 | `PATCH /api/drafts/{id}` | owner | `{version, changes}` | 200 draft | 409 `draft_conflict` when `version` is stale. Re-copies the catalog values (R4) |
 | `DELETE /api/drafts/{id}` | owner | — | 204 | Removes rows and files, audit `draft.deleted` (R8) |
 | `POST /api/drafts/{id}/images/{side}` | owner | multipart `file` (JPEG) | 200 draft | `side` is `front` or `back`. Increases `version`. Replaces any existing image |
@@ -81,7 +84,7 @@ revealed.
 
 ```json
 {"code": "draft_conflict", "message": "تغيّرت المسودة من جهاز آخر",
- "version": 9, "updated_at": "2026-11-22T09:15:40Z", "same_session": false}
+ "version": 9, "updated_at": "2026-11-22T09:15:40Z", "same_client": false}
 ```
 
 ## Environment variables (added to `.env.example`)

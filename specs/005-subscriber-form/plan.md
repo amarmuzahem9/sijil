@@ -16,7 +16,7 @@ Marketers fill one page that saves itself to the server as a draft.
   the client. Settings FKs use `SET NULL`.
 - Each draft stores copies of the names and prices, which the server fills from the catalog.
   The client never sends prices.
-- A `version` counter and the id of the last session give "last save wins" with a 409 notice on
+- A `version` counter and the id of the last page load (`X-Client-Id`) give "last save wins" with a 409 notice on
   the other device.
 
 **Behaviour**:

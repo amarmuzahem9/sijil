@@ -33,20 +33,25 @@ deletion with files, the satellite map, catalog reconciliation, and the tests in
   - The server runs one statement: `UPDATE … SET …, version = version + 1 WHERE id = :id AND
     marketer_id = :me AND version = :v RETURNING …`.
   - When no row matches but the draft exists, the server returns 409 `draft_conflict` with the
-    current `version`, `updated_at`, and `same_session`.
-- **Same-session conflicts are not real conflicts**: Each save stores the session id that made
-  it (`last_session_id`, from `AuthContext.session`). An image upload also increases the version.
-  When the conflicting save came from the same session (for example, an upload that finished
-  during typing), the response has `same_session: true`. The client then takes the new version
-  and sends its pending changes again without showing anything.
-- **Different session**: Autosave pauses and the banner «تغيّرت المسودة من جهاز آخر» appears
+    current `version`, `updated_at`, and `same_client`.
+- **Conflicts from the same page are not real conflicts**: Every page load of the form generates a
+  random `client_id` (UUID, in memory only) and sends it on every draft call as the header
+  `X-Client-Id`. Each save and each image upload stores it on the draft (`last_client_id`). An
+  image upload also increases the version. When the conflicting save came from the same page
+  (for example, an upload that finished during typing), the response has `same_client: true`.
+  The client then takes the new version and sends its pending changes again without showing
+  anything.
+  - The session id is **not** used for this (analysis U1). Two tabs on the same phone share one
+    session, and they would silently overwrite each other without ever showing the notice.
+  - A missing or malformed `X-Client-Id` on a draft write gets 422 `validation_error`.
+- **Another page or device**: Autosave pauses and the banner «تغيّرت المسودة من جهاز آخر» appears
   (FR-017).
   - «تحميل الأحدث» runs a GET and replaces the screen with the server's version.
   - «الإبقاء على نسختي» sends every field of the local form with the current server version.
     That save becomes the latest one, and the other device then gets the notice.
 - **Detection within 30 seconds (SC-004)**: While the form is visible, the client polls
   `GET /api/drafts/{id}/version` every 15 seconds. It also polls when the tab becomes visible
-  again or the window regains focus. The response is tiny: `{version, updated_at, same_session}`.
+  again or the window regains focus. The response is tiny: `{version, updated_at, same_client}`.
   A 404 there means the draft was deleted, and the client shows «حُذفت هذه المسودة» (US4
   scenario 5).
 - **Debounce**: Text fields are saved about 1 second after the last keystroke, and immediately on
@@ -57,6 +62,15 @@ deletion with files, the satellite map, catalog reconciliation, and the tests in
   (2, 4, 8 … up to 30 seconds) and on the browser's `online` event. Unsaved values stay in memory
   on screen. Nothing is written to localStorage, because card data must never be stored on the
   device (Principle II).
+- **Session ended during the form (analysis U2)**: An expired access token is refreshed silently
+  (existing `lib/api.ts`). When the session itself ends (`session_revoked`, or a refresh that
+  fails), the form page does **not** navigate to `/login`. Instead, a sign-in dialog opens over the
+  form («انتهت الجلسة، سجّل الدخول للمتابعة»), and the unsaved values stay in memory.
+  - After signing in **as the same account**, the queue resumes and saves.
+  - Signing in as a different account discards the local form state and goes to the dashboard,
+    so one marketer's data never leaks to another.
+  - `account_inactive` still ends at the login page with its message: there is no point in
+    keeping the form for a deactivated account.
 - **Alternatives**:
   - Field-level merging was rejected. The owner chose "last save wins", and merging hides
     surprises (Principle VI).
@@ -160,7 +174,8 @@ deletion with files, the satellite map, catalog reconciliation, and the tests in
   open", and Principle II and §13 say "every access". Logging all of them satisfies both.
   - The log is kept out of `audit_log`, so the audit viewer is not flooded by form reloads.
   - No viewer page is added in this feature; the admin requests pages (010) will show it.
-- **Backups**: This feature adds no backup job; that is feature 015. `deploy/staging.md`
+- **Backups**: This feature adds no backup job; the nightly backup of §15 is feature 015 (analysis
+  N1). `deploy/staging.md`
   documents that the `sijil_uploads` volume holds the card images, must be part of every backup,
   and gives a manual `tar` command for it.
 
@@ -225,15 +240,22 @@ deletion with files, the satellite map, catalog reconciliation, and the tests in
   - With no key, the script failing, or no network, the section shows «الخريطة غير متوفرة
     حالياً». «استخدم موقعي الحالي» (`navigator.geolocation`, high accuracy, 15-second timeout)
     still sets the pin coordinates (FR-009).
-- **CSP**: `web/Caddyfile` allows Google's documented hosts:
-  - `script-src`: `https://maps.googleapis.com`
+- **CSP**: `web/Caddyfile` follows Google's Maps JavaScript API CSP guide in full (analysis I1).
+  Only `maps.googleapis.com` would load the bootstrap but break tiles, the marker library and the
+  workers. These sources are added to the existing policy:
+  - `script-src`: `https://*.googleapis.com`, `https://*.gstatic.com`, `https://*.google.com`,
+    `https://*.ggpht.com`, `https://*.googleusercontent.com`, `blob:`
   - `img-src`: `https://*.googleapis.com`, `https://*.gstatic.com`, `https://*.google.com`,
+    `https://*.googleusercontent.com`, `data:`, `blob:`
+  - `connect-src`: `https://*.googleapis.com`, `https://*.google.com`, `https://*.gstatic.com`,
     `data:`, `blob:`
-  - `connect-src`: `https://*.googleapis.com`, `https://*.google.com`
+  - `frame-src`: `https://*.google.com`
   - `font-src`: `https://fonts.gstatic.com`
+  - `style-src`: `https://fonts.googleapis.com` (it already allows `'unsafe-inline'`)
   - `worker-src`: `blob:`
-  - `style-src` already allows `'unsafe-inline'`.
   - `Permissions-Policy` already allows `camera=(self), geolocation=(self)`.
+  - The e2e suite runs without a key, so it cannot prove the map loads. A real key must be
+    checked by hand on staging (T054), with no CSP errors in the browser console.
 - **e2e**: There is no key in e2e. Playwright checks the «الخريطة غير متوفرة حالياً» path and
   sets the pin through a granted, mocked geolocation.
 

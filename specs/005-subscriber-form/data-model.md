@@ -29,7 +29,7 @@ Migration `0005_drafts`. All timestamps are `timestamptz` in UTC (Principle X).
 | `phone_input` | text | yes | As typed, ≤ 30 |
 | `phone_normalized` | text | yes | Set only when §8.1 normalization succeeds. CHECK `^07[0-9]{9}$` |
 | `version` | integer | no | Starts at 1; +1 on every save and every image change |
-| `last_session_id` | bigint | yes | Session that made the last save (R3). Not a FK, because sessions may be pruned |
+| `last_client_id` | uuid | yes | `X-Client-Id` of the page load that made the last save or image change (R3). Not the session id: two tabs share a session |
 | `created_at` | timestamptz | no | |
 | `updated_at` | timestamptz | no | Set on every save |
 
