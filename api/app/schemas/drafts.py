@@ -20,7 +20,8 @@ class _Body(BaseModel):
 class LocationIn(_Body):
     lat: float = Field(ge=-90, le=90)
     lng: float = Field(ge=-180, le=180)
-    source: Literal["gps", "map"]
+    # gps: the phone; map: tap or drag; coords: typed or pasted; search: a Places result.
+    source: Literal["gps", "map", "coords", "search"]
     accuracy_m: StrictInt | None = Field(default=None, ge=0)
 
 

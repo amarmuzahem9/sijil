@@ -18,6 +18,7 @@ revealed.
 | 409 | `draft_conflict` | «تغيّرت المسودة من جهاز آخر» (+ `version`, `updated_at`, `same_client`) |
 | 422 | `too_long` | «النص أطول من المسموح» (+ `field`) |
 | 422 | `invalid_name_text` | «الاسم أحرف عربية فقط» (+ `field`) |
+| 422 | `location_outside_iraq` | «الموقع خارج العراق، تأكد من الإحداثيات» (+ `field: location`; system.md §5.2 v1.6) |
 | 422 | `invalid_choice` | «الاختيار غير صالح» (an id that does not exist) |
 | 413 | `image_too_large` | «حجم الصورة أكبر من 5 ميغابايت» |
 | 422 | `invalid_image` | «الملف ليس صورة صالحة» |
@@ -78,7 +79,7 @@ revealed.
   "mother_first_name": "string|null", "mother_second_name": "string|null",
   "mother_third_name": "string|null", "mother_surname": "string|null",
   "national_id": "string|null", "family_number": "string|null",
-  "location": {"lat": 0.0, "lng": 0.0, "source": "gps|map", "accuracy_m": 12} ,
+  "location": {"lat": 0.0, "lng": 0.0, "source": "gps|map|coords|search", "accuracy_m": 12} ,
   "address": "string|null", "landmark": "string|null",
   "area_id": 1, "tower_id": 3, "plan_id": 2,
   "phone_input": "string|null"

@@ -166,12 +166,12 @@ docker exec <npm> curl -s http://sijil-web/api/health
 
 ## 5ب) مفتاح Google Maps (الفيزة 005)
 
-الخريطة اختيارية: بدون مفتاح تعمل الاستمارة، ويظهر «الخريطة غير متوفرة حالياً»، ويبقى زر «استخدم موقعي الحالي» يعمل.
+الخريطة اختيارية: بدون مفتاح تعمل الاستمارة، ويظهر «الخريطة غير متوفرة حالياً»، ويبقى زر «استخدم موقعي الحالي» ومربع «إدخال إحداثية» يعملان.
 
-1. في Google Cloud Console فعّل **Maps JavaScript API** وأنشئ **API key**.
+1. في Google Cloud Console فعّل **Maps JavaScript API** و**Places API (New)** (لشريط «ابحث عن مكان»)، وأنشئ **API key**. لا تفعّل «Places API» القديمة؛ الكود يستعمل الجديدة.
 2. قيّد المفتاح (**Edit API key**):
    - Application restrictions: **Websites**، والعنوان `https://sijil.t3cftth.net/*`
-   - API restrictions: **Maps JavaScript API** فقط
+   - API restrictions: **Maps JavaScript API** و**Places API (New)** فقط
 3. من **Map Management** أنشئ **Map ID** من نوع JavaScript (يحتاجه الدبوس القابل للسحب).
 4. ضعهما في `.env` على السيرفر فقط، ولا يدخلان git أبداً:
    ```bash
@@ -180,6 +180,7 @@ docker exec <npm> curl -s http://sijil-web/api/health
    MAP_DEFAULT_CENTER=33.3152,44.3661   # مركز الخريطة عند عدم وجود موقع
    ```
 5. أعد تشغيل الخادم (`sijil up -d api`)، وافتح الاستمارة. يجب أن تظهر صور القمر الصناعي، وألا تظهر أخطاء CSP في Console المتصفح.
+6. جرّب «ابحث عن مكان» واكتب «ساحة». إذا ظهر «البحث عن الأماكن غير متاح حالياً» فـ Places API (New) غير مفعّلة أو غير مضافة لقيود المفتاح (في Console يظهر `REQUEST_DENIED` أو `PERMISSION_DENIED`).
 
 ## 6) التشغيل الثاني والتأكد
 

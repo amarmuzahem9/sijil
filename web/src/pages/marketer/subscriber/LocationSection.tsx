@@ -1,7 +1,8 @@
 /**
- * «موقع البيت» (docs/system.md §5.2, specs/005 US6): GPS or a satellite map with a draggable pin,
- * then the address and the nearest landmark. The pin is saved immediately; with no map key or no
- * network the section still works through «استخدم موقعي الحالي» (FR-009).
+ * «موقع البيت» (docs/system.md §5.2 v1.6, specs/005 US6): the phone's GPS, a typed coordinate or a
+ * pasted Google Maps link, a place search (Places, Iraq only), or a satellite map with a draggable
+ * pin; then the address and the nearest landmark. The pin is saved immediately and must be inside
+ * Iraq. With no map key or no network, GPS and the coordinate box still work (FR-009).
  */
 import MapOutlined from '@mui/icons-material/MapOutlined';
 import MyLocationOutlined from '@mui/icons-material/MyLocationOutlined';
@@ -13,7 +14,8 @@ import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 
 import { useClientConfig } from '../../../lib/clientConfig';
-import type { DraftLocation } from '../../../lib/drafts';
+import { COORDINATE_ERRORS, inIraq } from '../../../lib/coordinates';
+import type { DraftLocation, LocationSource } from '../../../lib/drafts';
 import {
   loadGoogleMaps,
   toLatLngLiteral,
@@ -21,11 +23,14 @@ import {
   type MapsApi,
 } from '../../../lib/googleMaps';
 import type { DraftAutosave } from '../../../lib/useDraftAutosave';
+import { CoordinateInput } from './CoordinateInput';
 import { DraftTextField } from './DraftTextField';
 import { MapPicker } from './MapPicker';
+import { PlaceSearch } from './PlaceSearch';
 
 export const MAP_UNAVAILABLE = 'الخريطة غير متوفرة حالياً';
 export const GPS_TIMEOUT_MS = 15_000;
+export const GPS_OUTSIDE_IRAQ = 'موقعك الحالي خارج العراق. حدّد البيت بالإحداثية أو على الخريطة.';
 
 const GEO_ERRORS: Record<number, string> = {
   1: 'لم يُسمح بالوصول إلى الموقع. فعّل إذن الموقع للمتصفح، أو حدّد البيت على الخريطة.',
@@ -78,10 +83,22 @@ export function LocationSection({
   // A location without finite numbers counts as no pin (never render or send it).
   const pin = toLatLngLiteral(values.location);
 
-  function setPin(location: DraftLocation) {
+  // Every source goes through here: finite numbers, inside Iraq (the server checks the same box).
+  function setPin(location: DraftLocation): boolean {
     const pos = toLatLngLiteral(location);
-    if (!pos) return;
+    if (!pos) return false;
+    if (!inIraq(pos)) {
+      setGeoError(location.source === 'gps' ? GPS_OUTSIDE_IRAQ : COORDINATE_ERRORS.outside_iraq);
+      return false;
+    }
+    setGeoError(null);
     saveNow({ location: { ...location, lat: pos.lat, lng: pos.lng } });
+    return true;
+  }
+
+  /** A typed coordinate or a search result: save it, then show it on the map when there is one. */
+  function goTo(pos: LatLngLiteral, source: LocationSource) {
+    if (setPin({ ...pos, source, accuracy_m: null }) && mapState.kind === 'ready') setMapOpen(true);
   }
 
   function useMyLocation() {
@@ -96,12 +113,12 @@ export function LocationSection({
         setLocating(false);
         const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setDevicePos(here);
-        setPin({
+        const saved = setPin({
           ...here,
           source: 'gps',
           accuracy_m: Number.isFinite(pos.coords.accuracy) ? Math.round(pos.coords.accuracy) : null,
         });
-        if (mapState.kind === 'ready') setMapOpen(true);
+        if (saved && mapState.kind === 'ready') setMapOpen(true);
       },
       (err) => {
         setLocating(false);
@@ -136,12 +153,21 @@ export function LocationSection({
         </Button>
       </Stack>
 
+      <CoordinateInput onGo={(pos) => goTo(pos, 'coords')} />
+      {mapState.kind === 'ready' && mapState.api.places && (
+        <PlaceSearch places={mapState.api.places} onPick={(pos) => goTo(pos, 'search')} />
+      )}
+
       {mapState.kind === 'unavailable' && (
         <Alert severity="info" data-testid="map-unavailable">
           {MAP_UNAVAILABLE}
         </Alert>
       )}
-      {geoError && <Alert severity="warning">{geoError}</Alert>}
+      {geoError && (
+        <Alert severity="warning" data-testid="location-error">
+          {geoError}
+        </Alert>
+      )}
 
       {mapOpen && mapState.kind === 'ready' && (
         <>

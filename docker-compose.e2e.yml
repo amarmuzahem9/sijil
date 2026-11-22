@@ -4,6 +4,10 @@ services:
   api:
     environment:
       APP_ENV: test
+      # Never use the developer's real Maps key in e2e: the tests expect no map (or serve a fake
+      # one), and must not send requests to Google on the owner's account.
+      GOOGLE_MAPS_API_KEY: ""
+      GOOGLE_MAPS_MAP_ID: ""
 
   proxy:
     ports: !reset []

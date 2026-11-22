@@ -24,7 +24,8 @@ export const clientId: string = crypto.randomUUID();
 const draftHeaders = (): Record<string, string> => ({ 'X-Client-Id': clientId });
 
 export type Side = 'front' | 'back';
-export type LocationSource = 'gps' | 'map';
+/** gps: the phone; map: tap or drag; coords: typed or pasted; search: a Places result (§5.2). */
+export type LocationSource = 'gps' | 'map' | 'coords' | 'search';
 
 export interface DraftLocation {
   lat: number;

@@ -21,6 +21,7 @@ from sqlalchemy.orm.exc import StaleDataError
 
 from app.core.access import has_any_permission
 from app.core.arabic_name import InvalidArabicName, clean_arabic_name, join_full_name
+from app.core.iraq_bounds import in_iraq
 from app.core.phone import normalize_phone, to_latin_digits
 from app.core.timeutil import utc_now
 from app.errors import AppError
@@ -105,6 +106,9 @@ def apply_changes(draft: Draft, changes: DraftChanges) -> None:
 
     if "location" in given:
         loc = changes.location
+        if loc is not None and not in_iraq(loc.lat, loc.lng):
+            # §5.2 v1.6: every pin, whatever its source, must be inside Iraq's bounding box.
+            raise AppError("location_outside_iraq", 422, extra={"field": "location"})
         draft.location_lat = loc.lat if loc else None
         draft.location_lng = loc.lng if loc else None
         draft.location_source = loc.source if loc else None

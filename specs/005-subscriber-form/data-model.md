@@ -23,7 +23,7 @@ Migration `0005_drafts`. All timestamps are `timestamptz` in UTC (Principle X).
 | `family_number` | text | yes | As typed, ≤ 30. Sensitive |
 | `location_lat` | double precision | yes | CHECK −90..90. Set together with `location_lng` (CHECK both null or both set) |
 | `location_lng` | double precision | yes | CHECK −180..180 |
-| `location_source` | text | yes | `gps` \| `map` |
+| `location_source` | text | yes | `gps` \| `map` \| `coords` \| `search` (migration 0006, system.md §5.2 v1.6). With a location, lat/lng must be inside Iraq's box (29.0–37.5, 38.7–48.8) |
 | `location_accuracy_m` | integer | yes | GPS accuracy if known |
 | `address` | text | yes | ≤ 300 |
 | `landmark` | text | yes | Nearest landmark, ≤ 200 |

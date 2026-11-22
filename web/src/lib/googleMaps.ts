@@ -38,6 +38,26 @@ export interface GMarker {
 export interface MapsApi {
   Map: new (el: HTMLElement, options: Record<string, unknown>) => GMap;
   AdvancedMarkerElement: new (options: Record<string, unknown>) => GMarker;
+  /** Places API (New) for the search bar; null when the library failed to load. */
+  places: PlacesLibrary | null;
+}
+
+/** The members of the `places` library the search bar uses (Places API New). */
+export interface PlacePrediction {
+  placeId: string;
+  text?: { text: string } | null;
+  mainText?: { text: string } | null;
+  secondaryText?: { text: string } | null;
+  toPlace(): { fetchFields(req: { fields: string[] }): Promise<unknown>; location?: unknown };
+}
+
+export interface PlacesLibrary {
+  AutocompleteSessionToken: new () => unknown;
+  AutocompleteSuggestion: {
+    fetchAutocompleteSuggestions(request: Record<string, unknown>): Promise<{
+      suggestions: { placePrediction?: PlacePrediction | null }[];
+    }>;
+  };
 }
 
 interface GoogleGlobal {
@@ -62,7 +82,7 @@ function injectScript(config: MapsConfig): Promise<void> {
       key: config.api_key,
       v: 'weekly',
       loading: 'async',
-      libraries: 'maps,marker',
+      libraries: 'maps,marker,places',
       language: 'ar',
       region: 'IQ',
       callback: '__sijilMapsReady',
@@ -83,9 +103,15 @@ async function load(config: MapsConfig): Promise<MapsApi | null> {
     if (!google?.maps) return null;
     const maps = await google.maps.importLibrary('maps');
     const marker = await google.maps.importLibrary('marker');
+    // The map works without search: a failure here only hides the search bar.
+    const places = await google.maps.importLibrary('places').catch(() => null);
     return {
       Map: maps.Map as MapsApi['Map'],
       AdvancedMarkerElement: marker.AdvancedMarkerElement as MapsApi['AdvancedMarkerElement'],
+      places:
+        places?.AutocompleteSuggestion && places.AutocompleteSessionToken
+          ? (places as unknown as PlacesLibrary)
+          : null,
     };
   })().catch(() => null);
   return Promise.race([ready, timeout]);

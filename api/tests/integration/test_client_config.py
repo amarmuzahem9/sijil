@@ -108,3 +108,49 @@ def test_null_clears_both_coordinates(client, h) -> None:
     )
     assert res.json()["location"] is None
     assert {"field": "location", "code": "required"} in res.json()["missing"]
+
+
+# --- §5.2 v1.6: typed coordinates, Places search, Iraq bounding box ----------------------------
+
+
+@pytest.mark.parametrize("source", ["coords", "search"])
+def test_typed_and_searched_pins_are_saved_with_their_source(client, h, source) -> None:
+    draft_id = _draft(client, h)
+    loc = {"lat": 34.70, "lng": 43.68, "source": source}
+    res = client.patch(
+        f"/api/drafts/{draft_id}", json={"version": 1, "changes": {"location": loc}}, headers=h
+    )
+    assert res.status_code == 200
+    assert res.json()["location"] == {**loc, "accuracy_m": None}
+
+
+@pytest.mark.parametrize(
+    "lat,lng",
+    [
+        (43.68, 34.70),  # swapped
+        (33.89, 35.50),  # Beirut
+        (24.71, 46.67),  # Riyadh
+        (0, 0),
+    ],
+)
+def test_location_outside_iraq_is_refused(client, h, lat, lng) -> None:
+    draft_id = _draft(client, h)
+    loc = {"lat": lat, "lng": lng, "source": "coords"}
+    res = client.patch(
+        f"/api/drafts/{draft_id}", json={"version": 1, "changes": {"location": loc}}, headers=h
+    )
+    assert res.status_code == 422
+    assert res.json()["code"] == "location_outside_iraq"
+    assert res.json()["field"] == "location"
+    assert client.get(f"/api/drafts/{draft_id}", headers=h).json()["version"] == 1
+
+
+@pytest.mark.parametrize("lat,lng", [(37.15, 42.68), (30.51, 47.81), (33.0, 41.0)])
+def test_border_cities_are_inside(client, h, lat, lng) -> None:
+    """Zakho, Basra and the western desert are inside the box."""
+    draft_id = _draft(client, h)
+    loc = {"lat": lat, "lng": lng, "source": "coords"}
+    res = client.patch(
+        f"/api/drafts/{draft_id}", json={"version": 1, "changes": {"location": loc}}, headers=h
+    )
+    assert res.status_code == 200
