@@ -37,6 +37,7 @@ FIELDS = (
     "issue_date",
     "expiry_date",
     "issuing_authority",
+    "national_id_check",
 )
 
 
@@ -62,5 +63,7 @@ def test_limits_match_fixture() -> None:
 def test_empty_draft_lists_everything_in_page_order() -> None:
     result = missing(_draft({}), [])
     # Everything but `card_expired`, which needs an expiry date.
-    assert [item["field"] for item in result] == [f for f in MISSING_ORDER if f != "card_expired"]
+    assert [item["field"] for item in result] == [
+        f for f in MISSING_ORDER if f not in ("card_expired", "national_id_unconfirmed")
+    ]
     assert {item["code"] for item in result} == {"required"}

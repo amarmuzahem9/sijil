@@ -134,6 +134,18 @@ def apply_changes(draft: Draft, changes: DraftChanges) -> None:
     if names or "no_surname" in given:
         draft.full_name = join_full_name([getattr(draft, f) for f in FULL_NAME_FIELDS])
 
+    # National ID against the verified MRZ (research R7): any change drops the confirmation;
+    # «اعتماد هذا الرقم» confirms the current value.
+    check = draft.national_id_check
+    if check and check.get("mrz"):
+        confirmed = check.get("confirmed_value")
+        if draft.national_id != before["national_id"]:
+            confirmed = None
+        if changes.national_id_confirmed and draft.national_id:
+            confirmed = draft.national_id
+        if confirmed != check.get("confirmed_value"):
+            draft.national_id_check = {**check, "confirmed_value": confirmed}
+
     # A card field changed by the marketer is «عُدِّل يدوياً» from now on (research R8); the
     # original reading stays. Echoes of the same value (e.g. a resent save) change nothing.
     edited = [f for f in CARD_FIELDS if getattr(draft, f) != before[f]]

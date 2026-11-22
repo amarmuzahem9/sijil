@@ -40,6 +40,7 @@ MESSAGES: dict[str, str] = {
     "too_long": "النص أطول من المسموح",
     "invalid_name_text": "الاسم أحرف عربية فقط",
     "invalid_place_text": "محل الولادة أحرف عربية فقط",
+    "reading_not_retryable": "لا توجد قراءة فاشلة لإعادتها",
     "invalid_choice": "الاختيار غير صالح",
     "location_outside_iraq": "الموقع خارج العراق، تأكد من الإحداثيات",
     "image_too_large": "حجم الصورة أكبر من 5 ميغابايت",

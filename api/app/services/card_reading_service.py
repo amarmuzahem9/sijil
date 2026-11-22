@@ -27,6 +27,7 @@ from app.core.card_reading import READING_LIMIT_S
 from app.core.national_id import normalize_national_id
 from app.core.timeutil import baghdad_today, utc_now
 from app.db import get_sessionmaker
+from app.errors import AppError
 from app.models import CardReading, Draft, DraftImage, ImageAccessLog
 from app.models.draft import FULL_NAME_FIELDS, NAME_MAX
 from app.schemas.drafts import (
@@ -96,6 +97,23 @@ def queue_if_ready(draft: Draft) -> bool:
         submit(draft.id)
         return True
     return False
+
+
+def retry(db: Session, draft: Draft, client_id: uuid.UUID | None) -> CardReadingOut:
+    """«أعد المحاولة» (US5, contracts/api.md): failed sides go back to `pending` and a job is
+    queued. 409 `reading_not_retryable` when no side failed or a side has no image."""
+    sweep_stale(db, draft.id)
+    db.refresh(draft)
+    sides = {image.side: image for image in draft.images}
+    failed = [r for r in draft.card_readings if r.state == "failed" and r.side in sides]
+    if set(sides) < {"front", "back"} or not failed:
+        raise AppError("reading_not_retryable", 409)
+    for reading in failed:
+        mark_pending(draft, reading.side, sides[reading.side].file_name, client_id)
+    db.commit()
+    db.refresh(draft)
+    submit(draft.id)
+    return reading_out(draft)
 
 
 # --- the job ------------------------------------------------------------------------------------
@@ -367,8 +385,23 @@ def apply_pair(db: Session, draft_id: uuid.UUID) -> bool:
 
 
 def refresh_national_id_check(draft: Draft) -> None:
-    """Placeholder until US4 (tasks T036): no cross-check is recorded yet."""
-    return None
+    """Record the national ID of a verified MRZ on the draft (research R7, FR-011–FR-013).
+
+    The check compares it with the draft's current national ID whatever its source (typed or
+    read); see `draft_validation` (`national_id_unconfirmed`) and `national_id_check_out`.
+    A confirmation stays only while it confirms the current value.
+    """
+    back = next((r for r in draft.card_readings if r.side == "back"), None)
+    zone = ((back.result or {}).get("mrz") or {}) if back and back.state == "done" else {}
+    mrz = zone.get("national_id") if zone.get("verified") else None
+    if not mrz:
+        draft.national_id_check = None
+        return
+    previous = draft.national_id_check or {}
+    confirmed = previous.get("confirmed_value") if previous.get("mrz") == mrz else None
+    if confirmed != draft.national_id:
+        confirmed = None
+    draft.national_id_check = {"mrz": mrz, "confirmed_value": confirmed}
 
 
 def status_out(db: Session, draft: Draft, client_id: uuid.UUID | None) -> CardReadingStatusOut:

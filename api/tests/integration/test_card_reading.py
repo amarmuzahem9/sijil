@@ -313,3 +313,102 @@ def test_woman_born_after_2000(client, owner) -> None:
     assert body["national_id"] == "200512345678"
     assert body["birth_date"] == "2005-03-14"
     assert body["national_id_check"] is None or not body["national_id_check"]["mismatch"]
+
+
+# --- US5: the reader fails or is too slow (FR-014, contracts › retry) ----------------------------
+
+from app.core.timeutil import utc_now  # noqa: E402
+from app.models import CardReading  # noqa: E402
+from app.services import card_reading_service  # noqa: E402
+from app.services.card_reader import FakeCardReader  # noqa: E402
+
+
+def test_reader_failure_then_retry(client, db, owner, monkeypatch) -> None:
+    _, headers = owner
+    draft_id = new_draft(client, headers)
+    patch_body = {"version": 0, "changes": {"first_name": "مكتوب"}}
+    patch_body["version"] = get(client, headers, draft_id)["version"]
+    client.patch(f"/api/drafts/{draft_id}", json=patch_body, headers=headers)
+    upload(client, headers, draft_id, "front", "clear_front")
+    upload(client, headers, draft_id, "back", "reader_failure")
+    body = get(client, headers, draft_id)
+    assert body["card_reading"]["back"] == {
+        "state": "failed",
+        "reason": "unavailable",
+        "finished_at": body["card_reading"]["back"]["finished_at"],
+        "surname_empty": None,
+    }
+    assert body["first_name"] == "مكتوب"  # typed meanwhile, kept
+    assert body["father_name"] == "تجريبي"  # the front was read
+
+    # The reader is back: the fake reads the same photo as a clear back from now on.
+    original = FakeCardReader.scenario_for
+    monkeypatch.setattr(
+        FakeCardReader,
+        "scenario_for",
+        lambda self, image, side: "clear_back" if side == "back" else original(self, image, side),
+    )
+    res = client.post(f"/api/drafts/{draft_id}/card-reading/retry", headers=headers)
+    assert res.status_code == 202
+    body = get(client, headers, draft_id)
+    assert body["card_reading"]["back"]["state"] == "done"
+    assert body["family_number"] == "1064L00M1234567890"
+    assert body["first_name"] == "مكتوب"
+
+
+def test_retry_needs_a_failed_side(client, owner) -> None:
+    _, headers = owner
+    draft_id = read_card(client, headers)
+    res = client.post(f"/api/drafts/{draft_id}/card-reading/retry", headers=headers)
+    assert res.status_code == 409
+    assert res.json()["code"] == "reading_not_retryable"
+
+
+def test_retry_is_owner_only(client, owner, make_user) -> None:
+    _, headers = owner
+    draft_id = read_card(client, headers, back="reader_failure")
+    stranger = _headers(client, make_user("marketer"))
+    res = client.post(f"/api/drafts/{draft_id}/card-reading/retry", headers=stranger)
+    assert res.status_code == 404
+
+
+def test_slow_reader_times_out(client, db, owner, monkeypatch) -> None:
+    _, headers = owner
+    monkeypatch.setattr(FakeCardReader, "slow_seconds", 0.01)
+    body = get(client, headers, read_card(client, headers, back="reader_slow"))
+    assert (body["card_reading"]["back"]["state"], body["card_reading"]["back"]["reason"]) == (
+        "failed",
+        "timeout",
+    )
+
+
+def test_running_reading_older_than_the_limit_is_timed_out_on_status(client, db, owner) -> None:
+    _, headers = owner
+    draft_id = read_card(client, headers)
+    from datetime import timedelta
+
+    reading = db.query(CardReading).filter_by(draft_id=uuid.UUID(draft_id), side="front").one()
+    reading.state = "running"
+    reading.started_at = utc_now() - timedelta(seconds=90)
+    db.commit()
+    status = client.get(f"/api/drafts/{draft_id}/card-reading", headers=headers).json()
+    assert (status["front"]["state"], status["front"]["reason"]) == ("failed", "timeout")
+    assert card_reading_service is not None
+
+
+# --- US6: replacing an image reads only that side again (research R5) --------------------------
+
+
+def test_replacing_the_front_reads_only_the_front(client, db, owner) -> None:
+    _, headers = owner
+    draft_id = read_card(client, headers)
+    upload(client, headers, draft_id, "front", "front_b")
+    body = get(client, headers, draft_id)
+    assert body["first_name"] == "سالم"
+    assert body["family_number"] == "1064L00M1234567890"  # the back's reading is reused
+    rows = db.scalars(
+        select(ImageAccessLog).where(
+            ImageAccessLog.draft_id == uuid.UUID(draft_id), ImageAccessLog.purpose == "ocr"
+        )
+    ).all()
+    assert sorted(r.side for r in rows) == ["back", "front", "front"]

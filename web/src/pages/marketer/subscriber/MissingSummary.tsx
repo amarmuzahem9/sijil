@@ -31,6 +31,7 @@ const FIELD_TARGETS: Record<MissingField, string> = {
   mother_first_name: 'field-mother_first_name',
   mother_second_name: 'field-mother_second_name',
   national_id: 'field-national_id',
+  national_id_unconfirmed: 'field-national_id',
   family_number: 'field-family_number',
   birth_date: 'field-birth_date',
   birth_place: 'field-birth_place',

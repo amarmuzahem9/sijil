@@ -23,7 +23,7 @@ def test_no_key_means_no_map(client, h, monkeypatch) -> None:
     monkeypatch.setattr(get_settings(), "google_maps_api_key", "")
     res = client.get("/api/client-config", headers=h)
     assert res.status_code == 200
-    assert res.json() == {"maps": None}
+    assert res.json()["maps"] is None
 
 
 def test_with_key_returns_map_config(client, h, monkeypatch) -> None:
@@ -32,12 +32,10 @@ def test_with_key_returns_map_config(client, h, monkeypatch) -> None:
     monkeypatch.setattr(settings, "google_maps_map_id", "test-map-id")
     monkeypatch.setattr(settings, "map_default_center", "33.5,44.25")
     res = client.get("/api/client-config", headers=h)
-    assert res.json() == {
-        "maps": {
-            "api_key": "test-key-not-real",
-            "map_id": "test-map-id",
-            "default_center": {"lat": 33.5, "lng": 44.25},
-        }
+    assert res.json()["maps"] == {
+        "api_key": "test-key-not-real",
+        "map_id": "test-map-id",
+        "default_center": {"lat": 33.5, "lng": 44.25},
     }
 
 
@@ -154,3 +152,19 @@ def test_border_cities_are_inside(client, h, lat, lng) -> None:
         f"/api/drafts/{draft_id}", json={"version": 1, "changes": {"location": loc}}, headers=h
     )
     assert res.status_code == 200
+
+
+# --- open-source licences (specs/006 FR-022) ----------------------------------------------------
+
+
+def test_open_source_lists_the_card_reader(client, h, monkeypatch) -> None:
+    monkeypatch.setattr(get_settings(), "ocr_source_url", "")
+    item = client.get("/api/client-config", headers=h).json()["open_source"][0]
+    assert item == {
+        "name": "ID_Iraqi_Project",
+        "licence": "AGPL-3.0",
+        "url": "https://github.com/Hai800Z/ID_Iraqi_Project",
+    }
+    monkeypatch.setattr(get_settings(), "ocr_source_url", "https://example.org/sijil-ocr")
+    item = client.get("/api/client-config", headers=h).json()["open_source"][0]
+    assert item["url"] == "https://example.org/sijil-ocr"

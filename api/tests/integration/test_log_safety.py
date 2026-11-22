@@ -171,3 +171,59 @@ def test_no_card_data_in_logs(client, db, make_user, caplog, capsys, tmp_path, m
     everything = raw + _formatted(list(caplog.records)) + printed.out + printed.err
     for secret in (national_id, family, phone, name, stored):
         assert secret not in everything
+
+
+def test_card_readings_never_log_card_data(
+    client, db, make_user, caplog, capsys, tmp_path, monkeypatch
+):
+    """specs/006 FR-019 / SC-007: a full reading, a re-shoot and a failure log no card text."""
+    import uuid
+
+    from app.services.card_reader_fake_data import AUTHORITY, DOC, FAMILY, NID, NID_OTHER
+    from tests.helpers.card_images import scenario_jpeg
+
+    monkeypatch.setattr(get_settings(), "uploads_dir", str(tmp_path))
+    caplog.set_level(logging.DEBUG)
+    user = make_user("marketer")
+    headers = auth_header(login(client, user.phone))
+    headers["X-Client-Id"] = str(uuid.uuid4())
+    for front, back in (
+        ("clear_front", "back_nid_mismatch"),
+        ("two_cards", "reader_failure"),
+        ("front_female_2000", "back_2000"),
+    ):
+        draft_id = str(uuid.uuid4())
+        client.put(f"/api/drafts/{draft_id}", json={"changes": {}}, headers=headers)
+        for side, scenario in (("front", front), ("back", back)):
+            client.post(
+                f"/api/drafts/{draft_id}/images/{side}",
+                files={"file": ("x.jpg", scenario_jpeg(scenario), "image/jpeg")},
+                headers=headers,
+            )
+        client.get(f"/api/drafts/{draft_id}/card-reading", headers=headers)
+        client.post(f"/api/drafts/{draft_id}/card-reading/retry", headers=headers)
+
+    raw = "\n".join(r.getMessage() for r in caplog.records)
+    printed = capsys.readouterr()
+    everything = raw + _formatted(list(caplog.records)) + printed.out + printed.err
+    assert "card reading" in everything  # the readings did log their state
+    for secret in (
+        NID,
+        NID_OTHER,
+        "200512345678",
+        DOC,
+        FAMILY,
+        AUTHORITY,
+        "مشترك",
+        "تجريبي",
+        "اختبار",
+        "الوهمي",
+        "مشتركة",
+        "مدينة",
+        "1999-01-01",
+        "1999/01/01",
+        "2005-03-14",
+        "990101",
+        "050314",
+    ):
+        assert secret not in everything, secret

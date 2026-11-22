@@ -19,6 +19,7 @@ export const MISSING_ORDER = [
   'mother_first_name',
   'mother_second_name',
   'national_id',
+  'national_id_unconfirmed',
   'family_number',
   // Back of the card (specs/006 owner change, system.md v1.8).
   'birth_date',
@@ -37,7 +38,8 @@ export const MISSING_ORDER = [
 ] as const;
 
 export type MissingField = (typeof MISSING_ORDER)[number];
-export type MissingCode = 'required' | 'invalid_national_id' | 'invalid_phone' | 'card_expired';
+export type MissingCode =
+  'required' | 'invalid_national_id' | 'invalid_phone' | 'card_expired' | 'national_id_unconfirmed';
 
 // The required names in MISSING_ORDER must match REQUIRED_NAME_FIELDS (checked by the tests).
 
@@ -87,6 +89,8 @@ export interface DraftFields extends Partial<Record<NameField, string | null>> {
   issue_date?: string | null;
   expiry_date?: string | null;
   issuing_authority?: string | null;
+  /** Verified MRZ national ID and the confirmed value (specs/006 FR-012). */
+  national_id_check?: { mrz: string; confirmed_value: string | null } | null;
 }
 
 export const FIELD_LABELS: Record<MissingField, string> = {
@@ -100,6 +104,7 @@ export const FIELD_LABELS: Record<MissingField, string> = {
   mother_first_name: NAME_LABELS.mother_first_name,
   mother_second_name: NAME_LABELS.mother_second_name,
   national_id: 'الرقم الوطني',
+  national_id_unconfirmed: 'تأكد من الرقم الوطني',
   family_number: 'الرقم العائلي',
   birth_date: 'تاريخ الميلاد',
   birth_place: 'محل الولادة',
@@ -121,6 +126,7 @@ export const CODE_MESSAGES: Record<MissingCode | 'too_long' | 'invalid_name_text
   invalid_national_id: 'الرقم الوطني 12 رقماً',
   invalid_phone: 'رقم غير صالح',
   card_expired: 'البطاقة منتهية الصلاحية',
+  national_id_unconfirmed: 'تأكد من الرقم الوطني',
   too_long: 'النص أطول من المسموح',
   invalid_name_text: 'الاسم أحرف عربية فقط',
 };
@@ -162,6 +168,12 @@ export function computeMissing(
   if (blank(draft.national_id)) found.set('national_id', 'required');
   else if (normalizeNationalId(draft.national_id) === null)
     found.set('national_id', 'invalid_national_id');
+  else if (
+    draft.national_id_check?.mrz &&
+    normalizeNationalId(draft.national_id) !== draft.national_id_check.mrz &&
+    draft.national_id_check.confirmed_value !== draft.national_id
+  )
+    found.set('national_id_unconfirmed', 'national_id_unconfirmed');
 
   if (draft.location_lat == null || draft.location_lng == null) found.set('location', 'required');
 

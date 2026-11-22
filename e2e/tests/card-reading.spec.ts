@@ -210,3 +210,88 @@ test('US7: an expired card and a birth year that does not match the national ID'
   await saved(page);
   await expect(page.getByTestId('missing-birth_date')).toHaveCount(0);
 });
+
+test('D: replacing the front reads it again; an edited field stays', async ({ page, request }, testInfo) => {
+  test.setTimeout(120_000);
+  const m = await marketer(request, testInfo.project.name);
+  await openNewForm(page, m.phone);
+  await uploadSide(page, 'front', 'clear_front');
+  await uploadSide(page, 'back', 'clear_back');
+  await expect(field(page, 'first_name')).toHaveValue(READ.first_name, { timeout: 20_000 });
+  await field(page, 'grandfather_name').fill('مصحح');
+  await field(page, 'grandfather_name').blur();
+  await saved(page);
+
+  await page.getByTestId('image-slot-front').getByRole('button', { name: 'تغيير' }).click();
+  await uploadSide(page, 'front', 'front_b');
+  await expect(field(page, 'first_name')).toHaveValue('سالم', { timeout: 20_000 });
+  await expect(field(page, 'grandfather_name')).toHaveValue('مصحح');
+  await expect(mark(page, 'grandfather_name')).toHaveText('عُدِّل يدوياً');
+});
+
+test('F: a national ID that differs from the verified MRZ must be confirmed', async ({
+  page,
+  request,
+}, testInfo) => {
+  test.setTimeout(120_000);
+  const m = await marketer(request, testInfo.project.name);
+  await openNewForm(page, m.phone);
+  await uploadSide(page, 'front', 'clear_front');
+  await uploadSide(page, 'back', 'back_nid_mismatch');
+
+  const check = page.getByTestId('national-id-check');
+  await expect(check).toContainText('تأكد من الرقم الوطني', { timeout: 20_000 });
+  await expect(check).toContainText('199912345678');
+  await expect(check).toContainText('199912345679');
+  await saved(page);
+  await expect(page.getByTestId('missing-national_id_unconfirmed')).toBeVisible();
+
+  await page.getByTestId('adopt-current-national-id').click();
+  await expect(check).toHaveCount(0);
+  await saved(page);
+  await expect(page.getByTestId('missing-national_id_unconfirmed')).toHaveCount(0);
+});
+
+test('K: the reader fails: «أعد المحاولة», and typing still works', async ({ page, request }, testInfo) => {
+  test.setTimeout(120_000);
+  const m = await marketer(request, testInfo.project.name);
+  await openNewForm(page, m.phone);
+  await uploadSide(page, 'front', 'clear_front');
+  await uploadSide(page, 'back', 'reader_failure');
+
+  const failed = page.getByTestId('reading-failed');
+  await expect(failed).toContainText('تعذّرت القراءة الآلية، أكمل يدوياً', { timeout: 20_000 });
+  await expect(field(page, 'first_name')).toHaveValue(READ.first_name); // the front was read
+  await field(page, 'family_number').fill('1064L00M1234567891');
+  await field(page, 'family_number').blur();
+  await saved(page);
+
+  await failed.getByRole('button', { name: 'أعد المحاولة' }).click();
+  await expect(failed).toBeVisible({ timeout: 20_000 }); // the fake reader still fails
+  await expect(field(page, 'family_number')).toHaveValue('1064L00M1234567891');
+});
+
+test('L: a reading slower than 60 s ends with the failure message', async ({ page, request }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-chrome', 'one project is enough (waits 60 s)');
+  test.setTimeout(180_000);
+  const m = await marketer(request, testInfo.project.name);
+  await openNewForm(page, m.phone);
+  await uploadSide(page, 'front', 'clear_front');
+  await uploadSide(page, 'back', 'reader_slow');
+  await expect(page.getByTestId('reading-running')).toBeVisible();
+  await expect(page.getByTestId('reading-failed')).toContainText('تعذّرت القراءة الآلية', {
+    timeout: 90_000,
+  });
+});
+
+test('N: «حسابي» shows the open-source licence of the card reader', async ({ page, request }, testInfo) => {
+  const m = await marketer(request, testInfo.project.name);
+  await signIn(page, m.phone, NEW_PASSWORD);
+  await expect(page).toHaveURL(/\/$/);
+  await page.goto('/account');
+  await page.getByTestId('open-licences').click();
+  const item = page.getByTestId('licence-item');
+  await expect(item).toContainText('ID_Iraqi_Project');
+  await expect(item).toContainText('AGPL-3.0');
+  await expect(item.getByRole('link')).toHaveAttribute('href', /github\.com/);
+});

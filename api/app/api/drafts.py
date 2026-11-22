@@ -27,6 +27,7 @@ from app.config import get_settings
 from app.db import get_db
 from app.errors import AppError
 from app.schemas.drafts import (
+    CardReadingOut,
     CardReadingStatusOut,
     CreateBody,
     DraftList,
@@ -179,6 +180,20 @@ def upload_image(
     if card_reading_service.ready_to_read(draft):
         background.add_task(card_reading_service.submit, draft.id)
     return draft_service.to_out(draft)
+
+
+@router.post(
+    "/drafts/{draft_id}/card-reading/retry", response_model=CardReadingOut, status_code=202
+)
+def retry_card_reading(
+    draft_id: uuid.UUID,
+    ctx: AuthContext = Depends(marketer_only),
+    cid: uuid.UUID = Depends(client_id),
+    db: Session = Depends(get_db),
+) -> CardReadingOut:
+    """«أعد المحاولة»: re-read the failed sides (contracts/api.md); owner only."""
+    draft = draft_service.get_owned(db, ctx.user, draft_id, lock=True)
+    return card_reading_service.retry(db, draft, cid)
 
 
 @router.get("/drafts/{draft_id}/card-reading", response_model=CardReadingStatusOut)

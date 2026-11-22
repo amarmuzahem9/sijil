@@ -456,7 +456,7 @@ unverified MRZ is ignored.
 
 ### Tests for User Story 4
 
-- [ ] T035 [P] [US4] Write `test_card_fields.py`, part 3, for `drafts.national_id_check`
+- [X] T035 [P] [US4] Write `test_card_fields.py`, part 3, for `drafts.national_id_check`
   (data-model.md, research R7):
   - equal → no mismatch;
   - different → `mismatch: true`, and `missing` contains `national_id_unconfirmed`;
@@ -468,17 +468,17 @@ unverified MRZ is ignored.
 
 ### Implementation for User Story 4
 
-- [ ] T036 [US4] In `card_reading_service.py`, implement `refresh_national_id_check(draft)` and
+- [X] T036 [US4] In `card_reading_service.py`, implement `refresh_national_id_check(draft)` and
   call it from `apply_pair`. It reads the verified MRZ from `card_readings.result` of the back
   and sets `drafts.national_id_check = {mrz, confirmed_value}` or null (data-model.md). In
   `draft_service.apply_changes`, handle `national_id_confirmed` and clear `confirmed_value` on
   any `national_id` change. In `draft_validation.missing`, add `national_id_unconfirmed` with the
   label «تأكد من الرقم الوطني», in both the shared fixture and `draftValidation.ts`.
-- [ ] T037 [US4] Add `web/src/pages/marketer/subscriber/NationalIdCheck.tsx` below the national
+- [X] T037 [US4] Add `web/src/pages/marketer/subscriber/NationalIdCheck.tsx` below the national
   ID field. It shows «تأكد من الرقم الوطني» with «الرقم الحالي» and «في الشريط الآلي» and an
   «اعتماد هذا الرقم» button for each; a button calls `saveNow({national_id, national_id_confirmed:
   true})`. It is hidden when there is no mismatch or the mismatch is confirmed.
-- [ ] T038 [US4] Extend `card-reading.spec.ts` with quickstart F (the summary lists the national
+- [X] T038 [US4] Extend `card-reading.spec.ts` with quickstart F (the summary lists the national
   ID until it is confirmed).
 
 ---
@@ -489,7 +489,7 @@ unverified MRZ is ignored.
 
 **Independent Test**: quickstart K, L.
 
-- [ ] T039 [P] [US5] Add integration cases to `test_card_reading.py`:
+- [X] T039 [P] [US5] Add integration cases to `test_card_reading.py`:
   - the fake failure → `failed/unavailable`;
   - the slow scenario with a reduced limit → `failed/timeout` (the limit is patched in tests);
   - a `running` row older than 60 s → `failed/timeout` on `GET …/card-reading`;
@@ -497,10 +497,10 @@ unverified MRZ is ignored.
     409 `reading_not_retryable`;
   - the fields typed meanwhile are kept;
   - retry on another marketer's draft returns 404 (FR-021, analysis L1).
-- [ ] T040 [US5] Add `POST /api/drafts/{id}/card-reading/retry` in `api/app/api/drafts.py` and
+- [X] T040 [US5] Add `POST /api/drafts/{id}/card-reading/retry` in `api/app/api/drafts.py` and
   `card_reading_service.retry()` (contracts/api.md). Add the error code `reading_not_retryable`
   to `api/app/errors.py`.
-- [ ] T041 [US5] In `CardSection.tsx`, show «تعذّرت القراءة الآلية، أكمل يدوياً» with «أعد
+- [X] T041 [US5] In `CardSection.tsx`, show «تعذّرت القراءة الآلية، أكمل يدوياً» with «أعد
   المحاولة» (calling retry, then polling) when any side is `failed`. Extend
   `card-reading.spec.ts` with quickstart K and L.
 
@@ -513,7 +513,7 @@ stay.
 
 **Independent Test**: quickstart D.
 
-- [ ] T042 [P] [US6] Add integration cases to `test_card_reading.py`:
+- [X] T042 [P] [US6] Add integration cases to `test_card_reading.py`:
   - after a reading and an edit, replacing the front with another clear-front scenario → the
     unedited fields change and the edited one does not;
   - `card_readings.raw` and `card_readings.result` of the replaced side are new, and the
@@ -521,7 +521,7 @@ stay.
   - a result whose `card_readings.image_file_name` no longer matches is dropped (US6-3);
   - only the replaced side is re-read; the other side's `done` reading is reused;
   - deleting the draft removes its `card_readings` rows (FR-010, analysis L2).
-- [ ] T043 [US6] Make the job re-read only the `pending` sides and reuse the other side's
+- [X] T043 [US6] Make the job re-read only the `pending` sides and reuse the other side's
   `done` result in `apply_pair` (research R5). Then extend `card-reading.spec.ts` with quickstart
   D.
 
@@ -529,49 +529,61 @@ stay.
 
 ## Phase 9: Polish & Cross-Cutting Concerns
 
-- [ ] T044 [P] Licences (FR-022, research R12):
+- [X] T044 [P] Licences (FR-022, research R12):
   - in `api/app/api/client_config.py`, add `open_source` from `ocr_source_url`, falling back to
     the upstream URL (contracts/api.md), with a test in
     `api/tests/integration/test_client_config.py`;
   - in `web/src/pages/AccountPanel.tsx`, add «رخص البرمجيات المفتوحة» as a dialog with the
     name, «AGPL-3.0» and the link;
   - add quickstart N to the e2e spec.
-- [ ] T045 [P] In `api/tests/integration/test_log_safety.py`, run a full fake reading and a
+- [X] T045 [P] In `api/tests/integration/test_log_safety.py`, run a full fake reading and a
   failure, then assert that no synthetic name, national ID, family number or MRZ text appears in
   the captured logs or the error bodies (FR-019, SC-007).
-- [ ] T046 [P] Add `ocr/service/evaluate.py`, the owner's offline check: it reads the paths given
+- [X] T046 [P] Add `ocr/service/evaluate.py`, the owner's offline check: it reads the paths given
   on the command line and prints detections, fields, MRZ checks and timing to stdout. It writes
   no file. Document it in `ocr/UPSTREAM.md` and quickstart › Real-reader check.
-- [ ] T047 [P] Update `deploy/staging.md` with a new section «قارئ البطاقة (الفيزة 006)»:
+- [X] T047 [P] Update `deploy/staging.md` with a new section «قارئ البطاقة (الفيزة 006)»:
   - build `ocr` on the server (internet for the build only, ~5 GB of disk);
   - the checks I1–I4 from quickstart;
   - set `OCR_MODE`, `OCR_URL` and `OCR_SOURCE_URL`;
   - «انشر مجلد ocr/ إلى النسخة العامة قبل كل نشر يغيّره»;
   - the reader's memory and CPU limits.
-- [ ] T048 [P] In `README.md`, add an `ocr/` row and a licence note: the reader is AGPL-3.0 with
+- [X] T048 [P] In `README.md`, add an `ocr/` row and a licence note: the reader is AGPL-3.0 with
   a public copy, and the rest of the app is private.
-- [ ] T049 Run the isolation checks I1–I5 (quickstart) on the dev stack with the real reader:
+- [X] T049 Run the isolation checks I1–I5 (quickstart) on the dev stack with the real reader:
   - no internet from `ocr`;
   - no published port;
   - `api` reaches `/health`;
   - limits of 2 CPUs and 2 GiB;
   - no card numbers in the logs.
   Record the results in the batch report.
-- [ ] T050 Owner's real-reader check (SC-002), run by the agent on the owner's machine **outside
+- [X] T050 Owner's real-reader check (SC-002), run by the agent on the owner's machine **outside
   the repository**:
   - `ocr/service/evaluate.py` on `test-cards/` in a `--network none` container;
   - compare with step 0;
   - measure the time from the second upload to the filled fields for clear cards (SC-001,
     analysis M1);
   - report in Arabic; nothing is saved.
-- [ ] T051 Full gate:
+- [X] T051 Full gate:
   - `pytest` (api), `pytest` (ocr image), `vitest`, lint and format (api, web);
   - `scripts/e2e.sh` (all projects);
   - `docker compose up` with the real reader, then a manual pass of quickstart B with a real card
     photo by the owner.
-- [ ] T052 Mark `specs/006-card-ocr/checklists/requirements.md` and these tasks done. Write the
+- [X] T052 Mark `specs/006-card-ocr/checklists/requirements.md` and these tasks done. Write the
   Arabic manual-test steps in `specs/006-card-ocr/manual-test-ar.md` (CLAUDE.md). Verify
   quickstart A–N.
+**Batch 3 notes (2026-11-23)**:
+- T049 isolation on the dev stack: no internet from `ocr`; no published port; `api` reaches
+  `/health`; 2 CPUs / 2 GiB, non-root, `/tmp` on tmpfs; 0 twelve-digit numbers in the `ocr`
+  and `api` logs after 30 real readings.
+- T050 (15 private cards through the real dev API, drafts deleted afterwards, counts only):
+  14 fronts read, 1 re-shoot (photo 21). On the read fronts 82/84 names right (97.6%, SC-002);
+  the two errors are «عبد» read «عبيد» and «عبد الرحمن». National IDs right on all 15. From the
+  back upload to the end of the reading: 5.7–10.9 s on 14 cards; 20.3 s on the first reading
+  after start-up (SC-001: 14/15 under 15 s).
+- 005 test `test_complete_draft_has_no_missing_items` now types the fake reader's national ID,
+  since the cross-check (US4) rightly flags a different one.
+
 - [ ] T053 Before the first staging deployment, remind the owner, then create the public copy of
   `ocr/` on the owner's GitHub account (owner's instruction). Then set `OCR_SOURCE_URL` in the
   server `.env`. This is an outward-facing step, so confirm first.

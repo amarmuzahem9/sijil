@@ -25,6 +25,7 @@ MISSING_ORDER: tuple[str, ...] = (
     "image_back",
     *REQUIRED_NAME_FIELDS,
     "national_id",
+    "national_id_unconfirmed",
     "family_number",
     # Back of the card (specs/006 owner change, system.md v1.8).
     "birth_date",
@@ -116,6 +117,15 @@ def missing(
         found["national_id"] = "required"
     elif normalize_national_id(draft.national_id) is None:
         found["national_id"] = "invalid_national_id"
+    else:
+        # specs/006 FR-012: differs from the verified MRZ and not confirmed for this value.
+        check = getattr(draft, "national_id_check", None) or {}
+        if (
+            check.get("mrz")
+            and normalize_national_id(draft.national_id) != check["mrz"]
+            and check.get("confirmed_value") != draft.national_id
+        ):
+            found["national_id_unconfirmed"] = "national_id_unconfirmed"
 
     if draft.location_lat is None or draft.location_lng is None:
         found["location"] = "required"

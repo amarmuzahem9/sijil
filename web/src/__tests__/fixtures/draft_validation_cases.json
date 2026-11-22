@@ -29,6 +29,7 @@
     "mother_first_name",
     "mother_second_name",
     "national_id",
+    "national_id_unconfirmed",
     "family_number",
     "birth_date",
     "birth_place",
@@ -778,6 +779,148 @@
           "code": "required"
         }
       ]
+    },
+    {
+      "note": "national ID differs from the verified MRZ (006 FR-012)",
+      "draft": {
+        "national_id": "199012345678",
+        "family_number": "A1B2C3",
+        "location_lat": 33.31,
+        "location_lng": 44.36,
+        "address": "حي تجريبي، شارع 1",
+        "landmark": "قرب جامع تجريبي",
+        "area_id": 1,
+        "tower_id": 1,
+        "plan_id": 1,
+        "phone_input": "07801234567",
+        "first_name": "مشترك",
+        "father_name": "تجريبي",
+        "grandfather_name": "اختبار",
+        "great_grandfather_name": "نموذج",
+        "surname": "الوهمي",
+        "mother_first_name": "أم",
+        "mother_second_name": "تجريبية",
+        "birth_date": "1990-01-01",
+        "birth_place": "مدينة تجريبية",
+        "issue_date": "2023-01-01",
+        "expiry_date": "2032-12-31",
+        "issuing_authority": "مديرية الجنسية والمعلومات المدنية",
+        "national_id_check": {
+          "mrz": "199012345670",
+          "confirmed_value": null
+        }
+      },
+      "images": ["front", "back"],
+      "missing": [
+        {
+          "field": "national_id_unconfirmed",
+          "code": "national_id_unconfirmed"
+        }
+      ]
+    },
+    {
+      "note": "mismatch confirmed for this value",
+      "draft": {
+        "national_id": "199012345678",
+        "family_number": "A1B2C3",
+        "location_lat": 33.31,
+        "location_lng": 44.36,
+        "address": "حي تجريبي، شارع 1",
+        "landmark": "قرب جامع تجريبي",
+        "area_id": 1,
+        "tower_id": 1,
+        "plan_id": 1,
+        "phone_input": "07801234567",
+        "first_name": "مشترك",
+        "father_name": "تجريبي",
+        "grandfather_name": "اختبار",
+        "great_grandfather_name": "نموذج",
+        "surname": "الوهمي",
+        "mother_first_name": "أم",
+        "mother_second_name": "تجريبية",
+        "birth_date": "1990-01-01",
+        "birth_place": "مدينة تجريبية",
+        "issue_date": "2023-01-01",
+        "expiry_date": "2032-12-31",
+        "issuing_authority": "مديرية الجنسية والمعلومات المدنية",
+        "national_id_check": {
+          "mrz": "199012345670",
+          "confirmed_value": "199012345678"
+        }
+      },
+      "images": ["front", "back"],
+      "missing": []
+    },
+    {
+      "note": "a confirmation of another value does not count",
+      "draft": {
+        "national_id": "199012345678",
+        "family_number": "A1B2C3",
+        "location_lat": 33.31,
+        "location_lng": 44.36,
+        "address": "حي تجريبي، شارع 1",
+        "landmark": "قرب جامع تجريبي",
+        "area_id": 1,
+        "tower_id": 1,
+        "plan_id": 1,
+        "phone_input": "07801234567",
+        "first_name": "مشترك",
+        "father_name": "تجريبي",
+        "grandfather_name": "اختبار",
+        "great_grandfather_name": "نموذج",
+        "surname": "الوهمي",
+        "mother_first_name": "أم",
+        "mother_second_name": "تجريبية",
+        "birth_date": "1990-01-01",
+        "birth_place": "مدينة تجريبية",
+        "issue_date": "2023-01-01",
+        "expiry_date": "2032-12-31",
+        "issuing_authority": "مديرية الجنسية والمعلومات المدنية",
+        "national_id_check": {
+          "mrz": "199012345670",
+          "confirmed_value": "199012345679"
+        }
+      },
+      "images": ["front", "back"],
+      "missing": [
+        {
+          "field": "national_id_unconfirmed",
+          "code": "national_id_unconfirmed"
+        }
+      ]
+    },
+    {
+      "note": "national ID equals the verified MRZ",
+      "draft": {
+        "national_id": "199012345678",
+        "family_number": "A1B2C3",
+        "location_lat": 33.31,
+        "location_lng": 44.36,
+        "address": "حي تجريبي، شارع 1",
+        "landmark": "قرب جامع تجريبي",
+        "area_id": 1,
+        "tower_id": 1,
+        "plan_id": 1,
+        "phone_input": "07801234567",
+        "first_name": "مشترك",
+        "father_name": "تجريبي",
+        "grandfather_name": "اختبار",
+        "great_grandfather_name": "نموذج",
+        "surname": "الوهمي",
+        "mother_first_name": "أم",
+        "mother_second_name": "تجريبية",
+        "birth_date": "1990-01-01",
+        "birth_place": "مدينة تجريبية",
+        "issue_date": "2023-01-01",
+        "expiry_date": "2032-12-31",
+        "issuing_authority": "مديرية الجنسية والمعلومات المدنية",
+        "national_id_check": {
+          "mrz": "199012345678",
+          "confirmed_value": null
+        }
+      },
+      "images": ["front", "back"],
+      "missing": []
     }
   ],
   "names": [

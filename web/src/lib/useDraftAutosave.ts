@@ -42,7 +42,7 @@ export interface DraftAutosave {
   /** Save a debounced text field now (blur). */
   commitField: (field: TextField) => void;
   /** Update and save immediately (selects, the pin, buttons). */
-  saveNow: (changes: Partial<FormValues>) => void;
+  saveNow: (changes: Partial<FormValues> & { national_id_confirmed?: boolean }) => void;
   retry: () => void;
   /** Called after an image upload on this page: newer version + new server draft. */
   applyServerDraft: (draft: Draft) => void;
@@ -59,6 +59,8 @@ export interface DraftAutosave {
   /** Catalog notices (choice unavailable / price changed) since the draft was opened. */
   notices: DraftNotice[];
   dismissNotice: (field: DraftNotice['field']) => void;
+  /** «أعد المحاولة» after a failed card reading (specs/006 US5). */
+  retryReading: () => Promise<void>;
   queue: AutosaveQueue;
 }
 
@@ -119,6 +121,7 @@ export function useDraftAutosave(
     ensureCreated: () => ctl.queue.ensureCreated(),
     notices,
     dismissNotice: (field) => setNotices((list) => list.filter((n) => n.field !== field)),
+    retryReading: () => (draftId ? ctl.retryReading(draftId) : Promise.resolve()),
     queue: ctl.queue,
   };
 }

@@ -366,9 +366,11 @@ def test_complete_draft_has_no_missing_items(client, db, h, make_user, tmp_path,
             "surname": "الوهمي",
             "mother_first_name": "أم",
             "mother_second_name": "تجريبية",
-            "national_id": "199012345678",
+            # The fake card reader's verified MRZ carries this number (specs/006 R7), so the
+            # national-ID cross-check finds no mismatch once the images are read.
+            "national_id": "199912345678",
             "family_number": "A1B2C3",
-            "birth_date": "1990-01-01",
+            "birth_date": "1999-01-01",
             "birth_place": "مدينة تجريبية",
             "issue_date": "2023-01-01",
             "expiry_date": "2032-12-31",

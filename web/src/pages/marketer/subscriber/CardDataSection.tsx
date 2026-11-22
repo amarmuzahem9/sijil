@@ -30,6 +30,7 @@ import { NAME_LABELS, OPTIONAL_NAME_FIELDS, type NameField } from '../../../lib/
 import type { DraftAutosave, TextField } from '../../../lib/useDraftAutosave';
 import { DraftTextField } from './DraftTextField';
 import { FieldSourceMark } from './FieldSourceMark';
+import { NationalIdCheck } from './NationalIdCheck';
 
 export const FOURTH_NAME_HINT = 'غير موجود على البطاقة، اسأل المشترك';
 
@@ -184,6 +185,16 @@ export function CardDataSection({
         ltr
         inputMode="numeric"
         adornment={mark('national_id')}
+      />
+      <NationalIdCheck
+        check={serverDraft?.national_id_check}
+        current={values.national_id}
+        savedValue={serverDraft?.national_id}
+        onAdopt={(value, confirm) =>
+          saveNow(
+            confirm ? { national_id: value, national_id_confirmed: true } : { national_id: value },
+          )
+        }
       />
       <DraftTextField
         field="family_number"

@@ -8,8 +8,15 @@ import LinearProgress from '@mui/material/LinearProgress';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
+import Button from '@mui/material/Button';
+import { useState } from 'react';
+
+import { ApiError } from '../../../lib/api';
 import {
+  anyFailed,
+  READING_FAILED,
   READING_NEEDS_OTHER_SIDE,
+  READING_RETRY,
   READING_RUNNING,
   shouldPoll,
   waitsForOtherSide,
@@ -20,10 +27,26 @@ import { ImageSlot } from './ImageSlot';
 export function CardSection({
   autosave,
 }: {
-  autosave: Pick<DraftAutosave, 'serverDraft' | 'ensureCreated' | 'applyServerDraft'>;
+  autosave: Pick<
+    DraftAutosave,
+    'serverDraft' | 'ensureCreated' | 'applyServerDraft' | 'retryReading'
+  >;
 }) {
   const images = autosave.serverDraft?.images ?? { front: null, back: null };
   const reading = autosave.serverDraft?.card_reading ?? null;
+  const [retrying, setRetrying] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
+  const retry = async () => {
+    setRetrying(true);
+    setRetryError(null);
+    try {
+      await autosave.retryReading();
+    } catch (err) {
+      setRetryError(err instanceof ApiError ? err.message : READING_FAILED);
+    } finally {
+      setRetrying(false);
+    }
+  };
   return (
     <Stack spacing={2}>
       <Typography variant="body2" color="text.secondary">
@@ -48,6 +71,19 @@ export function CardSection({
       {waitsForOtherSide(reading) && (
         <Alert severity="info" data-testid="reading-waits">
           {READING_NEEDS_OTHER_SIDE}
+        </Alert>
+      )}
+      {anyFailed(reading) && !shouldPoll(reading) && (
+        <Alert
+          severity="error"
+          data-testid="reading-failed"
+          action={
+            <Button color="inherit" size="small" disabled={retrying} onClick={() => void retry()}>
+              {READING_RETRY}
+            </Button>
+          }
+        >
+          {retryError ?? READING_FAILED}
         </Alert>
       )}
       {!waitsForOtherSide(reading) && shouldPoll(reading) && (

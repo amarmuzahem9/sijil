@@ -16,6 +16,7 @@ import {
   getDraft,
   getDraftVersion,
   patchDraft,
+  retryCardReading,
   type CardField,
   type Draft,
   type DraftChanges,
@@ -236,9 +237,13 @@ export class DraftFormController {
   }
 
   /** Selects, the pin and buttons: save immediately. */
-  saveNow(changes: Partial<FormValues>): void {
-    this.update(changes);
-    void this.queue.enqueue(toChanges(changes));
+  saveNow(changes: Partial<FormValues> & { national_id_confirmed?: boolean }): void {
+    const { national_id_confirmed, ...values } = changes;
+    this.update(values);
+    const out = toChanges(values);
+    // «اعتماد هذا الرقم» (specs/006 FR-012): sent with the value it confirms.
+    if (national_id_confirmed) out.national_id_confirmed = true;
+    void this.queue.enqueue(out);
   }
 
   /** «تحميل الأحدث». */
@@ -300,6 +305,12 @@ export class DraftFormController {
     if (!this.hasLocalChange('no_surname') && this.current.no_surname !== draft.no_surname)
       changes.no_surname = draft.no_surname;
     if (Object.keys(changes).length) this.update(changes);
+  }
+
+  /** «أعد المحاولة» (US5): re-read the failed sides; the 2-second poll then follows them. */
+  async retryReading(draftId: string): Promise<void> {
+    const reading = await retryCardReading(draftId);
+    if (this.server) this.setServer({ ...this.server, card_reading: reading });
   }
 
   /**

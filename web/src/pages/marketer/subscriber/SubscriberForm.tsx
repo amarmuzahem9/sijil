@@ -121,10 +121,18 @@ function DraftEditor({
           ...autosave.values,
           location_lat: autosave.values.location?.lat ?? null,
           location_lng: autosave.values.location?.lng ?? null,
+          national_id_check: autosave.serverDraft?.national_id_check
+            ? {
+                mrz: autosave.serverDraft.national_id_check.mrz,
+                confirmed_value: autosave.serverDraft.national_id_check.confirmed
+                  ? autosave.serverDraft.national_id
+                  : null,
+              }
+            : null,
         },
         imageSides,
       ),
-    [autosave.values, imageSides],
+    [autosave.values, autosave.serverDraft, imageSides],
   );
   const missing =
     autosave.saveState === 'saved' && autosave.serverDraft

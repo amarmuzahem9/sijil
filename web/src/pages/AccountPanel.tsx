@@ -1,4 +1,5 @@
 import EditOutlined from '@mui/icons-material/EditOutlined';
+import GavelOutlined from '@mui/icons-material/GavelOutlined';
 import LockResetOutlined from '@mui/icons-material/LockResetOutlined';
 import LogoutOutlined from '@mui/icons-material/LogoutOutlined';
 import Button from '@mui/material/Button';
@@ -11,6 +12,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { ROLE_LABELS } from '../auth/roles';
 import { NameDialog } from '../components/NameDialog';
+import { LicencesDialog } from '../components/LicencesDialog';
 import { apiFetch } from '../lib/api';
 
 /**
@@ -21,6 +23,7 @@ export default function AccountPanel() {
   const { user, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [renaming, setRenaming] = useState(false);
+  const [licences, setLicences] = useState(false);
   if (!user) return null;
 
   async function rename(name: string) {
@@ -74,6 +77,14 @@ export default function AccountPanel() {
             تغيير كلمة السر
           </Button>
           <Button
+            variant="text"
+            startIcon={<GavelOutlined />}
+            onClick={() => setLicences(true)}
+            data-testid="open-licences"
+          >
+            رخص البرمجيات المفتوحة
+          </Button>
+          <Button
             color="error"
             variant="contained"
             startIcon={<LogoutOutlined />}
@@ -86,6 +97,7 @@ export default function AccountPanel() {
           </Button>
         </Stack>
       </Paper>
+      {licences && <LicencesDialog onClose={() => setLicences(false)} />}
       <NameDialog
         open={renaming}
         initial={user.name}

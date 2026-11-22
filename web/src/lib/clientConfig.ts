@@ -9,9 +9,17 @@ export interface MapsConfig {
   default_center: { lat: number; lng: number };
 }
 
+/** An open-source component whose source the app's users may get (specs/006 FR-022). */
+export interface OpenSourceItem {
+  name: string;
+  licence: string;
+  url: string;
+}
+
 export interface ClientConfig {
   /** null when no Maps key is configured: the form works without the map. */
   maps: MapsConfig | null;
+  open_source?: OpenSourceItem[];
 }
 
 export const fetchClientConfig = () => apiFetch<ClientConfig>('/api/client-config');

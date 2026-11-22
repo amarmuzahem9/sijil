@@ -213,3 +213,73 @@ def test_corrected_date_is_kept_on_a_new_reading(client, owner) -> None:
     body = get(client, headers, draft_id)
     assert body["issue_date"] == "2020-01-03"
     assert body["card_fields"]["issue_date"]["source"] == "edited"
+
+
+# --- US4: national ID against the verified MRZ (FR-011–FR-013, research R7) --------------------
+
+NID = "199912345678"
+NID_OTHER = "199912345679"
+
+
+def missing_fields(body: dict) -> set[str]:
+    return {m["field"] for m in body["missing"]}
+
+
+def test_equal_national_ids_raise_nothing(client, owner) -> None:
+    _, headers = owner
+    body = get(client, headers, read_card(client, headers))
+    assert body["national_id_check"] == {"mrz": NID, "mismatch": False, "confirmed": False}
+    assert "national_id_unconfirmed" not in missing_fields(body)
+
+
+def test_mismatch_must_be_confirmed(client, owner) -> None:
+    _, headers = owner
+    draft_id = read_card(client, headers, back="back_nid_mismatch")
+    body = get(client, headers, draft_id)
+    assert body["national_id"] == NID  # the front value is filled
+    assert body["national_id_check"] == {"mrz": NID_OTHER, "mismatch": True, "confirmed": False}
+    assert "national_id_unconfirmed" in missing_fields(body)
+
+    body = patch(
+        client, headers, draft_id, {"national_id": NID, "national_id_confirmed": True}
+    ).json()
+    assert body["national_id_check"]["confirmed"] is True
+    assert "national_id_unconfirmed" not in missing_fields(body)
+
+    # Editing the number drops the confirmation; the comparison runs on the new value.
+    body = patch(client, headers, draft_id, {"national_id": "199912345670"}).json()
+    assert body["national_id_check"] == {"mrz": NID_OTHER, "mismatch": True, "confirmed": False}
+    assert "national_id_unconfirmed" in missing_fields(body)
+
+    # Adopting the MRZ number ends the mismatch.
+    body = patch(client, headers, draft_id, {"national_id": NID_OTHER}).json()
+    assert body["national_id_check"]["mismatch"] is False
+    assert "national_id_unconfirmed" not in missing_fields(body)
+
+
+def test_confirmation_without_a_mismatch_is_harmless(client, owner) -> None:
+    _, headers = owner
+    draft_id = new_draft(client, headers)
+    body = patch(
+        client, headers, draft_id, {"national_id": NID, "national_id_confirmed": True}
+    ).json()
+    assert body["national_id_check"] is None
+
+
+def test_unverified_mrz_is_never_compared(client, owner) -> None:
+    _, headers = owner
+    body = get(client, headers, read_card(client, headers, back="back_unverified"))
+    assert body["national_id_check"] is None
+    assert "national_id_unconfirmed" not in missing_fields(body)
+
+
+def test_typed_value_is_compared_too(client, owner) -> None:
+    _, headers = owner
+    draft_id = new_draft(client, headers)
+    patch(client, headers, draft_id, {"national_id": NID_OTHER})
+    upload(client, headers, draft_id, "front", "clear_front")
+    upload(client, headers, draft_id, "back", "clear_back")
+    body = get(client, headers, draft_id)
+    assert body["national_id"] == NID_OTHER  # typed first: not overwritten
+    assert body["national_id_check"]["mismatch"] is True
+    assert "national_id_unconfirmed" in missing_fields(body)
