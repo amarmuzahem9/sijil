@@ -1,5 +1,16 @@
 <!--
-Sync Impact Report (2026-11-22, amendment 2)
+Sync Impact Report (2026-11-23, amendment 3)
+- Version change: 1.1.1 → 1.2.0 (MINOR: Principle VII materially expanded)
+- Modified principles: VII. Fixed Technology Stack — the runtime services now include `ocr`, the
+  card reader (ID_Iraqi_Project, AGPL-3.0), kept separate from the app's server code, reachable
+  only over the internal network, without internet access; its source is offered to users
+  through a public copy (docs/system.md §14 v1.7, feature 006).
+- Added/removed sections: none
+- Templates: not modified
+- Follow-up TODOs: none
+- Approved by the project owner in the feature 006 specification review.
+
+Previous report (2026-11-22, amendment 2)
 - Version change: 1.1.0 → 1.1.1 (PATCH: clarification)
 - Modified principles: III. Permanent Audit Trail — clarified that an unsubmitted draft is not a
   request; its owner may delete it, and the deletion is audited (docs/system.md §5 v1.4, feature 005).
@@ -133,8 +144,13 @@ field.
   a UI library with RTL support.
 - Backend: Python 3.12 + FastAPI + SQLAlchemy 2 + Alembic (migrations) + Pydantic.
 - Database: PostgreSQL 16.
-- Runtime: Docker Compose with services `web`, `api`, `db`, `proxy`. All configuration MUST
-  come from environment variables (`.env`).
+- Runtime: Docker Compose with services `web`, `api`, `db`, `proxy` and `ocr`. All
+  configuration MUST come from environment variables (`.env`).
+- Card reading (OCR) runs in the separate `ocr` service (ID_Iraqi_Project, AGPL-3.0). Its code
+  lives in `ocr/` and MUST NOT be imported into or mixed with `api/` code; `api` reaches it only
+  over the internal Docker network, and the service MUST have no internet access. Its source,
+  with every change made to it, MUST be offered to the app's users through a public copy linked
+  from the app; the rest of the app's code stays private.
 - External services (WhatsApp OTP, OCR, maps) MUST sit behind a swappable adapter layer, each
   with a fake implementation for development and testing.
 
@@ -204,4 +220,4 @@ reliable proof they hold.
   violation MUST be resolved, or explicitly justified and approved, before merge.
 - Runtime guidance for agents lives in `CLAUDE.md`.
 
-**Version**: 1.1.1 | **Ratified**: 2026-11-21 | **Last Amended**: 2026-11-22
+**Version**: 1.2.0 | **Ratified**: 2026-11-21 | **Last Amended**: 2026-11-23
