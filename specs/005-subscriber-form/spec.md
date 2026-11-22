@@ -60,7 +60,7 @@ address, close the browser, reopen the draft from «الطلبات ← مسود�
 1. **Given** a signed-in marketer on the dashboard, **When** they tap «إضافة مشترك جديد»,
    **Then** a new draft is opened on one page with the five sections in the order of §5.
 2. **Given** an open draft, **When** the marketer changes any field and stops typing for about
-   2 seconds (or leaves the field), **Then** the change is saved on the server and the status
+   1 second (or leaves the field), **Then** the change is saved on the server and the status
    shows «محفوظ».
 3. **Given** the network is down, **When** a save fails, **Then** the status shows «لم يُحفظ»
    with «إعادة المحاولة», the typed values stay on screen, and saving is retried automatically
@@ -73,8 +73,8 @@ address, close the browser, reopen the draft from «الطلبات ← مسود�
 
 ### User Story 2 - Card images: capture, compress, upload with progress (Priority: P1)
 
-In the card section the marketer fills «وجه البطاقة» then «ظهر البطاقة». Each slot offers
-«تصوير» (camera) or «رفع من المعرض». The image is compressed on the phone before upload, a
+In the card section the marketer fills «وجه البطاقة» then «ظهر البطاقة». Each slot has two
+buttons, «تصوير» (camera) and «من المعرض» (gallery). The image is compressed on the phone before upload, a
 progress bar shows the upload, and a failed upload can be retried without picking the image
 again. After upload the slot shows a thumbnail with «تغيير».
 
@@ -87,17 +87,20 @@ bar, cut the network mid-upload, press «إعادة المحاولة», and conf
 
 **Acceptance Scenarios**:
 
-1. **Given** the front slot, **When** the marketer takes or picks a photo, **Then** it is
+1. **Given** either slot, **Then** it shows two separate buttons, «تصوير» (opens the camera) and
+   «من المعرض» (opens the gallery). The gallery button never opens the camera directly on
+   Android or iPhone.
+2. **Given** the front slot, **When** the marketer takes or picks a photo, **Then** it is
    compressed on the device (longest edge at most 1600px, JPEG quality about 0.8) before upload.
-2. **Given** an upload in progress, **Then** a progress bar shows the percentage, and the rest of
+3. **Given** an upload in progress, **Then** a progress bar shows the percentage, and the rest of
    the form stays usable.
-3. **Given** an upload fails, **Then** the slot shows «فشل الرفع» with «إعادة المحاولة», which
+4. **Given** an upload fails, **Then** the slot shows «فشل الرفع» with «إعادة المحاولة», which
    retries with the same compressed image.
-4. **Given** an uploaded image, **When** the marketer taps «تغيير» and uploads another,
+5. **Given** an uploaded image, **When** the marketer taps «تغيير» and uploads another,
    **Then** the new image replaces the old one in the draft.
-5. **Given** a file that is not an image, or an image larger than the size limit after
+6. **Given** a file that is not an image, or an image larger than the size limit after
    compression, **Then** it is refused with a clear Arabic message.
-6. **Given** the back slot, **Then** it can be filled before the front; both are required.
+7. **Given** the back slot, **Then** it can be filled before the front; both are required.
 
 ---
 
@@ -283,7 +286,8 @@ prices, change the region, and see the tower choice cleared.
 
 **Images**
 
-- **FR-005**: Each card side MUST accept a camera capture or a gallery file. The device MUST
+- **FR-005**: Each card side MUST offer two separate buttons, «تصوير» (camera) and «من المعرض»
+  (gallery); the gallery button MUST open the gallery on Android and iPhone. The device MUST
   correct orientation and compress the image to at most 1600px on the longest edge, JPEG quality
   about 0.8, before upload.
 - **FR-006**: Uploads MUST show progress and MUST allow retry of a failed upload without picking
@@ -322,8 +326,8 @@ prices, change the region, and see the tower choice cleared.
 
 **Drafts**
 
-- **FR-015**: Every change MUST be saved to the server as a draft after a short pause (about 2
-  seconds) or when the field loses focus, with a visible save status and automatic retry. A draft
+- **FR-015**: Every change MUST be saved to the server as a draft after a short pause (about 1
+  second) or when the field loses focus, with a visible save status and automatic retry. A draft
   is created on the first real change only.
 - **FR-016**: A draft MUST be openable from any device signed in to the same account, with every
   saved value and both images.
