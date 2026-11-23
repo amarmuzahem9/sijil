@@ -25,11 +25,11 @@ const READ = {
 } as const;
 
 const BACK = {
-  // Dates are shown day-month-year (owner request after the staging test).
-  birth_date: '01-01-1999',
+  // Dates are shown YYYY-MM-DD, read from the right as day-month-year (owner request).
+  birth_date: '1999-01-01',
   birth_place: 'حي تجريبي-بغداد',
-  issue_date: '02-01-2020',
-  expiry_date: '01-01-2030',
+  issue_date: '2020-01-02',
+  expiry_date: '2030-01-01',
   issuing_authority: 'مديرية الجنسية والمعلومات المدنية',
 } as const;
 
@@ -197,14 +197,14 @@ test('US7: an expired card and a birth year that does not match the national ID'
   await uploadSide(page, 'front', 'clear_front');
   await uploadSide(page, 'back', 'back_expired');
 
-  await expect(field(page, 'expiry_date')).toHaveValue('01-01-2025', { timeout: 20_000 });
+  await expect(field(page, 'expiry_date')).toHaveValue('2025-01-01', { timeout: 20_000 });
   await expect(page.getByTestId('card-expired')).toHaveText('البطاقة منتهية الصلاحية');
   await saved(page);
   await expect(page.getByTestId('missing-card_expired')).toBeVisible();
 
   // FR-032: a typed birth year that differs from the national ID only warns.
-  await field(page, 'birth_date').fill('01011998'); // digits only: the dashes are added
-  await expect(field(page, 'birth_date')).toHaveValue('01-01-1998');
+  await field(page, 'birth_date').fill('19980101'); // digits only: the dashes are added
+  await expect(field(page, 'birth_date')).toHaveValue('1998-01-01');
   await field(page, 'birth_date').blur();
   await expect(page.getByTestId('birth-year-mismatch')).toHaveText(
     'سنة الميلاد لا تطابق الرقم الوطني، تأكد منهما',
@@ -212,6 +212,11 @@ test('US7: an expired card and a birth year that does not match the national ID'
   await expect(mark(page, 'birth_date')).toHaveText('عُدِّل يدوياً');
   await saved(page);
   await expect(page.getByTestId('missing-birth_date')).toHaveCount(0);
+
+  // The calendar is back: a date picked there is saved at once.
+  await page.getByTestId('picker-issue_date').fill('2015-01-02', { force: true });
+  await expect(field(page, 'issue_date')).toHaveValue('2015-01-02');
+  await saved(page);
 });
 
 test('D: replacing the front reads it again; an edited field stays', async ({ page, request }, testInfo) => {

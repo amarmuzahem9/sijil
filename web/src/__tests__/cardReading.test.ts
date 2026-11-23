@@ -19,9 +19,8 @@ import {
 import { DraftFormController } from '../lib/draftFormController';
 import { CARD_FIELDS, type CardReading, type Draft } from '../lib/drafts';
 import {
-  displayToIso,
   formatTyping,
-  isoToDisplay,
+  isRealDate,
 } from '../pages/marketer/subscriber/DateTextField';
 import { fieldMarkText } from '../pages/marketer/subscriber/FieldSourceMark';
 
@@ -233,25 +232,25 @@ describe('back of the card (owner change)', () => {
   });
 });
 
-describe('dates as day-month-year (owner request after the staging test)', () => {
-  it('shows ISO dates as DD-MM-YYYY', () => {
-    expect(isoToDisplay('1999-01-10')).toBe('10-01-1999');
-    expect(isoToDisplay('')).toBe('');
+describe('dates: YYYY-MM-DD aligned right, read day-month-year from the right (owner request)', () => {
+  it('adds the dashes while typing digits, Arabic-Indic too', () => {
+    expect(formatTyping('19990110')).toBe('1999-01-10');
+    expect(formatTyping('199901')).toBe('1999-01');
+    expect(formatTyping('١٩٩٩٠١١٠')).toBe('1999-01-10');
+    expect(formatTyping('1999/01/10xx')).toBe('1999-01-10');
   });
 
-  it('adds the dashes while typing digits, Arabic-Indic too', () => {
-    expect(formatTyping('10011999')).toBe('10-01-1999');
-    expect(formatTyping('1001')).toBe('10-01');
-    expect(formatTyping('١٠٠١١٩٩٩')).toBe('10-01-1999');
-    expect(formatTyping('10/01/1999xx')).toBe('10-01-1999');
+  it('turns a pasted day-first date around', () => {
+    expect(formatTyping('10/01/1999')).toBe('1999-01-10');
+    expect(formatTyping('1-2-2020')).toBe('2020-02-01');
   });
 
   it('accepts only real dates', () => {
-    expect(displayToIso('10-01-1999')).toBe('1999-01-10');
-    expect(displayToIso('29-02-2024')).toBe('2024-02-29');
-    expect(displayToIso('29-02-2023')).toBeNull();
-    expect(displayToIso('31-04-2020')).toBeNull();
-    expect(displayToIso('10-01')).toBeNull();
-    expect(displayToIso('01-01-1800')).toBeNull();
+    expect(isRealDate('1999-01-10')).toBe(true);
+    expect(isRealDate('2024-02-29')).toBe(true);
+    expect(isRealDate('2023-02-29')).toBe(false);
+    expect(isRealDate('2020-04-31')).toBe(false);
+    expect(isRealDate('1999-01')).toBe(false);
+    expect(isRealDate('1800-01-01')).toBe(false);
   });
 });

@@ -103,7 +103,7 @@ multi-device change notice, name-field rules, private image storage).
 - Every field takes the full width of the screen, one per row.
 - The «من البطاقة» / «عُدِّل يدوياً» mark sits with the label on the field's frame, never inside
   the box over the value.
-- Dates are shown and typed as day-month-year (e.g. 10-01-1999); the server still stores dates.
+- Dates are typed or picked from the calendar, shown right-aligned as YYYY-MM-DD (e.g. 1999-01-10), so read from the right they are day, month, year; the server still stores dates.
 - An empty field never carries a mark.
 - The place of birth is filled only when the reading has at least six letters and contains a known
   governorate or main city (spelling-insensitive); a short or unknown reading such as «يدع ي»
