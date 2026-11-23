@@ -227,3 +227,55 @@ def test_card_readings_never_log_card_data(
         "050314",
     ):
         assert secret not in everything, secret
+
+
+def test_otp_codes_never_leak(client, db, make_user, caplog, capsys) -> None:
+    """specs/007 FR-016, FR-017, SC-004: the code appears only in the WhatsApp message (here the
+    fake outbox): not in logs, not in any response body, not in the database in plain form. The
+    full phone and the provider key are not logged either."""
+    import uuid
+
+    from sqlalchemy import select
+
+    from app.models import OtpChallenge
+    from app.services.otp_sender import get_otp_sender
+
+    caplog.set_level(logging.DEBUG)
+    fake = get_otp_sender()
+    fake.outbox.clear()
+    headers = auth_header(login(client, make_user("marketer").phone))
+    headers["X-Client-Id"] = str(uuid.uuid4())
+    phone = "07809871234"
+    draft_id = str(uuid.uuid4())
+    bodies = [
+        client.put(
+            f"/api/drafts/{draft_id}", json={"changes": {"phone_input": phone}}, headers=headers
+        ).text
+    ]
+
+    bodies.append(client.post(f"/api/drafts/{draft_id}/otp/send", headers=headers).text)
+    code = fake.outbox[-1][1]
+    wrong = f"{(int(code) + 1) % 1_000_000:06d}"
+    for entry in (wrong, "12", code):
+        bodies.append(
+            client.post(
+                f"/api/drafts/{draft_id}/otp/verify", json={"code": entry}, headers=headers
+            ).text
+        )
+    bodies.append(client.get(f"/api/drafts/{draft_id}", headers=headers).text)
+    assert '"status":"verified"' in bodies[-1]
+
+    raw = "\n".join(r.getMessage() for r in caplog.records)
+    printed = capsys.readouterr()
+    logs = raw + _formatted(list(caplog.records)) + printed.out + printed.err
+    assert "otp send" in logs and "0780****234" in logs  # the masked line is there
+    key = get_settings().otpiq_api_key
+    for secret in (code, wrong, phone, "9647809871234", key):
+        assert secret not in logs
+    for body in bodies:
+        assert code not in body
+
+    for row in db.execute(select(OtpChallenge)).scalars():
+        stored = " ".join(str(v) for v in (row.code_hash, row.context_hash, row.phone))
+        assert code not in stored
+    fake.outbox.clear()

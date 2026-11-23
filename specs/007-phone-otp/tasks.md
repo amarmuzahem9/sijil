@@ -204,6 +204,10 @@ and get `otp.status = "verified"`. Manually: the same with the dev key and the o
     conflict.
   - After a send it shows «أُرسل رمز التحقق عبر الواتساب إلى 07XXXXXXXXX» (spec US1).
   - It shows «خدمة التحقق غير مهيّأة» when `otp_enabled` is false.
+  - **Owner change (after batch 2)**: the single code box and «تأكيد» were replaced by six
+    one-digit boxes (`OtpCodeBoxes.tsx`): left to right, focus moves on, Backspace goes back,
+    paste and keyboard suggestion spread the code, the sixth digit submits, red shake on a
+    wrong code, green on success.
 - [x] T021 [US1] Mount `OtpControl` next to the phone field in
   `web/src/pages/marketer/subscriber/PhoneSection.tsx`, and pass the draft, the `otp` status and
   the flush function from `SubscriberForm.tsx`. Update the header comment.
@@ -275,7 +279,7 @@ phone, verification succeeds, and changing the category cancels it.
 
 ### Tests for User Story 3
 
-- [ ] T028 [P] [US3] Write the limit tests in `api/tests/integration/test_otp.py` (owner's list,
+- [x] T028 [P] [US3] Write the limit tests in `api/tests/integration/test_otp.py` (owner's list,
   quickstart table):
   - **Expiry**: the right code at the validity + 1 minute gives 410 `otp_expired`. With the
     setting changed to 10 after the send, the code keeps its original expiry.
@@ -293,12 +297,12 @@ phone, verification succeeds, and changing the category cancels it.
 
 ### Implementation for User Story 3
 
-- [ ] T029 [US3] Add the 60 s per-draft wait and the 5-per-hour per-phone check to
+- [x] T029 [US3] Add the 60 s per-draft wait and the 5-per-hour per-phone check to
   `otp_service.send` in `api/app/services/otp_service.py`. Both are computed from `otp_challenges`
   under the locks (research R7). Build the Arabic messages with minutes and seconds.
-- [ ] T030 [US3] Add the attempt counting, the expiry check and the code-format refusal to
+- [x] T030 [US3] Add the attempt counting, the expiry check and the code-format refusal to
   `otp_service.verify`. The third wrong entry returns `otp_cancelled` (contracts/api.md).
-- [ ] T031 [US3] Show the server messages in `OtpControl.tsx`: remaining attempts,
+- [x] T031 [US3] Show the server messages in `OtpControl.tsx`: remaining attempts,
   cancelled/expired with «اطلب رمزاً جديداً», the hourly limit with minutes, and the countdown from
   the server's `retry_after_s`.
 
@@ -312,7 +316,7 @@ phone, verification succeeds, and changing the category cancels it.
 
 ### Tests for User Story 4
 
-- [ ] T032 [P] [US4] Write the failure tests in `api/tests/integration/test_otp.py`:
+- [x] T032 [P] [US4] Write the failure tests in `api/tests/integration/test_otp.py`:
   - **Not counted**: with `FakeOtpSender.fail_with` set to each reason, there is no row and the
     contracts/api.md code is returned. A send right after a failure works with no 60 s wait.
     5 failures plus 5 successes within one hour all go through.
@@ -322,31 +326,31 @@ phone, verification succeeds, and changing the category cancels it.
 
 ### Implementation for User Story 4
 
-- [ ] T033 [US4] Finish the `OtpSendError` → `AppError` mapping in `otp_service.send`. Log the
+- [x] T033 [US4] Finish the `OtpSendError` → `AppError` mapping in `otp_service.send`. Log the
   reason with the masked phone, and roll back without inserting.
-- [ ] T034 [US4] Show the failure messages in `OtpControl.tsx`, and keep the button usable after a
+- [x] T034 [US4] Show the failure messages in `OtpControl.tsx`, and keep the button usable after a
   failure.
 
 ---
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T035 Extend `api/tests/integration/test_log_safety.py`:
+- [x] T035 Extend `api/tests/integration/test_log_safety.py`:
   - Send and verify, wrong and right.
   - Assert that the code, the full phone and the `OTPIQ_API_KEY` test value appear in no captured
     log line and in no response body.
   - Assert that `otp_challenges` stores no 6-digit plain code (SC-004).
-- [ ] T036 [P] Add the OTP keys to the redaction check, if `logging_config.redact` misses
+- [x] T036 [P] Add the OTP keys to the redaction check, if `logging_config.redact` misses
   `verificationCode` or `Bearer sk_`. Change only what the T035 test shows is missing, in
   `api/app/logging_config.py`.
 - [x] T037 [P] Write `specs/007-phone-otp/manual-test-ar.md`, the Arabic manual test steps for
   `https://localhost` with the dev key: send, receive, verify, change the category, the leak
   check, the 25 IQD log line.
-- [ ] T038 Run the whole api suite, `npm test` and the Playwright suite. Run `docker compose up` and
+- [x] T038 Run the whole api suite, `npm test` and the Playwright suite. Run `docker compose up` and
   do the manual steps once with the owner's dev key (one real send, 25 IQD).
-- [ ] T039 [P] Add a one-line pointer to `specs/007-phone-otp/contracts/api.md` at the end of
+- [x] T039 [P] Add a one-line pointer to `specs/007-phone-otp/contracts/api.md` at the end of
   `specs/005-subscriber-form/contracts/api.md` (the draft output gains `otp`).
-- [ ] T040 Tick the done tasks in this file, and run `/speckit-analyze` once more before merging.
+- [x] T040 Tick the done tasks in this file, and run `/speckit-analyze` once more before merging.
 
 ---
 

@@ -21,7 +21,7 @@ const FAKE_CODE = '246810';
 const AREA = 'منطقة التحقق';
 const TOWER = 'OTP01';
 const PLAN_A = 'OTPBASIC';
-const PLAN_B = 'OTPPLUS';
+const PLAN_B = 'OTPEXTRA'; // not 'PLUS': settings-acceptance filters rows by that text
 const PROJECT_INDEX: Record<string, number> = { 'desktop-chrome': 0, 'pixel-7': 1, 'iphone-14': 2 };
 
 async function ensureCatalog(request: APIRequestContext) {

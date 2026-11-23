@@ -109,3 +109,6 @@ revealed.
 | `GOOGLE_MAPS_API_KEY` | empty | Maps JavaScript API key. Restrict it to the domain in the Google console |
 | `GOOGLE_MAPS_MAP_ID` | empty | Map ID for the advanced (draggable) marker |
 | `MAP_DEFAULT_CENTER` | `33.3152,44.3661` | Map center used when there is no pin and no position |
+
+> **Feature 007**: `DraftOut` gains `otp`, and two routes are added (`/otp/send`, `/otp/verify`). See
+> [specs/007-phone-otp/contracts/api.md](../../007-phone-otp/contracts/api.md).
