@@ -1,5 +1,15 @@
 <!--
-Sync Impact Report (2026-11-23, amendment 4)
+Sync Impact Report (2026-11-24, amendment 5)
+- Version change: 1.2.1 → 1.3.0 (MINOR: Principle III materially expanded)
+- Modified principles: III. Permanent Audit Trail — a request in status pending review or rejected
+  MAY have its personal data and card images erased by an admin holding `delete`; the request row
+  stays with its non-personal fields and a deletion mark, the erasure is audited without personal
+  data, and audit entries are never altered (docs/system.md §7.4 v1.15, feature 011).
+- Added/removed sections: none
+- Templates: not modified
+- Follow-up TODOs: none
+- Approved by the project owner in the feature 011 specification review.
+Previous report (2026-11-23, amendment 4)
 - Version change: 1.2.0 → 1.2.1 (PATCH: clarification)
 - Modified principles: III. Permanent Audit Trail — a change to an identity number is audited by
   reference: the audit entry points to an append-only record holding the value before and after,
@@ -110,6 +120,14 @@ company.
   before/after values are then recoverable from the audit entry through that one link
   (docs/system.md §6.4, feature 010).
 - Requests and subscribers MUST NOT be physically deleted; they may only be deactivated.
+  Exception: a request in status pending review or rejected MAY have its personal data (names,
+  identity numbers, card data and readings, phone, username, address, location, number pins, the
+  reviewer's written rejection note) and its card images erased by an admin holding `delete`. The
+  request row MUST stay, with its number, marketer, type, status, dates, tower, plan, prices, the
+  rejection reason's name, and a deletion mark (who, when, reason from a fixed list). The erasure
+  MUST be audited with the request number, who, when and the reason, and no personal data.
+  Accepted and linked requests MUST never be erased. Existing audit entries MUST NOT be altered by
+  an erasure (docs/system.md §7.4, feature 011).
   An unsubmitted draft is not yet a request: its owner MAY delete it (with its images), and the
   deletion MUST be audited without card data (docs/system.md §5, feature 005).
 - User accounts MUST NOT be physically deleted. «حذف» moves an account to the archive, which is
@@ -235,4 +253,4 @@ reliable proof they hold.
   violation MUST be resolved, or explicitly justified and approved, before merge.
 - Runtime guidance for agents lives in `CLAUDE.md`.
 
-**Version**: 1.2.1 | **Ratified**: 2026-11-21 | **Last Amended**: 2026-11-23
+**Version**: 1.3.0 | **Ratified**: 2026-11-21 | **Last Amended**: 2026-11-24

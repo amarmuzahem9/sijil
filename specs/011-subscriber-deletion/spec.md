@@ -39,9 +39,9 @@ rejection, admin home counts).
   by one).
 
 **Out of scope**: deleting accepted or linked requests (never allowed); deleting imported legacy or SAS
-subscribers (013, 014); deleting drafts (already done by 005); purging the data from existing backups
+subscribers (014, 015); deleting drafts (already done by 005); purging the data from existing backups
 (they expire on their own schedule, see Assumptions); privacy requests from subscribers (not the goal of
-this feature); the subscriber search and file (017); reports and export (018) beyond the rule that a
+this feature); the subscriber search and file (018); reports and export (019) beyond the rule that a
 deleted request shows as an empty row.
 
 ## Clarifications
@@ -204,7 +204,7 @@ the request appears marked «محذوف» with its reason, number, tower and dat
 
 An admin with `review` types a request number in the box «فتح طلب برقمه» and the request file opens,
 whatever its status. This is how a rejected request is reached for deletion until the subscriber search
-(017) exists.
+(018) exists.
 
 **Why this priority**: Without it, a rejected request cannot be reached from any admin screen, so it cannot
 be deleted.
@@ -241,8 +241,8 @@ be deleted.
 - **Erasure fails half-way** (for example storage error): the request must not end half-erased; either the
   whole erasure completes or nothing changes and the admin sees an error and can retry. Image files are
   removed only after the data erasure is saved, and a file left behind by a failure is cleaned up on retry.
-- **Return request**: its stored historical username contains the phone, so it is erased like the current
-  username.
+- **Return request**: its username is the historical one taken from the target record and contains a phone,
+  so it is erased with the other fields.
 - **Rejection note («سبب آخر» text written by the reviewer)**: erased from the request; the reason's name
   stays. The copy inside the earlier «رفض» audit line is not altered.
 - **Marketer archived**: deletion still works; the row keeps the marketer's name as all their requests do.
@@ -279,7 +279,7 @@ be deleted.
   fields, the national-ID check result, all card readings, phone, username, address, nearest landmark, and
   location (coordinates, source, accuracy), and the reviewer's written rejection note.
 - **FR-008**: Deletion MUST erase the request's number pins (the before and after values), and from its
-  reasons any stored personal detail (such as edited numbers or a return's historical username), keeping
+  reasons any stored personal detail if one exists (today reasons hold only field names and the return basis), keeping
   each reason's type and the reference to the matched record.
 - **FR-009**: Deletion MUST remove every card image file of the request from storage, and its image records
   MUST no longer lead to any file.
@@ -376,5 +376,5 @@ be deleted.
   audit line stays.
 - No notification is sent to the marketer at deletion (notifications come in a later feature); FR-021 only
   covers what the marketer sees in their requests.
-- Reports and export (018) will show a deleted request as an empty row with its kept fields; this feature only
+- Reports and export (019) will show a deleted request as an empty row with its kept fields; this feature only
   guarantees the data is in that shape.
