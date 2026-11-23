@@ -149,7 +149,7 @@ web/src/
 ├── pages/admin/settings/GeneralTab.tsx          # «رقم واتساب الإدارة»
 └── __tests__/{returnNotice,contactAdmin,familyMatchNotice,dashboard}.test.tsx
 
-e2e/tests/existing-subscriber.spec.ts
+e2e/tests/subscriber-existing.spec.ts
 ```
 
 **Structure Decision**: the existing `api/` + `web/` layout and the 008 split:

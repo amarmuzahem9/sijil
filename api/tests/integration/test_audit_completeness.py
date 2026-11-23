@@ -105,3 +105,66 @@ def test_submission_actions_are_audited_once_without_card_data(
     blob = json.dumps([[e.before, e.after] for e in entries], ensure_ascii=False)
     for secret in (NID, FAMILY, "07801234567", "07801234599", ok["full_name"]):
         assert secret not in blob
+
+
+def test_existing_subscriber_actions_are_audited_once_without_card_data(
+    client, db, make_user, tmp_path, monkeypatch
+) -> None:
+    """Feature 009 (T045, FR-014): choosing and withdrawing a return, opening «الاتصال بالإدارة»
+    and submitting a return each write one entry by the marketer, with the draft id and the basis
+    only: no card number, no phone, no name, no matched record."""
+    from app.config import get_settings
+    from app.services.card_reader_fake_data import FAMILY, NID
+    from tests.helpers.requests import request_factory
+    from tests.helpers.submit import (
+        complete_draft,
+        make_catalog,
+        marketer_headers,
+        patch,
+        submit,
+        verify,
+    )
+
+    monkeypatch.setattr(get_settings(), "uploads_dir", str(tmp_path))
+    catalog = make_catalog(client, auth_header(login(client, make_user("super_admin").phone)))
+    marketer = make_user("marketer")
+    h = marketer_headers(client, marketer)
+    old = request_factory(
+        db,
+        make_user("marketer"),
+        national_id=NID,
+        national_id_input=NID,
+        family_number=FAMILY,
+        phone="07709990003",
+        full_name="اسم سابق سري",
+    )
+
+    draft_id = complete_draft(client, h, catalog, verified=False)
+    patch(client, h, draft_id, {"return_chosen": True})
+    patch(client, h, draft_id, {"return_chosen": False})
+    patch(client, h, draft_id, {"return_chosen": True})
+    assert client.post(f"/api/drafts/{draft_id}/contact-admin", headers=h).status_code == 204
+    verify(client, h, draft_id)
+    ok = submit(client, h, draft_id).json()
+
+    entries = list(
+        db.scalars(
+            select(AuditLog)
+            .where(AuditLog.action.like("draft.%") | AuditLog.action.like("request.%"))
+            .where(AuditLog.actor_id == marketer.id)
+            .order_by(AuditLog.id)
+        )
+    )
+    assert [(e.action, e.entity_id) for e in entries] == [
+        ("draft.return_chosen", draft_id),
+        ("draft.return_withdrawn", draft_id),
+        ("draft.return_chosen", draft_id),
+        ("draft.contact_admin_opened", draft_id),
+        ("request.submitted", str(ok["number"])),
+    ]
+    assert entries[0].after == {"basis": "identity"}
+    assert entries[-1].after["reasons"] == ["return"]
+    blob = json.dumps([[e.before, e.after] for e in entries], ensure_ascii=False)
+    for secret in (NID, FAMILY, "07801234567", "07709990003", old.full_name, old.username):
+        assert secret not in blob
+    assert f'"{old.id}"' not in blob and str(old.draft_id) not in blob

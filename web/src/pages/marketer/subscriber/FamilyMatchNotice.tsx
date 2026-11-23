@@ -2,9 +2,10 @@
  * Early warnings from the duplicate check, under their fields (specs/008 US3, US4, US6; FR-008 to
  * FR-010; docs/system.md §6.1).
  *
- * - National ID exists (row 2) and phone used (row 1): the message only. «إعادة مشترك للخدمة»
- *   comes with feature 009.
- * - Family exists (row 3): «طلب اشتراك إضافي». Once chosen, the request will wait for the admin;
+ * - National ID exists (row 2) and phone used (row 1): the message only. Since 009 the page shows
+ *   ReturnNotice («طلب العودة للخدمة») instead; PhoneUsedNotice remains for a used phone that is
+ *   not the return target, with «الاتصال بالإدارة».
+ * - Family exists (row 3): «إضافة اشتراك ثاني». Once chosen, the request will wait for the admin;
  *   «تراجع» withdraws it. Changing the family number drops the choice on the server.
  *
  * The page gets booleans only, so nothing here can name the other subscriber. Without `checks`
@@ -22,8 +23,8 @@ export const MATCH_TEXT = {
   nationalId: 'المشترك لديه اشتراك سابق',
   phone: 'المشترك موجود سابقاً، هل يود العودة للخدمة؟',
   family: 'لهذه العائلة اشتراك سابق',
-  familyAction: 'طلب اشتراك إضافي',
-  confirmed: 'طلب اشتراك إضافي: يكمل الطلب بهاتف جديد، ويذهب لموافقة المسؤول',
+  familyAction: 'إضافة اشتراك ثاني',
+  confirmed: 'إضافة اشتراك ثاني: يكمل الطلب بهاتف جديد، ويذهب لموافقة المسؤول',
   withdraw: 'تراجع',
 } as const;
 

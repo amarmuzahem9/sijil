@@ -124,7 +124,7 @@ export interface DraftChecks {
   /** National ID only (row 2b): a notice, sending stays allowed. */
   id_conflict: boolean;
   family_exists: boolean;
-  /** «طلب اشتراك إضافي» chosen for the current family number. */
+  /** «إضافة اشتراك ثاني» chosen for the current family number. */
   additional_confirmed: boolean;
   return_available: boolean;
   return_basis: ReturnBasis | null;
@@ -193,7 +193,7 @@ export interface DraftChanges extends Partial<NullableNames> {
   no_surname?: boolean;
   /** Confirms the current national ID against the verified MRZ (FR-012). */
   national_id_confirmed?: boolean;
-  /** «طلب اشتراك إضافي» for the current family number (specs/008 research R12). */
+  /** «إضافة اشتراك ثاني» for the current family number (specs/008 research R12). */
   additional_confirmed?: boolean;
   /** «طلب العودة للخدمة» (specs/009 research R3). */
   return_chosen?: boolean;

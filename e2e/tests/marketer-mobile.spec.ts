@@ -13,7 +13,11 @@ test('marketer: dashboard skeleton, navigation and admin refusal', async ({ page
     'href',
     '/drafts/new',
   );
-  await expect(page.getByRole('button', { name: 'إضافة اشتراك لمشترك موجود' })).toBeDisabled();
+  // Enabled since feature 009: the same form; the checks decide the path.
+  await expect(page.getByRole('link', { name: 'إضافة اشتراك لمشترك موجود' })).toHaveAttribute(
+    'href',
+    '/drafts/new',
+  );
   await expect(page.getByTestId('linked-counter')).toHaveText('تم الربط هذا الشهر: 0');
 
   if (testInfo.project.name === 'desktop-chrome') {

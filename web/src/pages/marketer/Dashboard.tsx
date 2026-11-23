@@ -29,8 +29,8 @@ export default function Dashboard() {
         الرئيسية
       </Typography>
 
-      {/* «إضافة مشترك جديد» opens the single-page form (feature 005); the second action
-          comes with feature 009. */}
+      {/* Both open the single-page form (feature 005). For an existing subscriber the checks
+          decide the path (specs/009 FR-005c): return to service or a second subscription. */}
       <Button
         variant="contained"
         size="large"
@@ -41,20 +41,16 @@ export default function Dashboard() {
       >
         إضافة مشترك جديد
       </Button>
-      <Stack spacing={0.5}>
-        <Button
-          variant="outlined"
-          size="large"
-          disabled
-          startIcon={<GroupAddOutlined />}
-          sx={{ py: 1.5 }}
-        >
-          إضافة اشتراك لمشترك موجود
-        </Button>
-        <Typography variant="caption" color="text.secondary" align="center">
-          قريباً
-        </Typography>
-      </Stack>
+      <Button
+        variant="outlined"
+        size="large"
+        component={RouterLink}
+        to="/drafts/new"
+        startIcon={<GroupAddOutlined />}
+        sx={{ py: 1.5 }}
+      >
+        إضافة اشتراك لمشترك موجود
+      </Button>
 
       <Card variant="outlined">
         <CardContent>

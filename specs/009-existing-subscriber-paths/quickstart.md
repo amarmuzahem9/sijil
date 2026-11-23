@@ -11,7 +11,7 @@ docker compose exec api pytest tests/unit/test_decision.py tests/unit/test_match
 docker compose exec api pytest tests/integration/test_return_path.py tests/integration/test_numbers_conflict.py tests/integration/test_admin_whatsapp.py
 docker compose exec api pytest            # full suite, including 008 regressions
 cd web && npm test
-cd e2e && npx playwright test existing-subscriber.spec.ts submit.spec.ts
+bash scripts/e2e.sh admin-first-login.spec.ts submit.spec.ts subscriber-existing.spec.ts
 ```
 
 ## Manual scenarios (expected results)

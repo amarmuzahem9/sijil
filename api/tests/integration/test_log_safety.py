@@ -320,3 +320,47 @@ def test_submission_never_logs_card_data(
     for secret in secrets:
         assert secret not in everything, secret
         assert secret not in blob, secret
+
+
+def test_existing_subscriber_paths_never_log_card_data(
+    client, db, make_user, caplog, capsys, tmp_path, monkeypatch
+) -> None:
+    """Feature 009 (T045): the return, conflict, OTP precheck and contact-admin paths log no card
+    number, phone or name, of either the draft or the matched record."""
+    from app.services.card_reader_fake_data import FAMILY, NID
+    from tests.helpers.requests import request_factory
+    from tests.helpers.submit import (
+        complete_draft,
+        make_catalog,
+        marketer_headers,
+        patch,
+        submit,
+        verify,
+    )
+
+    monkeypatch.setattr(get_settings(), "uploads_dir", str(tmp_path))
+    catalog = make_catalog(client, auth_header(login(client, make_user("super_admin").phone)))
+    h = marketer_headers(client, make_user("marketer"))
+    old = request_factory(
+        db,
+        make_user("marketer"),
+        national_id=NID,
+        national_id_input=NID,
+        family_number=FAMILY,
+        phone="07709990004",
+        full_name="اسم سابق سري للسجل",
+    )
+    caplog.set_level(logging.DEBUG)
+
+    draft_id = complete_draft(client, h, catalog, verified=False, phone="07709990004")
+    client.post(f"/api/drafts/{draft_id}/otp/send", headers=h)  # the person's own phone
+    patch(client, h, draft_id, {"return_chosen": True})
+    client.post(f"/api/drafts/{draft_id}/contact-admin", headers=h)
+    verify(client, h, draft_id)
+    submit(client, h, draft_id)
+
+    raw = "\n".join(r.getMessage() for r in caplog.records)
+    printed = capsys.readouterr()
+    everything = raw + _formatted(list(caplog.records)) + printed.out + printed.err
+    for secret in (NID, FAMILY, "07709990004", old.full_name, old.username):
+        assert secret not in everything

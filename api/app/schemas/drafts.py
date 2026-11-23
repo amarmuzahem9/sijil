@@ -48,7 +48,7 @@ class DraftChanges(_Body):
     # that differs from the verified MRZ. Provenance and readings are never accepted.
     no_surname: bool | None = None
     national_id_confirmed: bool | None = None
-    # Feature 008 (research R12): «طلب اشتراك إضافي» for the current family number.
+    # Feature 008 (research R12): «إضافة اشتراك ثاني» for the current family number.
     additional_confirmed: bool | None = None
     # Feature 009 (research R3): «طلب العودة للخدمة» for the current match.
     return_chosen: bool | None = None

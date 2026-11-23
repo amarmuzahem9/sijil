@@ -261,12 +261,12 @@ phone) and «الاتصال بالإدارة» (WhatsApp to the settings number)
 **Goal**: the 008 family path, relabeled. A national ID that differs (or is missing on a legacy
 record) leads to the family path.
 
-- [ ] T039 [P] [US3] Update `web/src/__tests__/familyMatchNotice.test.tsx` to expect «إضافة اشتراك
+- [x] T039 [P] [US3] Update `web/src/__tests__/familyMatchNotice.test.tsx` to expect «إضافة اشتراك
   ثاني». Run: **red**.
-- [ ] T040 [US3] Rename the button and the missing-item label in
+- [x] T040 [US3] Rename the button and the missing-item label in
   `web/src/pages/marketer/subscriber/FamilyMatchNotice.tsx` and `web/src/lib/draftValidation.ts`.
   T039 **green**.
-- [ ] T041 [P] [US3] Add a case to `api/tests/integration/test_submit.py` (red first if new): a
+- [x] T041 [P] [US3] Add a case to `api/tests/integration/test_submit.py` (red first if new): a
   family-only match on a record without a national ID (fake source) gives type additional with
   confirmation, as 008.
 
@@ -274,35 +274,35 @@ record) leads to the family path.
 
 ## Phase 6: User Story 4 - Start from the dashboard (Priority: P3)
 
-- [ ] T042 [P] [US4] Write `web/src/__tests__/dashboard.test.tsx`: «إضافة اشتراك لمشترك موجود» is
+- [x] T042 [P] [US4] Write `web/src/__tests__/dashboard.test.tsx`: «إضافة اشتراك لمشترك موجود» is
   enabled, has no «قريباً», and creates a draft and opens the form like «إضافة مشترك جديد». Run:
   **red**.
-- [ ] T043 [US4] Enable the button in `web/src/pages/marketer/Dashboard.tsx`, sharing the new-draft
+- [x] T043 [US4] Enable the button in `web/src/pages/marketer/Dashboard.tsx`, sharing the new-draft
   handler. T042 **green**.
 
 ---
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T044 [P] Write `api/tests/integration/test_marketer_privacy.py` (SC-003). For every path (return
+- [x] T044 [P] Write `api/tests/integration/test_marketer_privacy.py` (SC-003). For every path (return
   identity, return phone, conflict, family, pending block, contact-admin), collect every response
   body the marketer gets (draft GET/PATCH, otp/send, submit, request GET/list). Assert that none
   contains the matched record's name, phone, username, tower code, national ID, family number,
   request number or id. This checks a design already built, so it may pass on its first run; to
   prove it can fail, run it once against a deliberately leaking response, then green.
-- [ ] T045 [P] Extend `api/tests/integration/test_log_safety.py` and
+- [x] T045 [P] Extend `api/tests/integration/test_log_safety.py` and
   `api/tests/integration/test_audit_completeness.py`. The new actions (`draft.return_chosen`,
   `draft.return_withdrawn`, `draft.contact_admin_opened`) and the new submit reasons hold no card
   data or phone, and every one is recorded. Red first for the completeness case.
-- [ ] T046 Write `e2e/tests/existing-subscriber.spec.ts`: a return by identity to the result screen,
+- [x] T046 Write `e2e/tests/subscriber-existing.spec.ts` (named to run after `submit.spec.ts`, which approves the fake card person; it also runs alone): a return by identity to the result screen,
   and a return by phone to the result screen (fake OTP). Run red, then green.
-- [ ] T047 [P] Write the Arabic manual test guide
+- [x] T047 [P] Write the Arabic manual test guide
   `specs/009-existing-subscriber-paths/manual-test-ar.md` from quickstart scenarios 1–9.
-- [ ] T048 Check that `docs/system.md` v1.10 matches the built behavior (the §6.1 rows, §6.3, §10
+- [x] T048 Check that `docs/system.md` v1.10 matches the built behavior (the §6.1 rows, §6.3, §10
   settings). Fix the document if a detail moved during the build.
-- [ ] T049 Run everything: full api suite, `npm test`, Playwright (`existing-subscriber.spec.ts`,
+- [x] T049 Run everything: full api suite, `npm test`, Playwright (`subscriber-existing.spec.ts`,
   `submit.spec.ts`, `otp.spec.ts`), and `docker compose up` with a smoke run of the quickstart.
-- [ ] T050 Commit batch 4.
+- [x] T050 Commit batch 4.
 
 ---
 

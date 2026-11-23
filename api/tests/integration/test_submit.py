@@ -496,3 +496,36 @@ def test_family_match_plus_edit_records_both(client, db, h, marketer, catalog):
         "pending_family",
         ["family_exists", "numbers_edited"],
     )
+
+
+# --- specs/009 T041: a family match on a record with no national ID is the family path --------
+
+
+def test_family_match_on_a_record_without_national_id_is_additional(client, db, h, catalog):
+    from app.core.matches import Matches, MatchRecord
+    from app.services import match_service
+
+    def legacy(db, *, phone, national_id, family_key):
+        # A legacy subscriber (013) has no national ID: only the family flag can be set.
+        return Matches([MatchRecord("legacy", "L7", family=True)]) if family_key else Matches()
+
+    match_service.register_source("legacy", legacy)
+    try:
+        draft_id = complete_draft(client, h, catalog, verified=False)
+        checks = get_draft(client, h, draft_id)["checks"]
+        assert (checks["family_exists"], checks["return_available"]) == (True, False)
+        assert _confirm(client, h, draft_id)["checks"]["additional_confirmed"] is True
+        verify(client, h, draft_id)
+        res = submit(client, h, draft_id)
+    finally:
+        match_service.unregister_source("legacy")
+    assert res.status_code == 201, res.json()
+    assert (res.json()["type"], res.json()["result"]) == ("additional", "pending_family")
+    reason = db.scalars(
+        select(RequestReason).where(RequestReason.request_id == res.json()["id"])
+    ).one()
+    assert (reason.reason, reason.matched_source, reason.matched_ref) == (
+        "family_exists",
+        "legacy",
+        "L7",
+    )

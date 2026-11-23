@@ -1,7 +1,7 @@
 /**
  * Early warnings under the fields (specs/008 T034, T038, T043; FR-008 to FR-010): the national ID
  * and the phone show their message with no button (009 adds «إعادة مشترك للخدمة»); the family
- * shows «طلب اشتراك إضافي», then the confirmed state with «تراجع». Nothing shows without
+ * shows «إضافة اشتراك ثاني», then the confirmed state with «تراجع». Nothing shows without
  * `checks` (an older server) or without a match. The warnings never name the other subscriber.
  */
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -57,7 +57,7 @@ describe('NationalIdExistsNotice and PhoneUsedNotice', () => {
 });
 
 describe('FamilyMatchNotice', () => {
-  it('offers «طلب اشتراك إضافي» while unconfirmed', () => {
+  it('offers «إضافة اشتراك ثاني» while unconfirmed', () => {
     const onConfirm = vi.fn();
     render(
       <FamilyMatchNotice
@@ -67,7 +67,7 @@ describe('FamilyMatchNotice', () => {
       />,
     );
     expect(screen.getByText(MATCH_TEXT.family)).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'طلب اشتراك إضافي' }));
+    fireEvent.click(screen.getByRole('button', { name: 'إضافة اشتراك ثاني' }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
@@ -81,7 +81,7 @@ describe('FamilyMatchNotice', () => {
       />,
     );
     expect(screen.getByTestId('family-confirmed').textContent).toContain(MATCH_TEXT.confirmed);
-    expect(screen.queryByRole('button', { name: 'طلب اشتراك إضافي' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'إضافة اشتراك ثاني' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'تراجع' }));
     expect(onWithdraw).toHaveBeenCalledTimes(1);
   });
@@ -94,5 +94,15 @@ describe('FamilyMatchNotice', () => {
       </>,
     );
     expect(container.textContent).toBe('');
+  });
+});
+
+describe('v1.10 labels (specs/009 FR-016)', () => {
+  it('the confirmed text and the missing item use «إضافة اشتراك ثاني»', async () => {
+    const { SERVER_ITEMS } = await import('../pages/marketer/subscriber/MissingSummary');
+    expect(MATCH_TEXT.confirmed.startsWith('إضافة اشتراك ثاني')).toBe(true);
+    expect(SERVER_ITEMS.family_exists_unconfirmed.label).toBe(
+      'لهذه العائلة اشتراك سابق — اختر «إضافة اشتراك ثاني»',
+    );
   });
 });

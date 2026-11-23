@@ -212,5 +212,5 @@ number, not subscriber data.
   - `contactAdmin.test.tsx` (link shape, no phone in the text, disabled state);
   - the `familyMatchNotice` label;
   - the dashboard button.
-- **Playwright**: `existing-subscriber.spec.ts`, covering a return through identity and a return
+- **Playwright**: `subscriber-existing.spec.ts`, covering a return through identity and a return
   through the phone, up to the result screen.

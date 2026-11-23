@@ -29,7 +29,7 @@ export const SERVER_ITEMS = {
   return_pending: { target: 'field-national_id', label: 'يوجد طلب سابق بالانتظار لهذا المشترك' },
   family_exists_unconfirmed: {
     target: 'field-family_number',
-    label: 'لهذه العائلة اشتراك سابق — اختر «طلب اشتراك إضافي»',
+    label: 'لهذه العائلة اشتراك سابق — اختر «إضافة اشتراك ثاني»',
   },
   phone_used: { target: 'field-phone_input', label: 'المشترك موجود سابقاً، هل يود العودة للخدمة؟' },
 } as const;
