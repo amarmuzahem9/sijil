@@ -47,6 +47,9 @@ A request may carry more than one reason (§6.1 note).
   The type does not change.
 - Q: Rejection reason format? → A: A fixed list plus «سبب آخر» with a required text.
 - Q: Is the admin home (§10 item 1) part of 010? → A: Yes, with today's and this month's counts.
+- Q: How is a number pin audited, given Principle III (before/after) and Principle II (no identity
+  numbers in logs)? → A: The audit entry points to the pin record, which holds the value before and
+  after. Constitution amended to v1.2.1 to say so.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -152,14 +155,16 @@ type becomes second subscription, and accepting it still shows the 15-day remind
 4. **Given** the re-check finds a family match on a new request, **Then** its type becomes second
    subscription, the reason «اشتراك إضافي» is added, and acceptance is still the admin's decision (§6.4).
 5. **Given** the re-check finds a match that does not fit the request type (the same person on a new or
-   second-subscription request, a national-ID conflict, or a return whose target no longer matches),
+   second-subscription request, a national-ID conflict that was not on the request before the pin, or
+   a return whose target no longer matches),
    **Then** the type does not change, the file shows a clear red warning naming the clash (for example
    «تحذير: الأرقام المثبّتة تطابق مشتركاً موجوداً (نفس الشخص)، والطلب مرفوع كجديد»), and the admin decides.
    Pressing «قبول» while the warning stands opens a second confirmation «القبول رغم التحذير؟» that must be
    confirmed; the accept is written to the audit log as accepted despite the warning, with the warning
    kind. «رفض» works as usual.
-6. **Given** any pin, **Then** the audit log has who, when, which request, which field, and that the value
-   changed — without writing the national ID or family number values themselves.
+6. **Given** any pin, **Then** the audit log has who, when, which request, which field, and a reference
+   to the pin record. The pin record holds the value before and after; the audit entry never holds
+   the national ID or family number values themselves (constitution III v1.2.1).
 
 ---
 
@@ -262,14 +267,16 @@ plus earlier days.
   and marketer value MUST stay stored unchanged (Principle IV).
 - **FR-014**: After a pin the system MUST re-run the §6.1 match against all sources (excluding the request
   itself and rejected requests), add new reasons and linked records, mark reasons that no longer apply as
-  «لم يعد ينطبق» without deleting them, and mark the edited-numbers reason as «تم التثبيت».
+  «لم يعد ينطبق» without deleting them, and mark the edited-numbers reason as «تم التثبيت». The
+  «إعادة للخدمة» reason is never marked; a lost return target raises a warning instead (FR-019a).
 - **FR-015**: If the re-check finds a family match on a new request, the request type MUST become second
   subscription with reason «اشتراك إضافي» and still need the admin's acceptance.
 - **FR-016**: For a second-subscription request the decision area MUST show the 15-day reminder and the
   linked record's expiry date «حسب آخر استيراد» when known, otherwise «تاريخ الانتهاء غير متوفر».
 - **FR-017**: Accept, reject and pin MUST be written to the audit log with who, when, request number, the
   status (or field) before and after, the rejection reason and the commission answer — never the national
-  ID, family number, phone, names or images.
+  ID, family number, phone, names or images. A pin's before and after values are kept in its pin
+  record, and the audit entry points to that record.
 - **FR-018**: A rejected request MUST no longer count as existing in any later check (§6.1 note); this is
   already true in 008 and MUST stay true.
 - **FR-019**: The rejection reason MUST be picked from a fixed list: «صورة البطاقة غير واضحة»،
@@ -278,8 +285,8 @@ plus earlier days.
   آخر». The marketer sees the picked reason, and for «سبب آخر» the text as written. The reason code and
   text are both stored.
 - **FR-019a**: When a re-check after a pin finds a clash with the request type (FR-014: same person on a
-  new or second-subscription request, a national-ID conflict, or a return whose target no longer
-  matches), the type MUST stay as it is, the file MUST show a red warning naming the clash, and «قبول»
+  new or second-subscription request, a national-ID conflict that was not on the request before the
+  pin, or a return whose target no longer matches), the type MUST stay as it is, the file MUST show a red warning naming the clash, and «قبول»
   MUST need a second confirmation «القبول رغم التحذير؟». Such an accept MUST be audited as accepted
   despite the warning, with the warning kind (no card data).
 - **FR-020**: All new texts MUST be Arabic and RTL: «طلبات بالانتظار»، «قبول»، «رفض»، «سبب الرفض»،
@@ -299,8 +306,8 @@ plus earlier days.
 - **Pending reason** (from 008/009): gains a state — open, «تم التثبيت» (edited numbers after a pin),
   «لم يعد ينطبق» (match gone after a pin) — and the time and admin that changed it. Reasons added by a
   re-check are marked as added at review.
-- **Pinned number**: the field (national ID or family number), the pinned value, which source it came from
-  (reading, marketer, typed by admin), who and when. The original reading and marketer value are kept.
+- **Pinned number**: the field (national ID or family number), the value before and the pinned value,
+  which source it came from (reading, MRZ, marketer, typed by admin), who and when. The original reading and marketer value are kept.
 - **Linked record**: source (sijil, legacy, SAS), reference and link basis; shown to review admins only.
 - **Image access entry**: who opened which image and when.
 

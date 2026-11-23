@@ -9,8 +9,9 @@
     confirmation and is audited;
   - Q2: a fixed list of rejection reasons plus «سبب آخر»;
   - Q3: the admin home counts are in 010;
-- `docs/system.md` v1.13 §6.4, §7.2, §10;
-- the constitution.
+- the analysis answer D1: a pin is audited by reference to its pin row (constitution v1.2.1);
+- `docs/system.md` v1.14 §6.4, §7.2, §10;
+- the constitution v1.2.1.
 
 ## Summary
 
@@ -75,7 +76,7 @@ Each new test is run red before its code.
 |---|---|---|
 | I. Anti-Fraud First | ✅ | The server decides every accept, reject and pin. A pin re-runs the full check on every source under the 008 locks. Every reason that applies again is recorded. Reasons are only marked, never deleted. A clash gives a warning that needs an explicit, audited confirmation. Status changes only `pending_review → approved/rejected` (§7.2). |
 | II. Protection of Identity Documents | ✅ | Review data goes only to `review`. Images are served through the API and every open is logged (R9). Raw readings are never returned. The marketer gets the status and reason only. Pins live in a table read only by review pages. Audit and logs hold no numbers, phone or names (R12). |
-| III. Permanent Audit Trail | ✅ | Accept, reject and pin are audited with before and after. Nothing is deleted: reasons are marked, and pins are append-only. |
+| III. Permanent Audit Trail | ✅ | Accept and reject are audited with before and after. A pin is audited by reference (v1.2.1): the entry holds `pin_id`, and the append-only pin row holds the value before and after. Nothing is deleted: reasons are marked, and pins are append-only. |
 | IV. Recorded Values Are Immutable | ✅ | The decision (who, when, reason, commission answer, confirmed warnings) is stored on the request. The marketer's values and the original reading are kept unchanged (`submitted_*`, `card_fields`). Prices and username stay as fixed at submission. |
 | V. Mobile-First and Arabic | ✅ | Arabic labels and RTL. The review page stacks on a phone. Status colors come from §7.2. |
 | VI. Simplicity | ✅ | One pure check function used at pin, read and accept. Decision columns sit on the request, not in a new table. Rejection reasons are a fixed list. The rules went into `docs/system.md` v1.13 first. |

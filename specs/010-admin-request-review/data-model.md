@@ -48,6 +48,7 @@ Arabic labels:
 | `id` | bigint identity | no | PK |
 | `request_id` | bigint FK `requests.id` RESTRICT | no | |
 | `field` | text | no | CHECK `IN ('national_id','family_number')` |
+| `previous_value` | text | no | The field's value just before this pin (the before value for the audit, constitution III v1.2.1) |
 | `value` | text | no | The pinned value (national ID normalized, family number as written) |
 | `source` | text | no | CHECK `IN ('reading','mrz','marketer','typed')`. `mrz` is only for `national_id` |
 | `pinned_by` | bigint FK `users.id` | no | |
@@ -55,8 +56,10 @@ Arabic labels:
 
 Index: `(request_id, pinned_at)`.
 
-The table holds identity numbers. Only the review pages read it, and it never goes into audit or log
-lines (Principle II).
+The table holds identity numbers and is append-only: there is no update or delete path. Only the
+review pages read it. Its values never go into audit or log lines (Principle II). The audit entry
+`request.numbers_pinned` holds `pin_id`, which makes the before and after values recoverable
+(Principle III v1.2.1).
 
 ## image_access_log (changed)
 

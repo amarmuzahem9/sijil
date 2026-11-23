@@ -75,8 +75,9 @@ recorded.
 - The original card reading is already on the request: `card_fields[field].original` for both
   fields, and `national_id_check.mrz` for the national ID. These go to the review page.
   `card_readings` (raw) is still never sent anywhere (Principle II).
-- A new table `request_number_pins` keeps one row per pin: field, the pinned value, source
-  (`reading`, `mrz`, `marketer`, `typed`), who and when. The current value lives in the request
+- A new table `request_number_pins` keeps one append-only row per pin: field, the value before
+  (`previous_value`), the pinned value, source (`reading`, `mrz`, `marketer`, `typed`), who and when.
+  The audit entry points to this row (constitution III v1.2.1). The current value lives in the request
   columns `national_id`, `family_number` and `family_key`.
 - `POST …/pin` takes `{field, source, value?}`:
   - for `reading`, `mrz` and `marketer` the server takes the value itself, so the page cannot send a
@@ -87,8 +88,11 @@ recorded.
   - family number: kept as written, and its `family_key` must not be empty, else 422
     `invalid_family_number`.
 - Pinning is allowed only while the request is `pending_review`. It runs under the request row lock,
-  then the 008 advisory locks on the national ID and family keys (both old and new values, in the
-  same order as submit), so a pin and a submission with the same numbers cannot both pass unseen.
+  then the 008 advisory locks on the national ID and family keys, for both the old and the new
+  values. The order matches submission (`phone → nid → family`). All `match:nid:*` keys come
+  first, de-duplicated and sorted, then all `match:family:*` keys, de-duplicated and sorted. So two
+  pins with swapped values cannot deadlock, and a pin cannot form a cycle with a submission (a pin
+  takes no phone lock). A pin and a submission with the same numbers then cannot both pass unseen.
 
 **Rationale**: the original reading and the marketer's value stay as they were (Principle IV).
 Values the server picks itself cannot be swapped on the way.
@@ -100,8 +104,10 @@ Values the server picks itself cannot be swapped on the way.
 
 ## R5. Re-check and warnings
 
-**Decision**: a pure function `core/review_check.py::review(type, return_refs, matches, edited)`
-returns:
+**Decision**: a pure function
+`core/review_check.py::review(type, return_refs, return_basis, matches, prior_conflict_refs)` returns
+the following. `prior_conflict_refs` are the request's `numbers_conflict` rows that were open before
+the pin, so only a new conflict warns.
 - the reason rows that should be open now: `family_exists` and `numbers_conflict` per record;
 - the type change: `new` becomes `additional` if a family-only match exists (FR-015). Nothing else
   changes the type;
@@ -234,7 +240,10 @@ Web pages:
 |---|---|---|---|
 | `request.approved` | request / number | `{status: "pending_review"}` | `{status: "approved", type, counts_commission, despite_warnings}` |
 | `request.rejected` | request / number | `{status: "pending_review"}` | `{status: "rejected", reason, note}` |
-| `request.numbers_pinned` | request / number | `{type, field_changed: bool}` | `{field, source, type, reasons_added, reasons_not_applicable, numbers_edited_resolved}` |
+| `request.numbers_pinned` | request / number | `{type, field_changed: bool}` | `{pin_id, field, source, type, reasons_added, reasons_not_applicable, numbers_edited_resolved}` |
+
+The values before and after a pin live in `request_number_pins` (`previous_value`, `value`). The
+audit entry reaches them through `pin_id` (constitution III v1.2.1).
 
 The rules:
 - No national ID, family number, phone, names or image file names.

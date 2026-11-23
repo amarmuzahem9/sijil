@@ -1,5 +1,15 @@
 <!--
-Sync Impact Report (2026-11-23, amendment 3)
+Sync Impact Report (2026-11-23, amendment 4)
+- Version change: 1.2.0 → 1.2.1 (PATCH: clarification)
+- Modified principles: III. Permanent Audit Trail — a change to an identity number is audited by
+  reference: the audit entry points to an append-only record holding the value before and after,
+  so identity numbers stay out of the audit text (Principle II) while before/after stays
+  recoverable (docs/system.md §6.4 v1.14, feature 010).
+- Added/removed sections: none
+- Templates: not modified
+- Follow-up TODOs: none
+- Approved by the project owner in the feature 010 analysis review.
+Previous report (2026-11-23, amendment 3)
 - Version change: 1.1.1 → 1.2.0 (MINOR: Principle VII materially expanded)
 - Modified principles: VII. Fixed Technology Stack — the runtime services now include `ocr`, the
   card reader (ID_Iraqi_Project, AGPL-3.0), kept separate from the app's server code, reachable
@@ -94,6 +104,11 @@ company.
 - Every decision and sensitive change MUST be written to the audit log with who, when, what, and
   the value before and after. This covers: approve, reject, linked, undo linked, subscriber data
   edit, price change, export, and password reset.
+- When the changed value is an identity number (national ID, family number), the audit entry
+  MUST NOT carry the value itself. It MUST point to an append-only record that holds the value
+  before and after (for example a pin row), readable only by users entitled to the data. The
+  before/after values are then recoverable from the audit entry through that one link
+  (docs/system.md §6.4, feature 010).
 - Requests and subscribers MUST NOT be physically deleted; they may only be deactivated.
   An unsubmitted draft is not yet a request: its owner MAY delete it (with its images), and the
   deletion MUST be audited without card data (docs/system.md §5, feature 005).
@@ -220,4 +235,4 @@ reliable proof they hold.
   violation MUST be resolved, or explicitly justified and approved, before merge.
 - Runtime guidance for agents lives in `CLAUDE.md`.
 
-**Version**: 1.2.0 | **Ratified**: 2026-11-21 | **Last Amended**: 2026-11-23
+**Version**: 1.2.1 | **Ratified**: 2026-11-21 | **Last Amended**: 2026-11-23
