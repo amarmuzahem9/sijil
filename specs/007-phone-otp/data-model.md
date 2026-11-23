@@ -9,7 +9,7 @@ There is one row per **successful** send. A failed send writes nothing (research
 | Column | Type | Rules |
 |---|---|---|
 | `id` | uuid PK | Made in the app before hashing (it is part of the hashed message, R3) |
-| `request_id` | uuid, null, FK `drafts.id` ON DELETE SET NULL | The draft. Named `request_id` because the draft row becomes the request in 008. Set to null when the draft is deleted, and the row stays so the hourly limit still counts it |
+| `request_id` | uuid, null, FK `drafts.id` ON DELETE SET NULL | The draft. Named `request_id` because the draft was expected to become the request in 008 (008 instead copies the draft into a separate `requests` row and removes the draft, see specs/008 research R1, so after submission this is null) Set to null when the draft is deleted, and the row stays so the hourly limit still counts it |
 | `phone` | text, not null | Normalized `07XXXXXXXXX`, checked with `^07\d{9}$` |
 | `code_hash` | text, not null | HMAC-SHA256 hex (R3). The plain code is never stored |
 | `context_hash` | text, not null | SHA-256 hex of the phone, tower, category and both prices at send time (R4) |

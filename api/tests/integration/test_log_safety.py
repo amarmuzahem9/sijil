@@ -1,5 +1,6 @@
 """Principle II: no password, token or cookie value may reach the logs."""
 
+import json
 import logging
 
 from app.cli import bootstrap
@@ -279,3 +280,43 @@ def test_otp_codes_never_leak(client, db, make_user, caplog, capsys) -> None:
         stored = " ".join(str(v) for v in (row.code_hash, row.context_hash, row.phone))
         assert code not in stored
     fake.outbox.clear()
+
+
+def test_submission_never_logs_card_data(
+    client, db, make_user, caplog, capsys, tmp_path, monkeypatch
+) -> None:
+    """Feature 008 (T045, FR-020): a submission and a refusal log and audit no national ID,
+    family number, full phone, name or OTP code."""
+
+    from sqlalchemy import select
+
+    from app.models import AuditLog
+    from app.services.card_reader_fake_data import FAMILY, FRONT_FIELDS, NID
+    from app.services.otp_sender import get_otp_sender
+    from tests.helpers.submit import complete_draft, make_catalog, marketer_headers, submit
+
+    monkeypatch.setattr(get_settings(), "uploads_dir", str(tmp_path))
+    caplog.set_level(logging.DEBUG)
+    sender = get_otp_sender()
+    sender.outbox.clear()
+    catalog = make_catalog(client, auth_header(login(client, make_user("super_admin").phone)))
+    phone = "07801239876"
+
+    h = marketer_headers(client, make_user("marketer"))
+    assert submit(client, h, complete_draft(client, h, catalog, phone=phone)).status_code == 201
+    other = marketer_headers(client, make_user("marketer"))
+    # The same phone in a second draft: «تحقّق» is refused, then a submission is refused too.
+    refused = complete_draft(client, other, catalog, phone=phone, verified=False)
+    client.post(f"/api/drafts/{refused}/otp/send", headers=other)
+    codes = [code for _, code in sender.outbox]
+
+    raw = "\n".join(r.getMessage() for r in caplog.records)
+    printed = capsys.readouterr()
+    everything = raw + _formatted(list(caplog.records)) + printed.out + printed.err
+    audits = db.scalars(select(AuditLog).where(AuditLog.action.like("request.%"))).all()
+    blob = json.dumps([[a.before, a.after] for a in audits], ensure_ascii=False)
+    assert "submit draft=" in everything and "result=approved" in everything
+    secrets = [NID, FAMILY, phone, *codes, FRONT_FIELDS["name"], FRONT_FIELDS["last"]]
+    for secret in secrets:
+        assert secret not in everything, secret
+        assert secret not in blob, secret

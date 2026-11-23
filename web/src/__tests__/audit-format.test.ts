@@ -126,3 +126,27 @@ describe('draft deletion (specs/005 T044)', () => {
     );
   });
 });
+
+describe('submission (specs/008 T046)', () => {
+  it('labels the two actions in Arabic', () => {
+    expect(
+      actionLabel(
+        entry({
+          action: 'request.submitted',
+          entity_type: 'request',
+          entity_id: '1001',
+          after: { number: 1001, type: 'new', status: 'approved', reasons: [] },
+        }),
+      ),
+    ).toBe('إرسال طلب');
+    expect(
+      actionLabel(
+        entry({
+          action: 'request.submit_refused',
+          entity_type: 'draft',
+          after: { reason: 'phone_used' },
+        }),
+      ),
+    ).toBe('رفض إرسال طلب');
+  });
+});

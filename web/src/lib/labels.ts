@@ -52,6 +52,9 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'app_setting.updated': 'تعديل الإعدادات العامة',
   // specs/005: an unsubmitted draft deleted by its owner (no card data in the entry)
   'draft.deleted': 'حذف مسودة',
+  // specs/008: a submission and its automatic decision, and a refused submission (no card data)
+  'request.submitted': 'إرسال طلب',
+  'request.submit_refused': 'رفض إرسال طلب',
 };
 
 export const AUDIT_FIELD_LABELS: Record<string, string> = {

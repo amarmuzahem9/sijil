@@ -71,3 +71,37 @@ def test_every_action_once_and_no_secrets(client, db, make_user) -> None:
         assert secret not in blob
     for key in ("password_hash", "token", "temporary_password"):
         assert f'"{key}"' not in blob
+
+
+def test_submission_actions_are_audited_once_without_card_data(
+    client, db, make_user, tmp_path, monkeypatch
+) -> None:
+    """Feature 008 (T046): one `request.submitted` per request, one `request.submit_refused` per
+    refused attempt, by the marketer, with no card data."""
+    from app.config import get_settings
+    from app.services.card_reader_fake_data import FAMILY, NID
+    from tests.helpers.requests import request_factory
+    from tests.helpers.submit import complete_draft, make_catalog, marketer_headers, submit
+
+    monkeypatch.setattr(get_settings(), "uploads_dir", str(tmp_path))
+    catalog = make_catalog(client, auth_header(login(client, make_user("super_admin").phone)))
+    marketer = make_user("marketer")
+    h = marketer_headers(client, marketer)
+
+    ok = submit(client, h, complete_draft(client, h, catalog)).json()
+    refused_id = complete_draft(client, h, catalog, phone="07801234599", read_card=False)
+    request_factory(db, make_user("marketer"), phone="07801234599")
+    db.commit()
+    assert submit(client, h, refused_id).json()["code"] == "phone_used"
+
+    entries = list(
+        db.scalars(select(AuditLog).where(AuditLog.action.like("request.%")).order_by(AuditLog.id))
+    )
+    assert [(e.action, e.entity_type, e.entity_id) for e in entries] == [
+        ("request.submitted", "request", str(ok["number"])),
+        ("request.submit_refused", "draft", refused_id),
+    ]
+    assert all(e.actor_id == marketer.id for e in entries)
+    blob = json.dumps([[e.before, e.after] for e in entries], ensure_ascii=False)
+    for secret in (NID, FAMILY, "07801234567", "07801234599", ok["full_name"]):
+        assert secret not in blob

@@ -366,23 +366,24 @@ and confirm it fails.
 
 ## Phase 9: Polish & Cross-Cutting Concerns
 
-- [ ] T045 [P] Extend `api/tests/integration/test_log_safety.py` with a submission and a refusal. No
+- [x] T045 [P] Extend `api/tests/integration/test_log_safety.py` with a submission and a refusal. No
   national ID, family number, full phone, name or OTP code may appear in the captured logs or in
   `audit_log.after`.
-- [ ] T046 [P] Extend `api/tests/integration/test_audit_completeness.py` with
+- [x] T046 [P] Extend `api/tests/integration/test_audit_completeness.py` with
   `request.submitted` and `request.submit_refused`. Add their Arabic labels to `web/src/lib/labels.ts`
   (for example «إرسال طلب» and «رفض إرسال طلب»).
-- [ ] T047 [P] Create `e2e/tests/submit.spec.ts`:
+- [x] T047 [P] Create `e2e/tests/submit.spec.ts`:
   - fill a draft with the fake reader, verify with `246810`, submit, and see «تمت الموافقة», the
     number and the username;
   - a second draft with the same phone → «تحقّق» shows the used-phone message.
-- [ ] T048 [P] Update `web/src/lib/requestStatus.ts` and `Requests.tsx` comments that still say «no
+- [x] T048 [P] Update `web/src/lib/requestStatus.ts` and `Requests.tsx` comments that still say «no
   request exists before 008», and update the `phone_checks.py` docstring.
-- [ ] T049 Run the full suite in the containers (`pytest`, `npm test`, `npx playwright test`) and fix
-  any failure. Then run `docker compose up` and walk through quickstart scenarios 1–11.
-- [ ] T050 Write `specs/008-submission-decision/manual-test-ar.md`: the Arabic manual-test steps for
+- [x] T049 Run the full suite in the containers (`pytest`, `npm test`, `npx playwright test`) and fix
+  any failure. Then run `docker compose up` and walk through quickstart scenarios 1–11. (The
+  owner walked the scenarios by hand after batches 2 and 3; the e2e test covers 1–2.)
+- [x] T050 Write `specs/008-submission-decision/manual-test-ar.md`: the Arabic manual-test steps for
   the owner, covering quickstart 1–11 and the note that a failed card reading sends requests to review.
-- [ ] T051 Mark the tasks done in this file, and add a short «008» note to the 007 data-model remark
+- [x] T051 Mark the tasks done in this file, and add a short «008» note to the 007 data-model remark
   that said the draft row becomes the request. That remark should now point to 008 research R1.
 
 ---

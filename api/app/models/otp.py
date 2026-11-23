@@ -26,8 +26,8 @@ class OtpChallenge(Base):
 
     # Made by the app before hashing: the id is part of the hashed message (research R3).
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    # The draft (it becomes the request in 008). Null once the draft is deleted; the row stays
-    # so the hourly limit still counts it.
+    # The draft. Null once the draft is deleted or submitted (008 copies it into `requests` and
+    # removes it, specs/008 research R1); the row stays so the hourly limit still counts it.
     request_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("drafts.id", ondelete="SET NULL")
     )
