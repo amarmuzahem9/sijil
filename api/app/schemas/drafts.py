@@ -137,6 +137,22 @@ class CardReadingStatusOut(CardReadingOut):
     same_client: bool
 
 
+class OtpStatusOut(BaseModel):
+    """Phone verification state for the page (specs/007 data-model.md › DraftOut.otp). Never
+    carries a code."""
+
+    status: Literal["none", "sent", "verified", "needs_reverify"] = "none"
+    phone: str | None = None
+    resend_at: datetime | None = None
+    expires_at: datetime | None = None
+    attempts_left: int | None = None
+    verified_at: datetime | None = None
+
+
+class OtpVerifyIn(_Body):
+    code: str = Field(max_length=32)
+
+
 class DraftOut(BaseModel):
     id: uuid.UUID
     status: str
@@ -180,6 +196,7 @@ class DraftOut(BaseModel):
     card_reading: CardReadingOut = Field(default_factory=CardReadingOut)
     missing: list[MissingOut]
     notices: list[NoticeOut] = Field(default_factory=list)
+    otp: OtpStatusOut = Field(default_factory=OtpStatusOut)
 
 
 class DraftListItem(BaseModel):

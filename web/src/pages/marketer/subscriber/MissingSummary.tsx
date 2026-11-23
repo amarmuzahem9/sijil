@@ -1,7 +1,7 @@
 /**
  * «النواقص» (specs/005 US5, FR-013, FR-014): every missing or invalid item, each a link to its
- * field, and the «إرسال» button, disabled in this feature (it waits for OTP and the decision
- * engine, features 007 and 008).
+ * field, and the «إرسال» button, disabled until the decision engine (feature 008). An unverified
+ * phone (feature 007) is listed as «التحقق من الهاتف».
  */
 import CheckCircleOutlined from '@mui/icons-material/CheckCircleOutlined';
 import Alert from '@mui/material/Alert';
@@ -60,16 +60,25 @@ function goTo(field: MissingField) {
   focusable?.focus({ preventScroll: true });
 }
 
-export function MissingSummary({ missing }: { missing: MissingItem[] }) {
+const PHONE_VERIFICATION_LABEL = 'التحقق من الهاتف';
+
+export function MissingSummary({
+  missing,
+  phoneVerified,
+}: {
+  missing: MissingItem[];
+  phoneVerified: boolean;
+}) {
+  const count = missing.length + (phoneVerified ? 0 : 1);
   return (
     <Stack spacing={1.5} data-testid="missing-summary">
-      {missing.length === 0 ? (
+      {count === 0 ? (
         <Alert severity="success" icon={<CheckCircleOutlined />}>
           كل الحقول مكتملة
         </Alert>
       ) : (
         <Alert severity="warning">
-          <AlertTitle>النواقص ({missing.length})</AlertTitle>
+          <AlertTitle>النواقص ({count})</AlertTitle>
           <Stack component="ul" spacing={0.5} sx={{ m: 0, ps: 2.5 }}>
             {missing.map((item) => (
               <li key={item.field} data-testid={`missing-${item.field}`}>
@@ -79,6 +88,13 @@ export function MissingSummary({ missing }: { missing: MissingItem[] }) {
                 {item.code !== 'required' && ` — ${CODE_MESSAGES[item.code]}`}
               </li>
             ))}
+            {!phoneVerified && (
+              <li data-testid="missing-phone_verification">
+                <Link component="button" type="button" onClick={() => goTo('phone')}>
+                  {PHONE_VERIFICATION_LABEL}
+                </Link>
+              </li>
+            )}
           </Stack>
         </Alert>
       )}

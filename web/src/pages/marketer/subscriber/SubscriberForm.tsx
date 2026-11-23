@@ -214,7 +214,10 @@ function DraftEditor({
         <PhoneSection autosave={autosave} onCommit={onCommit} error={errorFor('phone_input')} />
       </FormSection>
 
-      <MissingSummary missing={missing} />
+      <MissingSummary
+        missing={missing}
+        phoneVerified={autosave.serverDraft?.otp?.status === 'verified'}
+      />
 
       <SignInDialog
         open={showSignIn}

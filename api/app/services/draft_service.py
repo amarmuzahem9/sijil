@@ -43,7 +43,13 @@ from app.schemas.drafts import (
     MissingOut,
     NoticeOut,
 )
-from app.services import audit_service, card_reading_service, draft_validation, image_store
+from app.services import (
+    audit_service,
+    card_reading_service,
+    draft_validation,
+    image_store,
+    otp_service,
+)
 
 log = logging.getLogger("sijil.drafts")
 
@@ -238,6 +244,7 @@ def to_out(draft: Draft, notices: list[NoticeOut] | None = None) -> DraftOut:
             for item in draft_validation.missing(draft, image_sides(draft.images))
         ],
         notices=notices or [],
+        otp=otp_service.status(draft),
     )
 
 
@@ -314,6 +321,8 @@ def patch(
         apply_changes(draft, changes)
         apply_subscription(db, draft, changes)
         notices = refresh_copies(db, draft)
+        # A change of phone, tower, category or prices cancels the OTP verification (specs/007 R5).
+        otp_service.clear_if_changed(draft)
     _touch(draft, client_id)
     try:
         db.flush()  # UPDATE ... WHERE id = :id AND version = :version (version_id_col)

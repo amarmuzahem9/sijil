@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from app.api.deps import AuthContext, current_user
 from app.config import get_settings
+from app.services.otp_sender import otp_configured
 
 router = APIRouter(tags=["client-config"])
 
@@ -46,13 +47,17 @@ def open_source_items() -> list[OpenSourceItem]:
 class ClientConfig(BaseModel):
     maps: MapsConfig | None
     open_source: list[OpenSourceItem] = []
+    # False when no OTPIQ key is configured: «تحقّق» shows «خدمة التحقق غير مهيّأة» (specs/007).
+    otp_enabled: bool = True
 
 
 @router.get("/client-config", response_model=ClientConfig)
 def get_client_config(_: AuthContext = Depends(current_user)) -> ClientConfig:
     settings = get_settings()
     if not settings.google_maps_api_key:
-        return ClientConfig(maps=None, open_source=open_source_items())
+        return ClientConfig(
+            maps=None, open_source=open_source_items(), otp_enabled=otp_configured()
+        )
     lat, lng = settings.map_center
     return ClientConfig(
         maps=MapsConfig(
@@ -61,4 +66,5 @@ def get_client_config(_: AuthContext = Depends(current_user)) -> ClientConfig:
             default_center=LatLng(lat=lat, lng=lng),
         ),
         open_source=open_source_items(),
+        otp_enabled=otp_configured(),
     )

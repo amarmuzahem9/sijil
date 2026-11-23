@@ -20,6 +20,8 @@ export interface ClientConfig {
   /** null when no Maps key is configured: the form works without the map. */
   maps: MapsConfig | null;
   open_source?: OpenSourceItem[];
+  /** false when no OTPIQ key is configured (specs/007): «خدمة التحقق غير مهيّأة». */
+  otp_enabled?: boolean;
 }
 
 export const fetchClientConfig = () => apiFetch<ClientConfig>('/api/client-config');

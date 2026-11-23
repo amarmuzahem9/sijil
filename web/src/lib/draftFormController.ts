@@ -6,7 +6,7 @@
  *
  * Values are kept in memory only; nothing is written to device storage (Principle II).
  */
-import { ApiError } from './api';
+import { ApiError, NETWORK_ERROR_MESSAGE } from './api';
 import { AutosaveQueue, type SaveState } from './autosaveQueue';
 import { fieldsToMerge, READING_POLL_MS, shouldPoll } from './cardReading';
 import {
@@ -229,6 +229,21 @@ export class DraftFormController {
       field,
       setTimeout(() => this.flushField(field), TEXT_DEBOUNCE_MS),
     );
+  }
+
+  /**
+   * Save every typed field now and wait for the queue (before «تحقّق»: the server sends to the
+   * phone stored on the draft, specs/007 contracts/api.md). Resolves to the draft id; rejects when
+   * the save did not go through (offline, conflict, invalid phone still typed).
+   */
+  async saveAll(): Promise<string> {
+    for (const field of [...this.timers.keys()]) this.flushField(field);
+    const id = await this.queue.ensureCreated();
+    await this.queue.flush();
+    const blocked = ['offline', 'failed', 'conflict', 'deleted', 'session_ended'];
+    if (this.queue.hasPending || blocked.includes(this.queue.state))
+      throw this.queue.lastError ?? new ApiError('network_error', NETWORK_ERROR_MESSAGE, 0);
+    return id;
   }
 
   /** Field left (blur): save now if a change is waiting. */

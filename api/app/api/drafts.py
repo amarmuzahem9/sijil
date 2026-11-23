@@ -32,10 +32,11 @@ from app.schemas.drafts import (
     CreateBody,
     DraftList,
     DraftOut,
+    OtpVerifyIn,
     PatchBody,
     VersionOut,
 )
-from app.services import card_reading_service, draft_service
+from app.services import card_reading_service, draft_service, otp_service
 
 router = APIRouter(tags=["drafts"])
 
@@ -121,6 +122,33 @@ def patch_draft(
 ) -> DraftOut:
     draft, notices = draft_service.patch(db, ctx.user, cid, draft_id, body.version, body.changes)
     return draft_service.to_out(draft, notices)
+
+
+# --- phone OTP (specs/007 contracts/api.md) ---------------------------------------------------
+
+
+@router.post("/drafts/{draft_id}/otp/send", response_model=DraftOut)
+def send_otp(
+    draft_id: uuid.UUID,
+    ctx: AuthContext = Depends(marketer_only),
+    _cid: uuid.UUID = Depends(client_id),
+    db: Session = Depends(get_db),
+) -> DraftOut:
+    """«تحقّق»: send a code to the phone stored on the draft. The response never holds it."""
+    draft = otp_service.send(db, ctx.user, draft_id)
+    return draft_service.to_out(draft)
+
+
+@router.post("/drafts/{draft_id}/otp/verify", response_model=DraftOut)
+def verify_otp(
+    draft_id: uuid.UUID,
+    body: OtpVerifyIn,
+    ctx: AuthContext = Depends(marketer_only),
+    cid: uuid.UUID = Depends(client_id),
+    db: Session = Depends(get_db),
+) -> DraftOut:
+    draft = otp_service.verify(db, ctx.user, cid, draft_id, body.code)
+    return draft_service.to_out(draft)
 
 
 # --- list and delete (US4) -------------------------------------------------------------------

@@ -134,7 +134,7 @@ and get `otp.status = "verified"`. Manually: the same with the dev key and the o
 
 ### Tests for User Story 1
 
-- [ ] T013 [P] [US1] Write the send and verify flow tests in `api/tests/integration/test_otp.py`:
+- [x] T013 [P] [US1] Write the send and verify flow tests in `api/tests/integration/test_otp.py`:
   - **Send**:
     - A send creates one challenge, and `outbox` holds the normalized phone and a 6-digit code.
     - The response `otp` is `sent` with `phone`, `resend_at`, `expires_at` and
@@ -151,7 +151,7 @@ and get `otp.status = "verified"`. Manually: the same with the dev key and the o
   - **Access and hook**:
     - Another marketer's draft gives 404 on both routes.
     - The pre-send hook is called, and an `AppError` it returns stops the send (monkeypatch it).
-- [ ] T014 [P] [US1] Write the component tests in `web/src/__tests__/otpControl.test.tsx`:
+- [x] T014 [P] [US1] Write the component tests in `web/src/__tests__/otpControl.test.tsx`:
   - The button is disabled for an empty phone.
   - The states show «تم التحقق» with ✓, the code box with `inputMode="numeric"` and
     `autocomplete="one-time-code"`, and «يحتاج تحقق جديد».
@@ -161,7 +161,7 @@ and get `otp.status = "verified"`. Manually: the same with the dev key and the o
 
 ### Implementation for User Story 1
 
-- [ ] T015 [US1] Write `api/app/services/otp_service.py`:
+- [x] T015 [US1] Write `api/app/services/otp_service.py`:
   - `context_hash(draft)`, a wrapper over `core.otp.context_hash`.
   - `status(db, draft) -> OtpStatusOut`, deriving the status as in data-model.md › "Derived
     state" and › `DraftOut.otp`.
@@ -179,23 +179,23 @@ and get `otp.status = "verified"`. Manually: the same with the dev key and the o
     - check active and context;
     - compare the hash;
     - on success set `verified_at` and the two draft columns.
-- [ ] T016 [US1] Add `OtpStatusOut` and `OtpVerifyIn` to `api/app/schemas/drafts.py`, and add
+- [x] T016 [US1] Add `OtpStatusOut` and `OtpVerifyIn` to `api/app/schemas/drafts.py`, and add
   `otp: OtpStatusOut` to `DraftOut` (contracts/api.md). `draft_service.to_out` fills it through
   `otp_service.status` in `api/app/services/draft_service.py`.
-- [ ] T017 [US1] Add `POST /drafts/{draft_id}/otp/send` and `POST /drafts/{draft_id}/otp/verify` to
+- [x] T017 [US1] Add `POST /drafts/{draft_id}/otp/send` and `POST /drafts/{draft_id}/otp/verify` to
   `api/app/api/drafts.py`:
   - Both use the existing owner and client-id dependencies and return `DraftOut`.
   - Map `OtpSendError` reasons to the contracts/api.md codes.
-- [ ] T018 [US1] Add `otp_enabled` to `GET /api/client-config` in `api/app/api/client_config.py`.
+- [x] T018 [US1] Add `otp_enabled` to `GET /api/client-config` in `api/app/api/client_config.py`.
   It is false when the mode is `otpiq` and the key is empty. Extend
   `api/tests/integration/test_client_config.py`.
-- [ ] T019 [P] [US1] Write `web/src/lib/otp.ts`:
+- [x] T019 [P] [US1] Write `web/src/lib/otp.ts`:
   - `sendOtp(draftId)` and `verifyOtp(draftId, code)` over the existing API client.
   - The `OtpStatus` type.
   - Error code → Arabic text, using the server's `message` when present.
   - `normalizeCodeEntry` (Arabic-Indic digits, spaces).
   - Add `otp` to the draft type in `web/src/lib/drafts.ts`.
-- [ ] T020 [US1] Write `web/src/pages/marketer/subscriber/OtpControl.tsx`:
+- [x] T020 [US1] Write `web/src/pages/marketer/subscriber/OtpControl.tsx`:
   - The «تحقّق» button, the code box (6 digits, numeric keypad, one-time-code, paste), the «تأكيد»
     button, the countdown and the status chip.
   - Before `sendOtp` it awaits the autosave flush, so the server has the typed phone (contracts
@@ -204,7 +204,7 @@ and get `otp.status = "verified"`. Manually: the same with the dev key and the o
     conflict.
   - After a send it shows «أُرسل رمز التحقق عبر الواتساب إلى 07XXXXXXXXX» (spec US1).
   - It shows «خدمة التحقق غير مهيّأة» when `otp_enabled` is false.
-- [ ] T021 [US1] Mount `OtpControl` next to the phone field in
+- [x] T021 [US1] Mount `OtpControl` next to the phone field in
   `web/src/pages/marketer/subscriber/PhoneSection.tsx`, and pass the draft, the `otp` status and
   the flush function from `SubscriberForm.tsx`. Update the header comment.
 
@@ -223,7 +223,7 @@ null.
 
 ### Tests for User Story 2
 
-- [ ] T022 [P] [US2] Write the context-change tests in `api/tests/integration/test_otp.py`
+- [x] T022 [P] [US2] Write the context-change tests in `api/tests/integration/test_otp.py`
   (owner's test "cancellation on context change", research R5):
   - **Each field cancels**: after verification, each of these alone gives `needs_reverify` and
     clears `drafts.otp_verified_at` and `drafts.otp_context_hash`:
@@ -236,26 +236,26 @@ null.
   - **Revert stays cancelled**: putting the old category back keeps `needs_reverify`.
   - **Pending code**: changing the phone while a code is pending gives `otp_no_active` on verify.
     The status leaves `sent`.
-- [ ] T023 [P] [US2] Add Vitest cases in `web/src/__tests__/otpControl.test.tsx`: the
+- [x] T023 [P] [US2] Add Vitest cases in `web/src/__tests__/otpControl.test.tsx`: the
   `needs_reverify` status shows «يحتاج تحقق جديد» and enables «تحقّق». A pending code box closes when
   the status becomes `none`.
 
 ### Implementation for User Story 2
 
-- [ ] T024 [US2] In `draft_service.patch` (`api/app/services/draft_service.py`), after
+- [x] T024 [US2] In `draft_service.patch` (`api/app/services/draft_service.py`), after
   `refresh_copies`, clear `otp_verified_at` and `otp_context_hash` when the context changed. Use
   `otp_service.context_hash`. Do the same in any other save path that changes these fields (PUT).
-- [ ] T025 [US2] Make `otp_service.status` compare a `sent` challenge's `context_hash` with the
+- [x] T025 [US2] Make `otp_service.status` compare a `sent` challenge's `context_hash` with the
   draft's current values. If they differ, the code is treated as cancelled, and `verify` returns
   `otp_no_active` (data-model.md › Derived state).
-- [ ] T026 [US2] Write the Playwright scenario in `e2e/tests/otp.spec.ts`. With the fake sender and
+- [x] T026 [US2] Write the Playwright scenario in `e2e/tests/otp.spec.ts`. With the fake sender and
   `OTP_FAKE_CODE`:
   - fill the subscription and the phone, tap «تحقّق», type 246810, and see «تم التحقق»;
   - change the category and see «يحتاج تحقق جديد»;
   - verify again and see ✓.
 
   Run it on desktop and on the phone projects.
-- [ ] T027 [US2] Show «يحتاج تحقق جديد» in `OtpControl.tsx`, and make `MissingSummary.tsx` treat unverified as missing
+- [x] T027 [US2] Show «يحتاج تحقق جديد» in `OtpControl.tsx`, and make `MissingSummary.tsx` treat unverified as missing
   «التحقق من الهاتف» (text only; the submit button stays disabled until 008).
 
 **Checkpoint (end of batch 2)**: the acceptance criterion holds: a real code reaches the test
@@ -264,6 +264,10 @@ phone, verification succeeds, and changing the category cancels it.
 ---
 
 ## Phase 5: User Story 3 - Resend, wrong attempts, expiry and hourly limit (Priority: P2)
+
+> **Note (batch 2)**: the limit and attempt code of T029/T030 already went in with T015, so a
+> real send on `https://localhost` could not bypass them. Batch 3 adds their tests (T028) and the
+> UI messages (T031).
 
 **Goal**: The §8.3 limits, enforced on the server, with clear messages.
 
@@ -335,7 +339,7 @@ phone, verification succeeds, and changing the category cancels it.
 - [ ] T036 [P] Add the OTP keys to the redaction check, if `logging_config.redact` misses
   `verificationCode` or `Bearer sk_`. Change only what the T035 test shows is missing, in
   `api/app/logging_config.py`.
-- [ ] T037 [P] Write `specs/007-phone-otp/manual-test-ar.md`, the Arabic manual test steps for
+- [x] T037 [P] Write `specs/007-phone-otp/manual-test-ar.md`, the Arabic manual test steps for
   `https://localhost` with the dev key: send, receive, verify, change the category, the leak
   check, the 25 IQD log line.
 - [ ] T038 Run the whole api suite, `npm test` and the Playwright suite. Run `docker compose up` and

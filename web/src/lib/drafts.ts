@@ -99,6 +99,20 @@ export interface NationalIdCheck {
   confirmed: boolean;
 }
 
+/** Phone verification state (specs/007 data-model.md › DraftOut.otp). Never holds a code. */
+export type OtpStatusName = 'none' | 'sent' | 'verified' | 'needs_reverify';
+
+export interface OtpStatus {
+  status: OtpStatusName;
+  /** The number the pending code was sent to. */
+  phone: string | null;
+  /** When «إعادة الإرسال» becomes available (server time, ISO). */
+  resend_at: string | null;
+  expires_at: string | null;
+  attempts_left: number | null;
+  verified_at: string | null;
+}
+
 export interface Draft extends NullableNames {
   id: string;
   status: 'draft';
@@ -136,6 +150,8 @@ export interface Draft extends NullableNames {
   card_reading: CardReading;
   missing: MissingItem[];
   notices: DraftNotice[];
+  /** Feature 007. Older responses (and test fixtures) may omit it. */
+  otp?: OtpStatus;
 }
 
 /** Partial update: an omitted key is unchanged, `null` clears. Prices and `full_name` are
@@ -221,6 +237,17 @@ export const patchDraft = (id: string, version: number, changes: DraftChanges) =
   apiFetch<Draft>(path(id), {
     method: 'PATCH',
     body: { version, changes },
+    headers: draftHeaders(),
+  });
+
+/** «تحقّق» (specs/007 contracts/api.md): send a code to the phone stored on the draft. */
+export const sendOtp = (id: string) =>
+  apiFetch<Draft>(`${path(id)}/otp/send`, { method: 'POST', headers: draftHeaders() });
+
+export const verifyOtp = (id: string, code: string) =>
+  apiFetch<Draft>(`${path(id)}/otp/verify`, {
+    method: 'POST',
+    body: { code },
     headers: draftHeaders(),
   });
 

@@ -254,8 +254,9 @@ test('E, F: field checks, «النواقص» and the disabled «إرسال»', a
   await page.goto('/drafts/new');
 
   const summary = page.getByTestId('missing-summary');
-  // 18 items of 005 + the five required back-of-card fields (006, system.md v1.8).
-  await expect(summary).toContainText('النواقص (23)');
+  // 18 items of 005 + the five required back-of-card fields (006, system.md v1.8) + the phone
+  // verification (007).
+  await expect(summary).toContainText('النواقص (24)');
   await expect(page.getByTestId('missing-expiry_date')).toContainText('تاريخ النفاذ');
 
   // Names: a digit is refused at once and never saved; each missing name is listed by name.
@@ -284,7 +285,8 @@ test('E, F: field checks, «النواقص» and the disabled «إرسال»', a
 
   const send = page.getByRole('button', { name: 'إرسال', exact: true });
   await expect(send).toBeDisabled();
-  await expect(page.getByText('الإرسال يتفعّل بعد إضافة التحقق من الهاتف')).toBeVisible();
+  await expect(page.getByText('الإرسال يتفعّل بعد إضافة فحص الطلب')).toBeVisible();
+  await expect(page.getByTestId('missing-phone_verification')).toBeVisible();
 });
 
 test('H, I: deleting a draft, and another marketer cannot open it', async ({

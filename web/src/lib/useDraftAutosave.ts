@@ -59,6 +59,8 @@ export interface DraftAutosave {
   /** Catalog notices (choice unavailable / price changed) since the draft was opened. */
   notices: DraftNotice[];
   dismissNotice: (field: DraftNotice['field']) => void;
+  /** Save everything typed and wait; resolves to the draft id (specs/007, before «تحقّق»). */
+  saveAll: () => Promise<string>;
   /** «أعد المحاولة» after a failed card reading (specs/006 US5). */
   retryReading: () => Promise<void>;
   queue: AutosaveQueue;
@@ -121,6 +123,7 @@ export function useDraftAutosave(
     ensureCreated: () => ctl.queue.ensureCreated(),
     notices,
     dismissNotice: (field) => setNotices((list) => list.filter((n) => n.field !== field)),
+    saveAll: () => ctl.saveAll(),
     retryReading: () => (draftId ? ctl.retryReading(draftId) : Promise.resolve()),
     queue: ctl.queue,
   };

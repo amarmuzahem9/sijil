@@ -19,6 +19,20 @@ def h(client, make_user):
 # --- /api/client-config ----------------------------------------------------------------------
 
 
+@pytest.mark.parametrize(
+    "mode,key,enabled",
+    [("fake", "", True), ("otpiq", "sk_dev_marker", True), ("otpiq", "", False)],
+)
+def test_otp_enabled_follows_the_sender_config(client, h, monkeypatch, mode, key, enabled) -> None:
+    """specs/007 contracts/api.md: no OTPIQ key → «خدمة التحقق غير مهيّأة»; the key never leaks."""
+    settings = get_settings()
+    monkeypatch.setattr(settings, "otp_mode", mode)
+    monkeypatch.setattr(settings, "otpiq_api_key", key)
+    res = client.get("/api/client-config", headers=h)
+    assert res.json()["otp_enabled"] is enabled
+    assert "sk_dev" not in res.text
+
+
 def test_no_key_means_no_map(client, h, monkeypatch) -> None:
     monkeypatch.setattr(get_settings(), "google_maps_api_key", "")
     res = client.get("/api/client-config", headers=h)
