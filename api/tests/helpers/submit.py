@@ -75,12 +75,13 @@ def complete_draft(
     read_card: bool = True,
     changes: dict | None = None,
     verified: bool = True,
+    back: str = "clear_back",
 ) -> str:
     """A draft with nothing missing. `read_card=False` types every card field by hand."""
     draft_id = str(uuid.uuid4())
     res = client.put(f"/api/drafts/{draft_id}", json={"changes": {}}, headers=headers)
     assert res.status_code == 201, res.json()
-    for side, scenario in (("front", "clear_front"), ("back", "clear_back")):
+    for side, scenario in (("front", "clear_front"), ("back", back)):
         # Without a reading the images are still required; a no-card photo reads nothing.
         name = scenario if read_card else "no_card"
         res = client.post(

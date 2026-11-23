@@ -30,6 +30,7 @@ import type { DraftAutosave, TextField } from '../../../lib/useDraftAutosave';
 import { DraftTextField } from './DraftTextField';
 import { DateTextField } from './DateTextField';
 import { FieldSourceMark, MarkedLabel, notchText } from './FieldSourceMark';
+import { FamilyMatchNotice, NationalIdExistsNotice } from './FamilyMatchNotice';
 import { NationalIdCheck } from './NationalIdCheck';
 
 export const FOURTH_NAME_HINT = 'غير موجود على البطاقة، اسأل المشترك';
@@ -180,6 +181,7 @@ export function CardDataSection({
         inputMode="numeric"
         labelMark={mark('national_id')}
       />
+      <NationalIdExistsNotice checks={serverDraft?.checks} />
       <NationalIdCheck
         check={serverDraft?.national_id_check}
         current={values.national_id}
@@ -200,6 +202,11 @@ export function CardDataSection({
         helperText="كما هو مكتوب على البطاقة"
         ltr
         labelMark={mark('family_number')}
+      />
+      <FamilyMatchNotice
+        checks={serverDraft?.checks}
+        onConfirm={() => saveNow({ additional_confirmed: true })}
+        onWithdraw={() => saveNow({ additional_confirmed: false })}
       />
 
       {/* Back of the card (specs/006 owner change, system.md v1.8): all required. */}

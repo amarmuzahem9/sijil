@@ -89,4 +89,38 @@ describe('MissingSummary «إرسال»', () => {
     );
     expect(sendButton().disabled).toBe(true);
   });
+  it('lists the server items in page order, between the form fields (T044)', () => {
+    // The server sorts: national ID items after the national ID, family after the family number,
+    // phone after the phone (specs/008 research R5).
+    const missing = [
+      { field: 'national_id_exists', code: 'national_id_exists' },
+      { field: 'family_exists_unconfirmed', code: 'family_exists_unconfirmed' },
+      { field: 'landmark', code: 'required' },
+      { field: 'phone_used', code: 'phone_used' },
+    ] as unknown as MissingItem[];
+    render(<MissingSummary missing={missing} phoneVerified onSubmit={vi.fn()} />);
+    const order = screen.getAllByRole('listitem').map((li) => li.getAttribute('data-testid'));
+    expect(order).toEqual([
+      'missing-national_id_exists',
+      'missing-family_exists_unconfirmed',
+      'missing-landmark',
+      'missing-phone_used',
+    ]);
+  });
+
+  it('links each server item to its field', () => {
+    const field = document.createElement('input');
+    field.id = 'field-family_number';
+    field.scrollIntoView = vi.fn();
+    document.body.appendChild(field);
+    const missing = [
+      { field: 'family_exists_unconfirmed', code: 'family_exists_unconfirmed' },
+    ] as unknown as MissingItem[];
+    render(<MissingSummary missing={missing} phoneVerified onSubmit={vi.fn()} />);
+    fireEvent.click(
+      screen.getByTestId('missing-family_exists_unconfirmed').querySelector('button')!,
+    );
+    expect(document.activeElement).toBe(field);
+    field.remove();
+  });
 });

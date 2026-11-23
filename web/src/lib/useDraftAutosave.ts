@@ -18,6 +18,7 @@ import {
   DraftFormController,
   valuesFromDraft,
   type FormValues,
+  type SaveNowChanges,
   type TextField,
 } from './draftFormController';
 import type { Draft, DraftNotice } from './drafts';
@@ -42,7 +43,7 @@ export interface DraftAutosave {
   /** Save a debounced text field now (blur). */
   commitField: (field: TextField) => void;
   /** Update and save immediately (selects, the pin, buttons). */
-  saveNow: (changes: Partial<FormValues> & { national_id_confirmed?: boolean }) => void;
+  saveNow: (changes: SaveNowChanges) => void;
   retry: () => void;
   /** Called after an image upload on this page: newer version + new server draft. */
   applyServerDraft: (draft: Draft) => void;

@@ -8,10 +8,19 @@ from datetime import date
 from pathlib import Path
 
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
 from app.config import get_settings
-from app.models import AuditLog, CardReading, Draft, DraftImage, Plan, Request, RequestImage
+from app.models import (
+    AuditLog,
+    CardReading,
+    Draft,
+    DraftImage,
+    Plan,
+    Request,
+    RequestImage,
+    RequestReason,
+)
 from app.services.card_reader_fake_data import FAMILY, NID
 from app.services.otp_sender import get_otp_sender
 from tests.conftest import auth_header, login
@@ -25,6 +34,7 @@ from tests.helpers.submit import (
     marketer_headers,
     patch,
     submit,
+    verify,
 )
 
 
@@ -338,3 +348,148 @@ def test_plan_row_is_untouched_by_submission(client, db, h, catalog) -> None:
     plan = db.get(Plan, catalog["plus"]["id"])
     assert (plan.trial_price, plan.second_price) == (20000, 35000)
     assert _count(db, RequestImage) == 2
+
+
+# --- US3: the same person (T033, §6.1 row 2) ---------------------------------------------------
+
+
+def test_known_national_id_is_a_missing_item_and_refuses(client, db, h, marketer, catalog):
+    request_factory(db, marketer, national_id=NID, national_id_input="١٩٩٩١٢٣٤٥٦٧٨")
+    db.commit()  # another marketer's submission, already committed
+    draft_id = complete_draft(client, h, catalog, verified=False)
+    draft = get_draft(client, h, draft_id)
+    assert draft["checks"]["national_id_exists"] is True
+    assert {"field": "national_id_exists", "code": "national_id_exists"} in draft["missing"]
+
+    verify(client, h, draft_id)
+    before = db.execute(text("SELECT last_value FROM request_number_seq")).scalar_one()
+    res = submit(client, h, draft_id)
+
+    assert (res.status_code, res.json()["code"]) == (409, "national_id_exists")
+    assert res.json()["message"] == "المشترك لديه اشتراك سابق"
+    db.expire_all()
+    assert db.get(Draft, uuid.UUID(draft_id)) is not None
+    assert db.execute(text("SELECT last_value FROM request_number_seq")).scalar_one() == before
+    entry = db.scalars(select(AuditLog).where(AuditLog.action == "request.submit_refused")).one()
+    assert entry.after == {"reason": "national_id_exists"}
+
+
+def test_rejected_request_with_the_national_id_does_not_block(client, db, h, marketer, catalog):
+    request_factory(db, marketer, national_id=NID, national_id_input=NID, status="rejected")
+    assert submit(client, h, complete_draft(client, h, catalog)).json()["result"] == "approved"
+
+
+# --- US4: the same family (T036, §6.1 row 3) ---------------------------------------------------
+
+
+def _confirm(client, h, draft_id):
+    return patch(client, h, draft_id, {"additional_confirmed": True})
+
+
+def test_confirmed_family_is_an_additional_request_for_review(client, db, h, marketer, catalog):
+    old = request_factory(db, marketer, family_number="1064 l00m 1234567890")
+    draft_id = complete_draft(client, h, catalog, verified=False)
+    assert get_draft(client, h, draft_id)["checks"]["family_exists"] is True
+    assert _confirm(client, h, draft_id)["checks"]["additional_confirmed"] is True
+    verify(client, h, draft_id)
+
+    res = submit(client, h, draft_id)
+
+    assert res.status_code == 201, res.json()
+    body = res.json()
+    assert (body["type"], body["status"], body["result"]) == (
+        "additional",
+        "pending_review",
+        "pending_family",
+    )
+    assert body["reasons"] == ["family_exists"] and body["username"] is None
+    rows = db.scalars(select(RequestReason).where(RequestReason.request_id == body["id"])).all()
+    assert [(r.reason, r.matched_source, r.matched_ref) for r in rows] == [
+        ("family_exists", "sijil", str(old.id))
+    ]
+
+
+def test_two_family_matches_make_two_rows(client, db, h, marketer, catalog):
+    a = request_factory(db, marketer, family_number=FAMILY)
+    b = request_factory(db, marketer, family_number=FAMILY.lower())
+    draft_id = complete_draft(client, h, catalog, verified=False)
+    _confirm(client, h, draft_id)
+    verify(client, h, draft_id)
+    body = submit(client, h, draft_id).json()
+    refs = db.scalars(
+        select(RequestReason.matched_ref).where(RequestReason.request_id == body["id"])
+    ).all()
+    assert sorted(refs) == sorted([str(a.id), str(b.id)])
+
+
+def test_unconfirmed_family_refuses_as_incomplete(client, db, h, marketer, catalog):
+    request_factory(db, marketer, family_number=FAMILY)
+    draft_id = complete_draft(client, h, catalog, verified=False)
+    verify(client, h, draft_id)
+    res = submit(client, h, draft_id)
+    assert (res.status_code, res.json()["code"]) == (422, "draft_incomplete")
+    assert res.json()["missing"] == [
+        {"field": "family_exists_unconfirmed", "code": "family_exists_unconfirmed"}
+    ]
+
+
+# --- US5: edited numbers (T039, §6.1 row 4) ----------------------------------------------------
+
+
+def _reasons(db, request_id):
+    rows = db.scalars(select(RequestReason).where(RequestReason.request_id == request_id)).all()
+    return [(r.reason, r.details) for r in rows]
+
+
+def test_family_number_changed_from_the_reading_goes_to_review(client, db, h, catalog):
+    draft_id = complete_draft(client, h, catalog, changes={"family_number": "1064L00M1234567891"})
+    body = submit(client, h, draft_id).json()
+    assert (body["status"], body["result"], body["reasons"]) == (
+        "pending_review",
+        "pending_review",
+        ["numbers_edited"],
+    )
+    assert _reasons(db, body["id"]) == [("numbers_edited", {"fields": ["family_number"]})]
+
+
+def test_only_a_name_edited_is_approved(client, db, h, catalog):
+    draft_id = complete_draft(client, h, catalog, changes={"grandfather_name": "مختلف"})
+    body = submit(client, h, draft_id).json()
+    assert body["result"] == "approved"
+    assert db.get(Request, body["id"]).card_fields["grandfather_name"]["source"] == "edited"
+
+
+def test_numbers_typed_with_no_reading_go_to_review(client, db, h, catalog):
+    draft_id = complete_draft(client, h, catalog, read_card=False)
+    body = submit(client, h, draft_id).json()
+    assert body["result"] == "pending_review"
+    assert _reasons(db, body["id"]) == [
+        ("numbers_edited", {"fields": ["national_id", "family_number"]})
+    ]
+
+
+def test_mrz_value_chosen_in_a_mismatch_is_approved(client, db, h, catalog):
+    """The front reads NID, the back's verified MRZ another number; the marketer picks the MRZ."""
+    from app.services.card_reader_fake_data import NID_OTHER
+
+    draft_id = complete_draft(client, h, catalog, verified=False, back="back_nid_mismatch")
+    out = patch(client, h, draft_id, {"national_id": NID_OTHER, "national_id_confirmed": True})
+    assert not any(m["field"] == "national_id_unconfirmed" for m in out["missing"])
+    verify(client, h, draft_id)
+    body = submit(client, h, draft_id).json()
+    assert body["result"] == "approved", body
+
+
+def test_family_match_plus_edit_records_both(client, db, h, marketer, catalog):
+    request_factory(db, marketer, family_number="1064L00M1234567891")
+    draft_id = complete_draft(
+        client, h, catalog, verified=False, changes={"family_number": "1064L00M1234567891"}
+    )
+    _confirm(client, h, draft_id)
+    verify(client, h, draft_id)
+    body = submit(client, h, draft_id).json()
+    assert (body["type"], body["result"], body["reasons"]) == (
+        "additional",
+        "pending_family",
+        ["family_exists", "numbers_edited"],
+    )

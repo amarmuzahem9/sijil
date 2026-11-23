@@ -285,14 +285,14 @@ and confirm it fails.
 
 **Independent Test**: quickstart scenario 3.
 
-- [ ] T033 [P] [US3] Add to `api/tests/integration/test_submit.py`:
+- [x] T033 [P] [US3] Add to `api/tests/integration/test_submit.py`:
   - the national ID exists (Arabic digits) → the draft response has the missing item
     `national_id_exists`;
   - submit with that match (whether seen on the page or new since the last save) → 409
     `national_id_exists` (rows 1–2 refuse with their own code, research R6 step 7), the draft is
     kept, no number is used, and the refusal is audited;
   - a rejected request with the same national ID → approved (Q1).
-- [ ] T034 [US3] Show the `national_id_exists` message under the national ID in
+- [x] T034 [US3] Show the `national_id_exists` message under the national ID in
   `web/src/pages/marketer/subscriber/CardDataSection.tsx`, with no button (FR-009). (The labels of
   the three server-only items were added in batch 2, as `SERVER_ITEMS` in `MissingSummary.tsx`, so
   the shared 005 order fixture stays unchanged.)
@@ -305,19 +305,19 @@ and confirm it fails.
 
 **Independent Test**: quickstart scenario 4.
 
-- [ ] T035 [P] [US4] Add to `api/tests/integration/test_drafts_autosave.py`:
+- [x] T035 [P] [US4] Add to `api/tests/integration/test_drafts_autosave.py`:
   - PATCH `additional_confirmed: true` with a family match stores
     `Draft.additional_confirmed_key` (data-model.md);
   - without a match → 422 `no_family_match`;
   - changing the family number drops the confirmation (`checks.additional_confirmed` false, and
     the missing item `family_exists_unconfirmed` is back).
-- [ ] T036 [P] [US4] Add to `api/tests/integration/test_submit.py`: a confirmed family match → 201,
+- [x] T036 [P] [US4] Add to `api/tests/integration/test_submit.py`: a confirmed family match → 201,
   type `additional`, `pending_review`, `result=pending_family`, and one `request_reasons` row
   `family_exists` with `matched_source=sijil` and `matched_ref` = the old request id; two matches
   → two rows.
-- [ ] T037 [US4] Accept `additional_confirmed` in the PATCH changes (`api/app/schemas/drafts.py`,
+- [x] T037 [US4] Accept `additional_confirmed` in the PATCH changes (`api/app/schemas/drafts.py`,
   `api/app/services/draft_service.py`), following research R12.
-- [ ] T038 [P] [US4] Create `web/src/pages/marketer/subscriber/FamilyMatchNotice.tsx` (message +
+- [x] T038 [P] [US4] Create `web/src/pages/marketer/subscriber/FamilyMatchNotice.tsx` (message +
   «طلب اشتراك إضافي» → PATCH, then the confirmed state) and place it under the family number in
   `CardDataSection.tsx`. Create `web/src/__tests__/familyMatchNotice.test.tsx`.
 
@@ -329,7 +329,7 @@ and confirm it fails.
 
 **Independent Test**: quickstart scenarios 5 and 6.
 
-- [ ] T039 [P] [US5] Add to `api/tests/integration/test_submit.py`. Use the fake card reader where
+- [x] T039 [P] [US5] Add to `api/tests/integration/test_submit.py`. Use the fake card reader where
   a scenario needs a reading.
   - a family number changed from the reading → `pending_review`, reason `numbers_edited` with
     `{"fields": ["family_number"]}`, `result=pending_review`;
@@ -337,7 +337,7 @@ and confirm it fails.
   - a number typed with no reading → `numbers_edited`;
   - the MRZ value chosen in a 006 mismatch → approved;
   - a family match plus an edit → both reasons, type `additional`, `result=pending_family`.
-- [ ] T040 [US5] Confirm `submit_service` writes the `numbers_edited` reason with `details.fields`
+- [x] T040 [US5] Confirm `submit_service` writes the `numbers_edited` reason with `details.fields`
   from `edited_fields`. Fix any gap found by T039 in `api/app/services/submit_service.py`.
 
 ---
@@ -348,18 +348,18 @@ and confirm it fails.
 
 **Independent Test**: spec User Story 6.
 
-- [ ] T041 [P] [US6] Create `api/tests/integration/test_draft_checks.py`:
+- [x] T041 [P] [US6] Create `api/tests/integration/test_draft_checks.py`:
   - for each key, a match shows in `checks` and `missing` after PATCH, PUT and GET;
   - clearing the value removes it;
   - the response JSON contains none of the matched request's name, username, tower, phone or ids
     (SC-006).
-- [ ] T042 [P] [US6] Add a case to `api/tests/integration/test_card_reading.py`: a national ID filled
-  by the fake reader that matches an existing request produces `national_id_exists` in the
-  card-reading status draft.
-- [ ] T043 [US6] In `web/src/pages/marketer/subscriber/SubscriberForm.tsx` (or the section
+- [x] T042 [P] [US6] Add a case to `api/tests/integration/test_card_reading.py`: a national ID filled
+  by the fake reader that matches an existing request produces `national_id_exists` in the draft
+  the page loads when the reading finishes (the status poll itself carries no draft).
+- [x] T043 [US6] In `web/src/pages/marketer/subscriber/SubscriberForm.tsx` (or the section
   components), refresh the warnings from every draft response, card-reading completion included.
   When `checks` is missing (an older server), show nothing.
-- [ ] T044 [P] [US6] Add Vitest cases for the warning placement in
+- [x] T044 [P] [US6] Add Vitest cases for the warning placement in
   `web/src/__tests__/missingSummarySubmit.test.tsx`: the three items appear in page order.
 
 ---

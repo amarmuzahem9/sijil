@@ -48,6 +48,8 @@ class DraftChanges(_Body):
     # that differs from the verified MRZ. Provenance and readings are never accepted.
     no_surname: bool | None = None
     national_id_confirmed: bool | None = None
+    # Feature 008 (research R12): «طلب اشتراك إضافي» for the current family number.
+    additional_confirmed: bool | None = None
     # Back of the card (owner change, system.md v1.8): ISO dates and text.
     birth_date: date | None = None
     birth_place: str | None = None

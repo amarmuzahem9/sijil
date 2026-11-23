@@ -394,3 +394,52 @@ def test_complete_draft_has_no_missing_items(client, db, h, make_user, tmp_path,
         )
     assert res.json()["missing"] == []
     assert client.get(f"/api/drafts/{draft_id}", headers=h).json()["missing"] == []
+
+
+# --- feature 008: «طلب اشتراك إضافي» (T035, research R12) ------------------------------------
+
+
+def _patch_v(client, h, draft_id, changes):
+    version = client.get(f"/api/drafts/{draft_id}", headers=h).json()["version"]
+    return client.patch(
+        f"/api/drafts/{draft_id}", json={"version": version, "changes": changes}, headers=h
+    )
+
+
+def test_family_confirmation_is_stored_and_dropped_on_change(client, db, h, make_user) -> None:
+    from app.models import Draft
+    from tests.helpers.requests import request_factory
+
+    request_factory(db, make_user("marketer"), family_number="5555A0000000000001")
+    draft_id, res = _create(client, h, {"family_number": "5555 a 0000000000001"})
+    assert res.json()["checks"]["family_exists"] is True
+    assert {
+        "field": "family_exists_unconfirmed",
+        "code": "family_exists_unconfirmed",
+    } in res.json()["missing"]
+
+    res = _patch_v(client, h, draft_id, {"additional_confirmed": True})
+    assert res.status_code == 200, res.json()
+    assert res.json()["checks"]["additional_confirmed"] is True
+    assert not any(m["field"] == "family_exists_unconfirmed" for m in res.json()["missing"])
+    db.expire_all()
+    assert db.get(Draft, uuid.UUID(draft_id)).additional_confirmed_key == "5555A0000000000001"
+
+    # Another family number that also matches still needs its own confirmation.
+    request_factory(db, make_user("marketer"), family_number="5555A0000000000002")
+    res = _patch_v(client, h, draft_id, {"family_number": "5555A0000000000002"})
+    assert res.json()["checks"]["additional_confirmed"] is False
+    assert any(m["field"] == "family_exists_unconfirmed" for m in res.json()["missing"])
+
+    # Withdrawing works too.
+    _patch_v(client, h, draft_id, {"additional_confirmed": True})
+    res = _patch_v(client, h, draft_id, {"additional_confirmed": False})
+    assert res.json()["checks"]["additional_confirmed"] is False
+    db.expire_all()
+    assert db.get(Draft, uuid.UUID(draft_id)).additional_confirmed_key is None
+
+
+def test_family_confirmation_without_a_match_is_refused(client, h) -> None:
+    draft_id, _ = _create(client, h, {"family_number": "6666A0000000000001"})
+    res = _patch_v(client, h, draft_id, {"additional_confirmed": True})
+    assert (res.status_code, res.json()["code"]) == (422, "no_family_match")

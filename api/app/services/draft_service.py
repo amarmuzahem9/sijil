@@ -208,6 +208,21 @@ def draft_checks(db: Session, draft: Draft) -> DraftChecksOut:
     )
 
 
+def apply_confirmation(db: Session, draft: Draft, changes: DraftChanges) -> None:
+    """«طلب اشتراك إضافي» (research R12): `true` stores the current family key, only while that
+    family matches an existing subscriber; `false` withdraws it. A later change of the family
+    number makes the stored key stale, so the confirmation drops without extra code."""
+    if "additional_confirmed" not in changes.model_fields_set:
+        return
+    if not changes.additional_confirmed:
+        draft.additional_confirmed_key = None
+        return
+    key = family_key(draft.family_number)
+    if key is None or not match_service.find_matches(db, family_key=key).family:
+        raise AppError("no_family_match", 422)
+    draft.additional_confirmed_key = key
+
+
 # The 005/006 page order with the three 008 items, which need the database (research R5).
 _AFTER = {
     "national_id_unconfirmed": "national_id_exists",
@@ -340,6 +355,7 @@ def create_if_absent(
 
     draft = Draft(id=draft_id, marketer_id=user.id, last_client_id=client_id)
     apply_changes(draft, changes)
+    apply_confirmation(db, draft, changes)
     apply_subscription(db, draft, changes)
     notices = refresh_copies(db, draft)
     try:
@@ -375,6 +391,7 @@ def patch(
     # versioned UPDATE, and one save must bump the version exactly once.
     with db.no_autoflush:
         apply_changes(draft, changes)
+        apply_confirmation(db, draft, changes)
         apply_subscription(db, draft, changes)
         notices = refresh_copies(db, draft)
         # A change of phone, tower, category or prices cancels the OTP verification (specs/007 R5).

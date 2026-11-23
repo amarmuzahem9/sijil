@@ -131,6 +131,12 @@ export interface FormListener {
   created: (id: string) => void;
 }
 
+/** What a button saves at once: field values plus the two confirmations. */
+export type SaveNowChanges = Partial<FormValues> & {
+  national_id_confirmed?: boolean;
+  additional_confirmed?: boolean;
+};
+
 export class DraftFormController {
   private current: FormValues;
   private readonly timers = new Map<TextField, ReturnType<typeof setTimeout>>();
@@ -252,12 +258,14 @@ export class DraftFormController {
   }
 
   /** Selects, the pin and buttons: save immediately. */
-  saveNow(changes: Partial<FormValues> & { national_id_confirmed?: boolean }): void {
-    const { national_id_confirmed, ...values } = changes;
+  saveNow(changes: SaveNowChanges): void {
+    const { national_id_confirmed, additional_confirmed, ...values } = changes;
     this.update(values);
     const out = toChanges(values);
     // «اعتماد هذا الرقم» (specs/006 FR-012): sent with the value it confirms.
     if (national_id_confirmed) out.national_id_confirmed = true;
+    // «طلب اشتراك إضافي» / «تراجع» (specs/008 research R12).
+    if (additional_confirmed !== undefined) out.additional_confirmed = additional_confirmed;
     void this.queue.enqueue(out);
   }
 

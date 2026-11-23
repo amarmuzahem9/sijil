@@ -11,6 +11,7 @@ import { getDraft, sendOtp, verifyOtp } from '../../../lib/drafts';
 import { normalizePhone } from '../../../lib/phone';
 import type { DraftAutosave, TextField } from '../../../lib/useDraftAutosave';
 import { DraftTextField } from './DraftTextField';
+import { PhoneUsedNotice } from './FamilyMatchNotice';
 import { OtpControl } from './OtpControl';
 
 // Errors after which the server's otp state changed (attempt used, code cancelled or gone).
@@ -82,6 +83,7 @@ export function PhoneSection({
         inputMode="tel"
         autoComplete="off"
       />
+      <PhoneUsedNotice checks={serverDraft?.checks} />
       <OtpControl
         otp={serverDraft?.otp}
         phoneValid={normalized !== null}

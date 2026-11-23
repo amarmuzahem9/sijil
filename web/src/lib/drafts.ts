@@ -113,6 +113,15 @@ export interface OtpStatus {
   verified_at: string | null;
 }
 
+/** The duplicate check (specs/008 research R5). Booleans only: never who matched. */
+export interface DraftChecks {
+  phone_used: boolean;
+  national_id_exists: boolean;
+  family_exists: boolean;
+  /** «طلب اشتراك إضافي» chosen for the current family number. */
+  additional_confirmed: boolean;
+}
+
 export interface Draft extends NullableNames {
   id: string;
   status: 'draft';
@@ -152,6 +161,8 @@ export interface Draft extends NullableNames {
   notices: DraftNotice[];
   /** Feature 007. Older responses (and test fixtures) may omit it. */
   otp?: OtpStatus;
+  /** Feature 008. Older responses (and test fixtures) may omit it: then no warning shows. */
+  checks?: DraftChecks;
 }
 
 /** Partial update: an omitted key is unchanged, `null` clears. Prices and `full_name` are
@@ -170,6 +181,8 @@ export interface DraftChanges extends Partial<NullableNames> {
   no_surname?: boolean;
   /** Confirms the current national ID against the verified MRZ (FR-012). */
   national_id_confirmed?: boolean;
+  /** «طلب اشتراك إضافي» for the current family number (specs/008 research R12). */
+  additional_confirmed?: boolean;
   birth_date?: string | null;
   birth_place?: string | null;
   issue_date?: string | null;

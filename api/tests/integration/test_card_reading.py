@@ -412,3 +412,18 @@ def test_replacing_the_front_reads_only_the_front(client, db, owner) -> None:
         )
     ).all()
     assert sorted(r.side for r in rows) == ["back", "front", "front"]
+
+
+# --- feature 008: a read national ID that already exists (T042) -------------------------------
+
+
+def test_read_national_id_that_exists_warns(client, db, owner, make_user) -> None:
+    from tests.helpers.requests import request_factory
+
+    request_factory(db, make_user("marketer"), national_id=NID, national_id_input=NID)
+    _, headers = owner
+    draft_id = read_card(client, headers)
+    draft = client.get(f"/api/drafts/{draft_id}", headers=headers).json()
+    assert draft["national_id"] == NID
+    assert draft["checks"]["national_id_exists"] is True
+    assert {"field": "national_id_exists", "code": "national_id_exists"} in draft["missing"]
