@@ -383,3 +383,33 @@ def test_rejected_request_phone_is_free(client, db, h, catalog, fake, make_user)
     request_factory(db, make_user("marketer"), phone=PHONE, status="rejected")
     draft_id, _ = _draft(client, h, catalog)
     assert _send(client, h, draft_id).status_code == 200
+
+
+# --- feature 009: a return choice lets the code go to the target's own phone (T026, R6) -------
+
+
+def test_return_choice_allows_the_owners_phone(client, db, h, catalog, fake, make_user) -> None:
+    from tests.helpers.requests import request_factory
+
+    request_factory(db, make_user("marketer"), phone=PHONE)
+    draft_id, _ = _draft(client, h, catalog)
+    assert _send(client, h, draft_id).status_code == 409  # no choice yet
+
+    _patch(client, h, draft_id, {"return_chosen": True})
+    assert _send(client, h, draft_id).status_code == 200
+    assert len(fake.outbox) == 1
+
+
+def test_stale_return_choice_refuses_again(client, db, h, catalog, fake, make_user) -> None:
+    from tests.helpers.requests import request_factory
+
+    request_factory(db, make_user("marketer"), phone=PHONE)
+    other = request_factory(db, make_user("marketer"), phone="07801234599")
+    draft_id, _ = _draft(client, h, catalog)
+    _patch(client, h, draft_id, {"return_chosen": True})
+    # Moving to another subscriber's phone makes the stored key stale.
+    out = _patch(client, h, draft_id, {"phone_input": other.phone})
+    assert out["checks"]["return_chosen"] is False
+    res = _send(client, h, draft_id)
+    assert (res.status_code, res.json()["code"]) == (409, "phone_used")
+    assert fake.outbox == []

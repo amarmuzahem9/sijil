@@ -14,6 +14,7 @@ import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import type { ReactNode } from 'react';
 
 import type { DraftChecks } from '../../../lib/drafts';
 
@@ -37,11 +38,16 @@ export function NationalIdExistsNotice({ checks }: { checks: Checks }) {
   );
 }
 
-export function PhoneUsedNotice({ checks }: { checks: Checks }) {
+/** A used phone that is not the return offer's (e.g. phone of A, card of B): the message, and
+ * `children` (specs/009: «الاتصال بالإدارة»). */
+export function PhoneUsedNotice({ checks, children }: { checks: Checks; children?: ReactNode }) {
   if (!checks?.phone_used) return null;
   return (
     <Alert severity="error" data-testid="phone-used">
-      {MATCH_TEXT.phone}
+      <Stack spacing={1}>
+        <span>{MATCH_TEXT.phone}</span>
+        {children}
+      </Stack>
     </Alert>
   );
 }

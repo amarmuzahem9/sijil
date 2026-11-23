@@ -7,9 +7,12 @@ lets one web build serve every environment, and keeps it out of the repository.
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from app.api.deps import AuthContext, current_user
 from app.config import get_settings
+from app.db import get_db
+from app.services import settings_service
 from app.services.otp_sender import otp_configured
 
 router = APIRouter(tags=["client-config"])
@@ -49,14 +52,22 @@ class ClientConfig(BaseModel):
     open_source: list[OpenSourceItem] = []
     # False when no OTPIQ key is configured: «تحقّق» shows «خدمة التحقق غير مهيّأة» (specs/007).
     otp_enabled: bool = True
+    # «الاتصال بالإدارة» (specs/009 R8): the administration's WhatsApp number, or null when unset.
+    admin_whatsapp: str | None = None
 
 
 @router.get("/client-config", response_model=ClientConfig)
-def get_client_config(_: AuthContext = Depends(current_user)) -> ClientConfig:
+def get_client_config(
+    _: AuthContext = Depends(current_user), db: Session = Depends(get_db)
+) -> ClientConfig:
     settings = get_settings()
+    whatsapp = settings_service.admin_whatsapp(db)
     if not settings.google_maps_api_key:
         return ClientConfig(
-            maps=None, open_source=open_source_items(), otp_enabled=otp_configured()
+            maps=None,
+            open_source=open_source_items(),
+            otp_enabled=otp_configured(),
+            admin_whatsapp=whatsapp,
         )
     lat, lng = settings.map_center
     return ClientConfig(
@@ -67,4 +78,5 @@ def get_client_config(_: AuthContext = Depends(current_user)) -> ClientConfig:
         ),
         open_source=open_source_items(),
         otp_enabled=otp_configured(),
+        admin_whatsapp=whatsapp,
     )

@@ -37,7 +37,13 @@ from app.schemas.drafts import (
     VersionOut,
 )
 from app.schemas.requests import RequestOut, SubmitIn
-from app.services import card_reading_service, draft_service, otp_service, submit_service
+from app.services import (
+    audit_service,
+    card_reading_service,
+    draft_service,
+    otp_service,
+    submit_service,
+)
 
 router = APIRouter(tags=["drafts"])
 
@@ -150,6 +156,27 @@ def verify_otp(
 ) -> DraftOut:
     draft = otp_service.verify(db, ctx.user, cid, draft_id, body.code)
     return draft_service.to_out(db, draft)
+
+
+@router.post("/drafts/{draft_id}/contact-admin", status_code=204)
+def contact_admin(
+    draft_id: uuid.UUID,
+    ctx: AuthContext = Depends(marketer_only),
+    _cid: uuid.UUID = Depends(client_id),
+    db: Session = Depends(get_db),
+) -> Response:
+    """«الاتصال بالإدارة» was opened (specs/009 R8): audited with the draft id only; the draft
+    does not change. The page opens WhatsApp itself and does not wait for this answer."""
+    draft = draft_service.get_owned(db, ctx.user, draft_id)
+    audit_service.record(
+        db,
+        actor_id=ctx.user.id,
+        action="draft.contact_admin_opened",
+        entity_type="draft",
+        entity_id=str(draft.id),
+    )
+    db.commit()
+    return Response(status_code=204)
 
 
 # --- submission (specs/008 contracts/api.md) -------------------------------------------------

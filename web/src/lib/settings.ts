@@ -74,13 +74,17 @@ export const tiersApi = {
     ),
 };
 
+export interface GeneralSettings {
+  otp_validity_minutes: number;
+  /** «رقم واتساب الإدارة» (specs/009), null when not set. */
+  admin_whatsapp: string | null;
+}
+
+/** PATCH sends only the keys given; each changes alone (specs/009 T030). */
 export const generalApi = {
-  get: () => apiFetch<{ otp_validity_minutes: number }>(`${BASE}/general`),
-  update: (otp_validity_minutes: number) =>
-    apiFetch<{ otp_validity_minutes: number }>(`${BASE}/general`, {
-      method: 'PATCH',
-      body: { otp_validity_minutes },
-    }),
+  get: () => apiFetch<GeneralSettings>(`${BASE}/general`),
+  update: (changes: Partial<GeneralSettings>) =>
+    apiFetch<GeneralSettings>(`${BASE}/general`, { method: 'PATCH', body: changes }),
 };
 
 export const catalogApi = { get: () => apiFetch<Catalog>('/api/catalog') };

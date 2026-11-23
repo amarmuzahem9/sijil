@@ -198,7 +198,7 @@ phone) and «الاتصال بالإدارة» (WhatsApp to the settings number)
 
 ### Tests for User Story 2
 
-- [ ] T025 [P] [US2] Extend `api/tests/integration/test_return_path.py` (phone basis). Cover:
+- [x] T025 [P] [US2] Extend `api/tests/integration/test_return_path.py` (phone basis). Cover:
   - phone of a record and no identity match → `return_basis=phone`;
   - after choosing, `POST otp/send` to that phone succeeds;
   - without a choice it is still 409 `phone_used`;
@@ -207,9 +207,9 @@ phone) and «الاتصال بالإدارة» (WhatsApp to the settings number)
   - phone + identity on the same record → one return choice only.
 
   Run: **red**.
-- [ ] T026 [P] [US2] Extend `api/tests/integration/test_otp.py`: the precheck exception applies only
+- [x] T026 [P] [US2] Extend `api/tests/integration/test_otp.py`: the precheck exception applies only
   with a valid return choice, and a stale choice gives `phone_used` again. Run: **red**.
-- [ ] T027 [P] [US2] Write `api/tests/integration/test_admin_whatsapp.py` (and add matching cases
+- [x] T027 [P] [US2] Write `api/tests/integration/test_admin_whatsapp.py` (and add matching cases
   to `test_settings_general.py` and `test_client_config.py` where they fit better). Cover:
   - `GET/PATCH /api/admin/settings/general` with `admin_whatsapp` (data-model.md ›
     app_settings.admin_whatsapp): §8.1 normalization, invalid → 422 `invalid_phone`, empty clears,
@@ -222,18 +222,18 @@ phone) and «الاتصال بالإدارة» (WhatsApp to the settings number)
 
 ### Implementation for User Story 2
 
-- [ ] T028 [US2] Return-target exception in `precheck_for_otp`, in `api/app/services/phone_checks.py`
+- [x] T028 [US2] Return-target exception in `precheck_for_otp`, in `api/app/services/phone_checks.py`
   (R6). T026 **green**.
-- [ ] T029 [US2] Phone-basis keys and validity in `api/app/services/draft_service.py`, and in
+- [x] T029 [US2] Phone-basis keys and validity in `api/app/services/draft_service.py`, and in
   `submit_service.py` if anything is still missing. T025 **green**.
-- [ ] T030 [US2] Add [data-model.md](./data-model.md) `app_settings.admin_whatsapp` to
+- [x] T030 [US2] Add [data-model.md](./data-model.md) `app_settings.admin_whatsapp` to
   `get_general` / `update_general` in `api/app/services/settings_service.py`. Make `update_general` accept partial changes, so the OTP
   minutes and the number can be changed separately, with one audit row per changed key. Update the
   schema and route in `api/app/api/settings.py`.
-- [ ] T031 [US2] Add `admin_whatsapp` to `api/app/api/client_config.py`.
-- [ ] T032 [US2] Add `POST /drafts/{id}/contact-admin` to `api/app/api/drafts.py`, with owner check
+- [x] T031 [US2] Add `admin_whatsapp` to `api/app/api/client_config.py`.
+- [x] T032 [US2] Add `POST /drafts/{id}/contact-admin` to `api/app/api/drafts.py`, with owner check
   and audit. T027 **green**.
-- [ ] T033 [P] [US2] Write `web/src/__tests__/contactAdmin.test.tsx`. Cover:
+- [x] T033 [P] [US2] Write `web/src/__tests__/contactAdmin.test.tsx`. Cover:
   - the link is `https://wa.me/9647…?text=…`;
   - the decoded text contains the marketer's name and does **not** contain the typed phone;
   - the button is an `<a target="_blank">`;
@@ -241,16 +241,16 @@ phone) and «الاتصال بالإدارة» (WhatsApp to the settings number)
   - when the number is null the button is disabled with «رقم الإدارة غير مضبوط في الإعدادات».
 
   Run: **red**.
-- [ ] T034 [US2] Build `web/src/lib/contactAdmin.ts` and
+- [x] T034 [US2] Build `web/src/lib/contactAdmin.ts` and
   `web/src/pages/marketer/subscriber/ContactAdminButton.tsx`. Show `ReturnNotice` (phone basis) and
   the button in `PhoneSection.tsx`, reading `admin_whatsapp` from client config. T033 **green**.
-- [ ] T035 [P] [US2] Write a Vitest test for the «رقم واتساب الإدارة» field in
+- [x] T035 [P] [US2] Write a Vitest test for the «رقم واتساب الإدارة» field in
   `web/src/__tests__/generalTab.test.tsx`: it saves, shows the server error, and empty clears it.
   Run: **red**.
-- [ ] T036 [US2] Add the field to `web/src/pages/admin/settings/GeneralTab.tsx`, and the audit label
+- [x] T036 [US2] Add the field to `web/src/pages/admin/settings/GeneralTab.tsx`, and the audit label
   for `draft.contact_admin_opened` / return actions in `web/src/lib/labels.ts`. T035 **green**.
-- [ ] T037 [US2] Run the full api suite and `npm test`. Do a manual run of quickstart scenarios 2, 3, 7.
-- [ ] T038 [US2] Commit batch 3.
+- [x] T037 [US2] Run the full api suite and `npm test`. Do a manual run of quickstart scenarios 2, 3, 7.
+- [x] T038 [US2] Commit batch 3.
 
 **Checkpoint**: both return bases and the contact button work.
 

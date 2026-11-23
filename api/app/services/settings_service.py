@@ -14,6 +14,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.phone import normalize_phone
 from app.core.timeutil import utc_now
 from app.errors import AppError
 from app.models import AppSetting, Area, Plan, RewardTier, Tower, User
@@ -462,7 +463,10 @@ def replace_tiers(db: Session, actor: User, items: list[tuple[int, int]]) -> lis
 
 OTP_MINUTES_KEY = "otp_validity_minutes"
 OTP_MINUTES_MIN, OTP_MINUTES_MAX = 5, 1440
-_GENERAL_DEFAULTS = {OTP_MINUTES_KEY: 60}
+# «رقم واتساب الإدارة» for «الاتصال بالإدارة»
+# (specs/009 data-model.md › app_settings.admin_whatsapp).
+ADMIN_WHATSAPP_KEY = "admin_whatsapp"
+_GENERAL_DEFAULTS: dict[str, Any] = {OTP_MINUTES_KEY: 60, ADMIN_WHATSAPP_KEY: None}
 
 
 def get_general(db: Session) -> dict[str, Any]:
@@ -472,28 +476,51 @@ def get_general(db: Session) -> dict[str, Any]:
     return values
 
 
-def update_general(db: Session, actor: User, otp_validity_minutes: int) -> dict[str, Any]:
-    if not OTP_MINUTES_MIN <= otp_validity_minutes <= OTP_MINUTES_MAX:
-        raise AppError("invalid_otp_minutes", 422)
+def admin_whatsapp(db: Session) -> str | None:
+    return get_general(db)[ADMIN_WHATSAPP_KEY]
+
+
+def _clean_general(key: str, value: Any) -> Any:
+    if key == OTP_MINUTES_KEY:
+        if not OTP_MINUTES_MIN <= value <= OTP_MINUTES_MAX:
+            raise AppError("invalid_otp_minutes", 422)
+        return value
+    # admin_whatsapp: empty clears; otherwise §8.1 or `invalid_phone`.
+    if value is None or not str(value).strip():
+        return None
+    phone = normalize_phone(value)
+    if phone is None:
+        raise AppError("invalid_phone", 422)
+    return phone
+
+
+def update_general(db: Session, actor: User, changes: dict[str, Any]) -> dict[str, Any]:
+    """Change only the keys given; one audit row per key whose value really changes."""
+    cleaned = {key: _clean_general(key, value) for key, value in changes.items()}
     current = get_general(db)
-    old = current[OTP_MINUTES_KEY]
-    if old == otp_validity_minutes:
-        return current  # no-op
-    row = db.get(AppSetting, OTP_MINUTES_KEY)
-    if row is None:
-        row = AppSetting(key=OTP_MINUTES_KEY, value=otp_validity_minutes)
-        db.add(row)
-    row.value = otp_validity_minutes
-    row.updated_by = actor.id
-    row.updated_at = utc_now()
-    audit_service.record(
-        db,
-        actor_id=actor.id,
-        action="app_setting.updated",
-        entity_type="app_setting",
-        entity_id=OTP_MINUTES_KEY,
-        before={OTP_MINUTES_KEY: old},
-        after={OTP_MINUTES_KEY: otp_validity_minutes},
-    )
+    for key, new in cleaned.items():
+        old = current[key]
+        if old == new:
+            continue  # no-op
+        row = db.get(AppSetting, key)
+        if new is None:
+            if row is not None:
+                db.delete(row)
+        else:
+            if row is None:
+                row = AppSetting(key=key, value=new)
+                db.add(row)
+            row.value = new
+            row.updated_by = actor.id
+            row.updated_at = utc_now()
+        audit_service.record(
+            db,
+            actor_id=actor.id,
+            action="app_setting.updated",
+            entity_type="app_setting",
+            entity_id=key,
+            before={key: old},
+            after={key: new},
+        )
     _commit(db)
     return get_general(db)

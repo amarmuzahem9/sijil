@@ -5,7 +5,7 @@ as "20,000" is refused; the web parses Arabic digits before sending). Length and
 in settings_service so each failure returns its own code.
 """
 
-from pydantic import BaseModel, ConfigDict, StrictInt
+from pydantic import BaseModel, ConfigDict, StrictInt, model_validator
 
 
 class _Body(BaseModel):
@@ -139,8 +139,23 @@ class TiersOut(BaseModel):
 
 
 class GeneralUpdate(_Body):
-    otp_validity_minutes: StrictInt
+    """Partial: only the keys sent change (specs/009 T030). At least one is required."""
+
+    otp_validity_minutes: StrictInt | None = None
+    admin_whatsapp: str | None = None
+
+    @model_validator(mode="after")
+    def _one_key(self) -> "GeneralUpdate":
+        if not self.model_fields_set:
+            raise ValueError("no setting given")
+        if "otp_validity_minutes" in self.model_fields_set and self.otp_validity_minutes is None:
+            raise ValueError("otp_validity_minutes cannot be null")
+        return self
+
+    def changes(self) -> dict:
+        return {key: getattr(self, key) for key in self.model_fields_set}
 
 
 class GeneralOut(BaseModel):
     otp_validity_minutes: int
+    admin_whatsapp: str | None = None

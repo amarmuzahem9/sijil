@@ -249,3 +249,85 @@ def test_marketer_responses_name_no_one(client, db, h, catalog, make_user):
     for secret in (old.full_name, OLD_PHONE, OLD_USERNAME, old.tower_code, f"T3C-{old.number}"):
         assert secret not in blob
     assert PHONE in blob  # the new subscription's own phone is fine
+
+
+# --- phone basis (US2, T025) --------------------------------------------------------------------
+
+
+def _phone_owner(db, make_user, **overrides):
+    """A subscriber with PHONE whose numbers differ from the fake card's."""
+    return request_factory(db, make_user("marketer"), phone=PHONE, **overrides)
+
+
+def test_used_phone_offers_return_by_phone(client, db, h, catalog, make_user):
+    _phone_owner(db, make_user)
+    draft = get_draft(client, h, complete_draft(client, h, catalog, verified=False))
+    checks = draft["checks"]
+    assert (checks["phone_used"], checks["return_available"], checks["return_basis"]) == (
+        True,
+        True,
+        "phone",
+    )
+    assert checks["national_id_exists"] is False
+
+
+def test_return_by_phone_sends_the_code_and_submits(client, db, h, catalog, make_user):
+    old = _phone_owner(db, make_user)
+    draft_id = complete_draft(client, h, catalog, verified=False)
+    res = client.post(f"/api/drafts/{draft_id}/otp/send", headers=h)
+    assert (res.status_code, res.json()["code"]) == (409, "phone_used")
+
+    chosen = patch(client, h, draft_id, {"return_chosen": True})
+    assert chosen["checks"]["phone_used"] is False
+    assert "phone_used" not in [m["field"] for m in chosen["missing"]]
+    (entry,) = _audits(db, "draft.return_chosen")
+    assert entry.after == {"basis": "phone"}
+    verify(client, h, draft_id)
+
+    res = submit(client, h, draft_id)
+
+    assert res.status_code == 201, res.json()
+    assert (res.json()["type"], res.json()["result"]) == ("return", "pending_approval")
+    (reason,) = db.scalars(
+        select(RequestReason).where(RequestReason.request_id == res.json()["id"])
+    )
+    assert (reason.reason, reason.matched_ref, reason.details) == (
+        "return",
+        str(old.id),
+        {"basis": "phone"},
+    )
+
+
+def test_phone_of_a_and_card_of_b_returns_b_only(client, db, h, catalog, make_user):
+    _phone_owner(db, make_user)  # A
+    _person(db, make_user)  # B: the card's person, with another phone
+    draft_id = complete_draft(client, h, catalog, verified=False)
+    assert get_draft(client, h, draft_id)["checks"]["return_basis"] == "identity"
+
+    chosen = patch(client, h, draft_id, {"return_chosen": True})
+    assert chosen["checks"]["return_chosen"] is True
+    assert chosen["checks"]["phone_used"] is True  # A's phone is still refused
+    res = client.post(f"/api/drafts/{draft_id}/otp/send", headers=h)
+    assert (res.status_code, res.json()["code"]) == (409, "phone_used")
+
+
+def test_phone_and_identity_on_the_same_record_offer_one_return(client, db, h, catalog, make_user):
+    _person(db, make_user, phone=PHONE)
+    draft_id = complete_draft(client, h, catalog, verified=False)
+    checks = get_draft(client, h, draft_id)["checks"]
+    assert checks["return_basis"] == "identity"
+    chosen = patch(client, h, draft_id, {"return_chosen": True})
+    assert chosen["checks"]["phone_used"] is False  # the person's own phone
+    verify(client, h, draft_id)
+    res = submit(client, h, draft_id)
+    assert res.status_code == 201, res.json()
+    assert (
+        len(
+            list(
+                db.scalars(
+                    select(RequestReason).where(RequestReason.request_id == res.json()["id"])
+                )
+            )
+        )
+        == 1
+    )

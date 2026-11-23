@@ -136,7 +136,11 @@ test('a clean draft is approved with its number and username; the same phone get
   await typePhone(b, '+964 780 000 0801');
   await b.getByTestId('otp-send').click();
   await expect(b.getByTestId('otp-error')).toHaveText('المشترك موجود سابقاً، هل يود العودة للخدمة؟');
-  await expect(b.getByTestId('phone-used')).toBeVisible();
+  // v1.10 (specs/009 US2): the phone's owner can return, or the marketer contacts the admin.
+  await expect(b.getByTestId('return-offer')).toBeVisible();
+  await expect(b.getByRole('button', { name: 'طلب العودة للخدمة' })).toBeVisible();
+  // No administration number in the e2e settings: the contact button is disabled.
+  await expect(b.getByRole('button', { name: 'الاتصال بالإدارة' })).toBeDisabled();
   await expect(b.getByTestId('otp-digit-0')).toHaveCount(0);
   await expect(b.getByTestId('missing-phone_used')).toBeVisible();
   await other.close();

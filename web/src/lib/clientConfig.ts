@@ -22,6 +22,8 @@ export interface ClientConfig {
   open_source?: OpenSourceItem[];
   /** false when no OTPIQ key is configured (specs/007): «خدمة التحقق غير مهيّأة». */
   otp_enabled?: boolean;
+  /** «الاتصال بالإدارة» (specs/009): the administration's WhatsApp, null when not set. */
+  admin_whatsapp?: string | null;
 }
 
 export const fetchClientConfig = () => apiFetch<ClientConfig>('/api/client-config');

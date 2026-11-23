@@ -175,7 +175,7 @@ def get_general(_: AuthContext = Depends(_can), db: Session = Depends(get_db)) -
 def update_general(
     body: GeneralUpdate, ctx: AuthContext = Depends(_can), db: Session = Depends(get_db)
 ) -> GeneralOut:
-    return GeneralOut(**svc.update_general(db, ctx.user, body.otp_validity_minutes))
+    return GeneralOut(**svc.update_general(db, ctx.user, body.changes()))
 
 
 # --- shared: activate / deactivate / delete -----------------------------------------------------

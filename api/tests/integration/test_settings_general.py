@@ -23,13 +23,13 @@ def h(client, admin):
 
 
 def test_default_is_60(client, h) -> None:
-    assert client.get(URL, headers=h).json() == {"otp_validity_minutes": 60}
+    assert client.get(URL, headers=h).json()["otp_validity_minutes"] == 60
 
 
 def test_update_stored_and_audited(client, db, admin, h) -> None:
     r = client.patch(URL, json={"otp_validity_minutes": 30}, headers=h)
-    assert r.json() == {"otp_validity_minutes": 30}
-    assert client.get(URL, headers=h).json() == {"otp_validity_minutes": 30}
+    assert r.json()["otp_validity_minutes"] == 30
+    assert client.get(URL, headers=h).json()["otp_validity_minutes"] == 30
     row = db.get(AppSetting, "otp_validity_minutes")
     assert row.value == 30 and row.updated_by == admin.id
 
@@ -60,7 +60,13 @@ def test_out_of_range(client, h, value) -> None:
 
 @pytest.mark.parametrize(
     "body",
-    [{"otp_validity_minutes": 2.5}, {"otp_validity_minutes": "30"}, {"backup_path": "/x"}, {}],
+    [
+        {"otp_validity_minutes": 2.5},
+        {"otp_validity_minutes": "30"},
+        {"otp_validity_minutes": None},
+        {"backup_path": "/x"},
+        {},
+    ],
 )
 def test_malformed(client, h, body) -> None:
     r = client.patch(URL, json=body, headers=h)

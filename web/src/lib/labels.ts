@@ -56,6 +56,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'request.submitted': 'إرسال طلب',
   'draft.return_chosen': 'اختيار طلب العودة للخدمة',
   'draft.return_withdrawn': 'إلغاء طلب العودة للخدمة',
+  'draft.contact_admin_opened': 'فتح «الاتصال بالإدارة»',
   'request.submit_refused': 'رفض إرسال طلب',
 };
 
@@ -74,6 +75,7 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   second_price: 'سعر الشهر الثاني',
   tiers: 'الشرائح',
   otp_validity_minutes: 'مدة صلاحية الرمز (دقيقة)',
+  admin_whatsapp: 'رقم واتساب الإدارة',
   created_at: 'أُنشئت',
   updated_at: 'آخر حفظ',
   tower_code: 'البرج',
