@@ -11,13 +11,13 @@ import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 
 import { ApiError } from '../../../lib/api';
 import type { OtpStatus } from '../../../lib/drafts';
-import { CODE_LENGTH, normalizeCodeEntry, OTP_TEXT } from '../../../lib/otp';
+import { ERROR_HOLD_MS, OTP_TEXT, SUCCESS_HOLD_MS } from '../../../lib/otp';
+import { OtpCodeBoxes, type CodePhase } from './OtpCodeBoxes';
 
 function secondsUntil(iso: string | null | undefined, now: number): number {
   if (!iso) return 0;
@@ -44,57 +44,24 @@ function useNow(until: string | null): number {
   return now;
 }
 
-/** The code box; remounted (empty) for each new code, see the `key` below. */
-function CodeEntry({ busy, onConfirm }: { busy: boolean; onConfirm: (code: string) => void }) {
-  const [code, setCode] = useState('');
-  const ready = code.length === CODE_LENGTH && !busy;
-  return (
-    <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
-      <TextField
-        label={OTP_TEXT.codeLabel}
-        value={code}
-        onChange={(e) => setCode(normalizeCodeEntry(e.target.value))}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && ready) onConfirm(code);
-        }}
-        size="small"
-        autoComplete="one-time-code"
-        slotProps={{
-          htmlInput: {
-            inputMode: 'numeric',
-            autoComplete: 'one-time-code',
-            dir: 'ltr',
-            'data-testid': 'otp-code',
-            style: { letterSpacing: '0.3em', textAlign: 'center' },
-          },
-        }}
-        sx={{ maxWidth: 180 }}
-      />
-      <Button
-        variant="contained"
-        onClick={() => onConfirm(code)}
-        disabled={!ready}
-        data-testid="otp-confirm"
-      >
-        {OTP_TEXT.confirm}
-      </Button>
-    </Stack>
-  );
-}
-
 export interface OtpControlProps {
   otp: OtpStatus | undefined;
   /** The typed phone is valid per §8.1 (instant check; the server re-checks). */
   phoneValid: boolean;
   enabled: boolean;
   onSend: () => Promise<void>;
-  onVerify: (code: string) => Promise<void>;
+  /** Checks the code; resolves to a callback that applies the verified draft (called after the
+   * green boxes have shown), rejects with the server error. */
+  onVerify: (code: string) => Promise<() => void>;
 }
 
 export function OtpControl({ otp, phoneValid, enabled, onSend, onVerify }: OtpControlProps) {
   const status = otp?.status ?? 'none';
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [phase, setPhase] = useState<CodePhase>('idle');
+  // Bumped after a wrong code: remounts the boxes empty, focused on the first one.
+  const [round, setRound] = useState(0);
   // A server-side wait (429 retry_after_s) when the status itself carries no resend time.
   const [waitUntil, setWaitUntil] = useState<string | null>(null);
   const resendAt = otp?.resend_at ?? waitUntil;
@@ -129,7 +96,25 @@ export function OtpControl({ otp, phoneValid, enabled, onSend, onVerify }: OtpCo
       setWaitUntil(null);
       await onSend();
     });
-  const confirm = (code: string) => void run(() => onVerify(code));
+  const confirm = async (code: string) => {
+    setPhase('checking');
+    setError(null);
+    try {
+      const apply = await onVerify(code);
+      setPhase('success');
+      setTimeout(() => {
+        apply();
+        setPhase('idle');
+      }, SUCCESS_HOLD_MS);
+    } catch (err) {
+      setError(messageOf(err));
+      setPhase('error');
+      setTimeout(() => {
+        setPhase('idle');
+        setRound((r) => r + 1);
+      }, ERROR_HOLD_MS);
+    }
+  };
 
   if (status === 'verified') {
     return (
@@ -172,7 +157,11 @@ export function OtpControl({ otp, phoneValid, enabled, onSend, onVerify }: OtpCo
           <Typography variant="body2" color="text.secondary" data-testid="otp-sent-to">
             {OTP_TEXT.sentTo(otp?.phone ?? '')}
           </Typography>
-          <CodeEntry key={otp?.expires_at ?? ''} busy={busy} onConfirm={confirm} />
+          <OtpCodeBoxes
+            key={`${otp?.expires_at ?? ''}-${round}`}
+            phase={phase}
+            onComplete={(code) => void confirm(code)}
+          />
           {sendButton(OTP_TEXT.resend)}
         </>
       ) : (

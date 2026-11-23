@@ -35,7 +35,7 @@ export function PhoneSection({
     normalized && normalized !== values.phone_input.trim() ? `سيُحفظ كـ ${normalized}` : ' ';
 
   const refreshAfter = useCallback(
-    async (err: unknown) => {
+    async (err: unknown): Promise<never> => {
       if (draftId && err instanceof ApiError && REFRESH_AFTER.has(err.code)) {
         try {
           applyServerDraft(await getDraft(draftId));
@@ -56,11 +56,13 @@ export function PhoneSection({
 
   const onVerify = useCallback(
     async (code: string) => {
-      if (!draftId) return;
+      if (!draftId) return () => {};
       try {
-        applyServerDraft(await verifyOtp(draftId, code));
+        const verified = await verifyOtp(draftId, code);
+        // Applied once the green boxes have shown (OtpControl).
+        return () => applyServerDraft(verified);
       } catch (err) {
-        await refreshAfter(err);
+        return refreshAfter(err);
       }
     },
     [applyServerDraft, draftId, refreshAfter],

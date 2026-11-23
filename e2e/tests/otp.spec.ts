@@ -69,6 +69,13 @@ async function choose(page: Page, label: string, option: string | RegExp) {
 }
 
 const saved = (page: Page) => expect(page.getByTestId('save-badge')).toHaveText('محفوظ');
+const digit = (page: Page, i: number) => page.getByTestId(`otp-digit-${i}`);
+
+/** Type into the six boxes the way a marketer does: the first box is focused, focus moves on. */
+async function typeCode(page: Page, code: string) {
+  await expect(digit(page, 0)).toBeFocused();
+  await page.keyboard.type(code);
+}
 
 test('send, verify, a category change cancels, verify again', async ({ page, request }, testInfo) => {
   test.setTimeout(150_000);
@@ -100,15 +107,25 @@ test('send, verify, a category change cancels, verify again', async ({ page, req
   await expect(page.getByTestId('otp-send')).toContainText('إعادة الإرسال بعد');
   await expect(page.getByTestId('otp-send')).toBeDisabled();
 
-  // A wrong code first: the server says how many attempts remain.
-  await page.getByTestId('otp-code').fill('000000');
-  await page.getByTestId('otp-confirm').click();
-  await expect(page.getByTestId('otp-error')).toHaveText('الرمز غير صحيح، بقيت محاولتان');
+  // Six boxes, left to right on the Arabic page, inside the screen width (phone sizes too).
+  const viewport = page.viewportSize()!;
+  const first = (await digit(page, 0).boundingBox())!;
+  const last = (await digit(page, 5).boundingBox())!;
+  expect(first.x).toBeLessThan(last.x);
+  expect(last.x + last.width).toBeLessThanOrEqual(viewport.width);
+  await page.getByTestId('otp-code').screenshot({ path: testInfo.outputPath('otp-boxes.png') });
 
-  // The right code, typed with Arabic digits.
-  await page.getByTestId('otp-code').fill('٢٤٦٨١٠');
-  await expect(page.getByTestId('otp-code')).toHaveValue(FAKE_CODE);
-  await page.getByTestId('otp-confirm').click();
+  // A wrong code first: the sixth digit submits by itself; red, then the boxes clear.
+  await typeCode(page, '000000');
+  await expect(page.getByTestId('otp-error')).toHaveText('الرمز غير صحيح، بقيت محاولتان');
+  await expect(digit(page, 0)).toHaveValue('');
+  await expect(page.getByTestId('otp-code')).toHaveAttribute('data-phase', 'idle');
+
+  // The right code, typed with Arabic digits: each box shows its Latin digit, then green, then ✓.
+  await typeCode(page, '٢٤٦٨١٠');
+  await expect(page.getByTestId('otp-code')).toHaveAttribute('data-phase', 'success');
+  await expect(digit(page, 5)).toHaveValue('0');
+  await page.getByTestId('otp-code').screenshot({ path: testInfo.outputPath('otp-boxes-ok.png') });
   await expect(page.getByTestId('otp-verified')).toHaveText('تم التحقق');
   await expect(page.getByTestId('missing-phone_verification')).toHaveCount(0);
 
@@ -126,7 +143,14 @@ test('send, verify, a category change cancels, verify again', async ({ page, req
   // Verify again after the 60 s resend wait from the first send.
   await expect(page.getByTestId('otp-send')).toHaveText('تحقّق', { timeout: 70_000 });
   await page.getByTestId('otp-send').click();
-  await page.getByTestId('otp-code').fill(FAKE_CODE);
-  await page.getByTestId('otp-confirm').click();
+  // Paste the whole code into the first box: it spreads over the six and submits.
+  await expect(digit(page, 0)).toBeFocused();
+  await page.evaluate((code) => {
+    const data = new DataTransfer();
+    data.setData('text', code);
+    document.activeElement!.dispatchEvent(
+      new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }),
+    );
+  }, FAKE_CODE);
   await expect(page.getByTestId('otp-verified')).toHaveText('تم التحقق');
 });

@@ -12,11 +12,16 @@ export const OTP_TEXT = {
   needsReverify: 'يحتاج تحقق جديد',
   notConfigured: 'خدمة التحقق غير مهيّأة',
   codeLabel: 'رمز التحقق',
+  digitLabel: 'الرقم',
   sentTo: (phone: string) => `أُرسل رمز التحقق عبر الواتساب إلى ${phone}`,
   resendIn: (seconds: number) => `إعادة الإرسال بعد ${seconds} ثانية`,
 } as const;
 
 export const CODE_LENGTH = 6;
+
+/** How long the green boxes show before ✓ «تم التحقق», and the red shake before clearing. */
+export const SUCCESS_HOLD_MS = 700;
+export const ERROR_HOLD_MS = 500;
 
 /** Arabic-Indic digits → ASCII, anything else dropped, at most 6 digits (pasting works). */
 export function normalizeCodeEntry(raw: string): string {
