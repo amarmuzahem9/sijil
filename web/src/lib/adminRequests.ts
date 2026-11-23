@@ -4,6 +4,7 @@
  */
 import { apiFetch, apiFetchBlob } from './api';
 import type { RequestType } from './requests';
+import type { DeletionReason } from './labels';
 import type { RequestStatus } from './requestStatus';
 
 export type ReasonCode = 'family_exists' | 'numbers_edited' | 'return' | 'numbers_conflict';
@@ -84,6 +85,15 @@ export interface Decision {
   label: string | null;
 }
 
+/** The deletion mark (specs/011 contracts/api.md). */
+export interface DeletedMark {
+  at: string;
+  by_name: string;
+  reason: DeletionReason;
+}
+
+/** A deleted request (`deleted` set) carries only the kept fields: every personal field is null
+ * and names, images, numbers, linked records and warnings are empty (specs/011 R9). */
 export interface RequestFile {
   id: number;
   number_label: string;
@@ -91,33 +101,36 @@ export interface RequestFile {
   status: Exclude<RequestStatus, 'draft'>;
   names: Record<string, string | null>;
   names_reading: Record<string, string | null>;
-  full_name: string;
-  national_id: string;
-  family_number: string;
-  birth_date: string;
-  issue_date: string;
-  expiry_date: string;
-  birth_place: string;
-  issuing_authority: string;
+  full_name: string | null;
+  national_id: string | null;
+  family_number: string | null;
+  birth_date: string | null;
+  issue_date: string | null;
+  expiry_date: string | null;
+  birth_place: string | null;
+  issuing_authority: string | null;
   images: { id: string; side: 'front' | 'back' }[];
-  location: { lat: number; lng: number; source: string; accuracy_m: number | null };
-  address: string;
-  landmark: string;
+  location: { lat: number; lng: number; source: string; accuracy_m: number | null } | null;
+  address: string | null;
+  landmark: string | null;
   area_name: string;
   tower_code: string;
   tower_name: string;
   plan_name: string;
   trial_price: number;
   second_price: number;
-  phone: string;
+  phone: string | null;
   otp_verified_at: string;
-  username: string;
+  username: string | null;
   marketer_name: string;
   submitted_at: string;
-  numbers: { national_id: NumberView; family_number: NumberView };
+  numbers: { national_id: NumberView; family_number: NumberView } | null;
   reasons: ReviewReason[];
   warnings: ReviewWarning[];
   decision: Decision | null;
+  deleted: DeletedMark | null;
+  /** «حذف» is offered: the caller holds `delete` and the request is pending or rejected. */
+  can_delete: boolean;
 }
 
 export function listPending(reason?: ReasonCode) {
@@ -150,6 +163,16 @@ export interface RejectBody {
 
 export const accept = (id: number, body: AcceptBody) =>
   apiFetch<RequestFile>(`/api/admin/requests/${id}/accept`, { method: 'POST', body });
+
+export interface DeleteBody {
+  reason: DeletionReason;
+  /** The request number as typed; the server parses it again (specs/011 R6). */
+  confirm_number: string;
+}
+
+/** «حذف مشترك»: the file in its deleted form. */
+export const deleteRequest = (id: number, body: DeleteBody) =>
+  apiFetch<RequestFile>(`/api/admin/requests/${id}/delete`, { method: 'POST', body });
 
 export const reject = (id: number, body: RejectBody) =>
   apiFetch<RequestFile>(`/api/admin/requests/${id}/reject`, { method: 'POST', body });

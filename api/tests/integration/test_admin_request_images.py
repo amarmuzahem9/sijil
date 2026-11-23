@@ -110,3 +110,18 @@ def test_missing_file_is_404_without_the_path_in_the_log(
 def test_unknown_image_is_404(client, make_user) -> None:
     res = _get(client, headers_for(client, make_user("super_admin")), uuid.uuid4())
     assert res.status_code == 404
+
+
+def test_deleted_request_image_is_404(client, db, uploads, make_user, marketer) -> None:
+    """specs/011 T021: after a deletion the old image link opens nothing."""
+    request = request_factory(db, marketer, status="pending_review")
+    image = _image(db, uploads, request)
+    deleter = admin_with(make_user, "review", "delete")
+    h = headers_for(client, deleter)
+    res = client.post(
+        f"/api/admin/requests/{request.id}/delete",
+        json={"reason": "test", "confirm_number": request.number_label},
+        headers=h,
+    )
+    assert res.status_code == 200, res.text
+    assert _get(client, h, image.id).status_code == 404

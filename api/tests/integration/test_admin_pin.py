@@ -371,3 +371,18 @@ def test_without_review_is_404(client, db, make_user, marketer) -> None:
         {"field": "family_number", "source": "reading"},
     )
     assert res.status_code == 404
+
+
+def test_deleted_request_cannot_be_pinned(client, db, h, reviewer, marketer) -> None:
+    """specs/011 T019."""
+    from tests.helpers.requests import mark_deleted
+
+    request = mark_deleted(db, request_factory(db, marketer, status="pending_review"), reviewer)
+    res = _pin(
+        client, h, request.id, {"field": "national_id", "source": "typed", "value": "199000000002"}
+    )
+    assert (res.status_code, res.json()["code"]) == (409, "request_deleted")
+    assert (
+        db.scalars(select(RequestNumberPin).where(RequestNumberPin.request_id == request.id)).all()
+        == []
+    )

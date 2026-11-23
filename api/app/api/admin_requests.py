@@ -15,8 +15,15 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import AuthContext, current_user, require_permission
 from app.db import get_db
-from app.schemas.admin_requests import AcceptIn, PendingList, PinIn, RejectIn, RequestFileOut
-from app.services import review_service
+from app.schemas.admin_requests import (
+    AcceptIn,
+    DeleteIn,
+    PendingList,
+    PinIn,
+    RejectIn,
+    RequestFileOut,
+)
+from app.services import deletion_service, review_service
 
 router = APIRouter(prefix="/admin", tags=["admin-review"])
 
@@ -42,7 +49,9 @@ def get_request_file(
     db: Session = Depends(get_db),
 ) -> RequestFileOut:
     """404 for a caller without `review`, the same as for a missing request."""
-    return review_service.to_file(db, review_service.get_for_review(db, ctx.user, request_id))
+    return review_service.to_file(
+        db, review_service.get_for_review(db, ctx.user, request_id), ctx.user
+    )
 
 
 @router.post("/requests/{request_id}/accept", response_model=RequestFileOut)
@@ -54,7 +63,7 @@ def accept_request(
 ) -> RequestFileOut:
     """«قبول». A return needs `counts_commission`; warnings need `confirm_warnings` (R7)."""
     request = review_service.accept(db, ctx.user, request_id, body)
-    return review_service.to_file(db, request)
+    return review_service.to_file(db, request, ctx.user)
 
 
 @router.post("/requests/{request_id}/reject", response_model=RequestFileOut)
@@ -66,7 +75,7 @@ def reject_request(
 ) -> RequestFileOut:
     """«رفض» with a fixed reason, or «سبب آخر» with the admin's note (R6)."""
     request = review_service.reject(db, ctx.user, request_id, body)
-    return review_service.to_file(db, request)
+    return review_service.to_file(db, request, ctx.user)
 
 
 @router.post("/requests/{request_id}/pin", response_model=RequestFileOut)
@@ -78,7 +87,20 @@ def pin_number(
 ) -> RequestFileOut:
     """«تثبيت» a national ID or family number from a source; the file after the re-check (R4)."""
     request = review_service.pin(db, ctx.user, request_id, body)
-    return review_service.to_file(db, request)
+    return review_service.to_file(db, request, ctx.user)
+
+
+@router.post("/requests/{request_id}/delete", response_model=RequestFileOut)
+def delete_request(
+    request_id: int,
+    body: DeleteIn,
+    ctx: AuthContext = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> RequestFileOut:
+    """«حذف مشترك»: needs `review` and `delete`; a pending or rejected request only. The answer
+    is the file in its deleted form (specs/011 contracts/api.md)."""
+    request = deletion_service.delete(db, ctx.user, request_id, body)
+    return review_service.to_file(db, request, ctx.user)
 
 
 @router.get("/request-images/{image_id}", response_class=FileResponse)

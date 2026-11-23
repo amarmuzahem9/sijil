@@ -64,6 +64,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'request.approved': 'قبول طلب',
   'request.rejected': 'رفض طلب',
   'request.numbers_pinned': 'تثبيت رقم',
+  // specs/011
+  'request.deleted': 'حذف مشترك',
 };
 
 export const AUDIT_FIELD_LABELS: Record<string, string> = {
@@ -101,6 +103,9 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   reasons_added: 'أسباب أُضيفت',
   reasons_not_applicable: 'أسباب لم تعد تنطبق',
   numbers_edited_resolved: 'اكتمل تثبيت الأرقام',
+  // specs/011
+  deleted: 'حُذفت البيانات',
+  pin_count: 'عدد التثبيتات',
 };
 
 export const STATE_LABELS = { active: 'فعّال', inactive: 'موقوف' } as const;

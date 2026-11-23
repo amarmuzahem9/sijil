@@ -268,3 +268,46 @@ def test_a_pin_is_audited_by_its_pin_row(client, db, make_user) -> None:
         request.full_name,
     ):
         assert secret not in blob, secret
+
+
+def test_a_deletion_is_audited_once_without_personal_data(
+    client, db, make_user, tmp_path, monkeypatch
+) -> None:
+    """Feature 011 (T020, FR-018): one `request.deleted` entry by the admin, with the number,
+    the status before, the counts and the reason, and no personal value."""
+    from app.config import get_settings
+    from tests.helpers.requests import add_images, add_pin, request_factory
+
+    monkeypatch.setattr(get_settings(), "uploads_dir", str(tmp_path))
+    marketer = make_user("marketer")
+    admin = make_user("super_admin")
+    request = request_factory(db, marketer, status="pending_review", full_name="اسم سري للحذف")
+    add_images(db, request, tmp_path)
+    add_pin(db, request, admin)
+    secrets = [
+        request.national_id,
+        request.family_number,
+        request.phone,
+        request.full_name,
+        request.username,
+        request.address,
+        request.landmark,
+        "199000000099",  # the pin's value
+    ]
+    h = auth_header(login(client, admin.phone))
+    res = client.post(
+        f"/api/admin/requests/{request.id}/delete",
+        json={"reason": "duplicate", "confirm_number": request.number_label},
+        headers=h,
+    )
+    assert res.status_code == 200, res.text
+
+    entries = list(db.scalars(select(AuditLog).where(AuditLog.action == "request.deleted")))
+    assert [(e.entity_type, e.entity_id, e.actor_id) for e in entries] == [
+        ("request", str(request.number), admin.id)
+    ]
+    assert entries[0].before == {"status": "pending_review", "image_count": 2, "pin_count": 1}
+    assert entries[0].after == {"deleted": True, "reason": "duplicate"}
+    blob = json.dumps([entries[0].before, entries[0].after], ensure_ascii=False)
+    for secret in secrets:
+        assert secret not in blob, secret

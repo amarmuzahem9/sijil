@@ -214,3 +214,21 @@ def test_rejected_request_no_longer_counts(client, db, h, marketer) -> None:
 
     assert all(r.ref_id != own for r in match_service.find_matches(db, **keys).records)
     assert db.get(Request, request.id).status == "rejected"
+
+
+# --- specs/011 T019: a deleted request takes no decision ----------------------------------------
+
+
+@pytest.mark.parametrize(
+    "action,body",
+    [("accept", {}), ("reject", {"reason": "card_unclear"})],
+)
+def test_deleted_request_cannot_be_decided(client, db, h, reviewer, marketer, action, body) -> None:
+    from tests.helpers.requests import mark_deleted
+
+    request = mark_deleted(db, request_factory(db, marketer, status="pending_review"), reviewer)
+    res = client.post(f"/api/admin/requests/{request.id}/{action}", json=body, headers=h)
+    assert (res.status_code, res.json()["code"]) == (409, "request_deleted")
+    db.expire_all()
+    row = db.get(Request, request.id)
+    assert row.status == "pending_review" and row.approved_at is None and row.rejected_at is None

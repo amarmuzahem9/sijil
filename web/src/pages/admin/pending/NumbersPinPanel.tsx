@@ -168,7 +168,8 @@ export function NumbersPinPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const canPin = file.status === 'pending_review';
-  const fields = FIELDS.filter((f) => file.numbers[f].edited);
+  const numbers = file.numbers; // null on a deleted request (specs/011 R9)
+  const fields = numbers ? FIELDS.filter((f) => numbers[f].edited) : [];
   if (fields.length === 0) return null;
 
   async function send(body: PinBody) {
@@ -198,7 +199,7 @@ export function NumbersPinPanel({
           <FieldGroup
             key={field}
             field={field}
-            view={file.numbers[field]}
+            view={numbers![field]}
             canPin={canPin}
             busy={busy}
             onPin={(body) => void send(body)}

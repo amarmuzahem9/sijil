@@ -438,3 +438,49 @@ def test_a_pin_never_logs_the_values(client, db, make_user, caplog, capsys) -> N
         request.full_name,
     ):
         assert secret not in everything, secret
+
+
+def test_deletion_never_logs_personal_data(
+    client, db, make_user, caplog, capsys, tmp_path, monkeypatch
+) -> None:
+    """specs/011 FR-020: the deletion logs the request number and the reason only."""
+    from tests.helpers.requests import add_images, request_factory
+    from tests.helpers.review import admin_with, headers_for
+
+    monkeypatch.setattr(get_settings(), "uploads_dir", str(tmp_path))
+    caplog.set_level(logging.DEBUG)
+    marketer = make_user("marketer")
+    request = request_factory(
+        db,
+        marketer,
+        status="pending_review",
+        full_name="اسم سري للحذف",
+        address="عنوان سري للحذف",
+        landmark="نقطة سرية للحذف",
+    )
+    images = add_images(db, request, tmp_path)
+    secrets = [
+        request.full_name,
+        request.national_id,
+        request.family_number,
+        request.phone,
+        request.username,
+        request.address,
+        request.landmark,
+        str(request.location_lat),
+        *(i.file_name for i in images),
+    ]
+    admin = admin_with(make_user, "review", "delete")
+    res = client.post(
+        f"/api/admin/requests/{request.id}/delete",
+        json={"reason": "test", "confirm_number": request.number_label},
+        headers=headers_for(client, admin),
+    )
+    assert res.status_code == 200, res.text
+
+    printed = capsys.readouterr()
+    raw = "\n".join(r.getMessage() for r in caplog.records)
+    everything = raw + _formatted(list(caplog.records)) + printed.out + printed.err
+    assert f"number={request.number}" in raw
+    for secret in secrets:
+        assert secret not in everything, secret

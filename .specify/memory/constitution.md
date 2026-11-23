@@ -1,5 +1,14 @@
 <!--
-Sync Impact Report (2026-11-24, amendment 5)
+Sync Impact Report (2026-11-24, amendment 6)
+- Version change: 1.3.0 → 1.3.1 (PATCH: clarification)
+- Modified principles: IV. Recorded Values Are Immutable — points to the Principle III erasure:
+  on a deleted pending or rejected request the original reading, the historical username and the
+  rejection note are erased, and the kept values never change (docs/system.md §7.4, feature 011).
+- Added/removed sections: none
+- Templates: not modified
+- Follow-up TODOs: none
+- Approved by the project owner in the feature 011 analysis review (D1).
+Previous report (2026-11-24, amendment 5)
 - Version change: 1.2.1 → 1.3.0 (MINOR: Principle III materially expanded)
 - Modified principles: III. Permanent Audit Trail — a request in status pending review or rejected
   MAY have its personal data and card images erased by an admin holding `delete`; the request row
@@ -145,6 +154,10 @@ tamper-evident history.
 - Later changes to settings (prices, tiers, categories) MUST NOT alter values already recorded.
 - Phone verification, request approval, and link completion are three separate facts, each
   stored with its own timestamp. A paid commission month is locked.
+- The one exception is the erasure of Principle III: deleting a pending or rejected request
+  erases its personal values (among them the original reading, the historical username and the
+  rejection note). The values it keeps (prices, dates, the decision's who, when and reason) never
+  change (docs/system.md §7.4, feature 011).
 
 **Rationale**: Records must reflect what was true at the time, so reports and commissions stay
 correct after settings change.
@@ -253,4 +266,4 @@ reliable proof they hold.
   violation MUST be resolved, or explicitly justified and approved, before merge.
 - Runtime guidance for agents lives in `CLAUDE.md`.
 
-**Version**: 1.3.0 | **Ratified**: 2026-11-21 | **Last Amended**: 2026-11-24
+**Version**: 1.3.1 | **Ratified**: 2026-11-21 | **Last Amended**: 2026-11-24

@@ -46,7 +46,7 @@ function bothEdited() {
           },
         ],
       },
-      family_number: { ...file.numbers.family_number, reading: null },
+      family_number: { ...file.numbers!.family_number, reading: null },
     },
   });
 }

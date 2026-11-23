@@ -30,9 +30,11 @@ from app.models import (
     User,
 )
 from app.models.draft import NAME_FIELDS
+from app.models.request import DELETABLE_STATUSES
 from app.schemas.admin_requests import (
     AcceptIn,
     DecisionOut,
+    DeletedOut,
     ImageOut,
     LinkedRecordOut,
     LocationOut,
@@ -55,6 +57,21 @@ def can_review(user: User) -> bool:
     return has_any_permission(user.role, user.permissions, ["review"])
 
 
+def can_delete(user: User) -> bool:
+    """«حذف مشترك» (specs/011 R7). Deleting also needs `review` to reach the file."""
+    return has_any_permission(user.role, user.permissions, ["delete"])
+
+
+def deletable(user: User, request: Request) -> bool:
+    """«حذف» is offered on this file (specs/011 contracts/api.md › can_delete)."""
+    return (
+        can_review(user)
+        and can_delete(user)
+        and not request.is_deleted
+        and request.status in DELETABLE_STATUSES
+    )
+
+
 def _active_codes(request: Request) -> list[str]:
     codes: list[str] = []
     for row in request.reasons:
@@ -67,7 +84,7 @@ def _active_codes(request: Request) -> list[str]:
 
 
 def list_pending(db: Session, reason: str | None = None) -> PendingList:
-    query = select(Request).where(Request.status == "pending_review")
+    query = select(Request).where(Request.status == "pending_review", Request.deleted_at.is_(None))
     if reason is not None:
         query = query.where(
             exists().where(
@@ -221,12 +238,77 @@ def _decision(request: Request, names: dict[int, str]) -> DecisionOut | None:
             by=names.get(request.rejected_by),
             at=request.rejected_at,
             reason=request.rejection_reason,
-            label=rejection_reasons.label(request.rejection_reason, request.rejection_note),
+            # A deleted request lost the note: the reason's name only (specs/011 R11).
+            label=(
+                rejection_reasons.LABELS[request.rejection_reason]
+                if request.is_deleted
+                else rejection_reasons.label(request.rejection_reason, request.rejection_note)
+            ),
         )
     return None
 
 
-def to_file(db: Session, request: Request) -> RequestFileOut:
+def _deleted_file(db: Session, request: Request, viewer: User | None) -> RequestFileOut:
+    """The kept fields and the mark only (specs/011 R9): no personal field, image, number,
+    linked record or warning."""
+    names = _names(db, {request.approved_by, request.rejected_by, request.deleted_by})
+    return RequestFileOut(
+        id=request.id,
+        number_label=request.number_label,
+        type=request.type,
+        status=request.status,
+        names={},
+        names_reading={},
+        full_name=None,
+        national_id=None,
+        family_number=None,
+        birth_date=None,
+        issue_date=None,
+        expiry_date=None,
+        birth_place=None,
+        issuing_authority=None,
+        images=[],
+        location=None,
+        address=None,
+        landmark=None,
+        area_name=request.area_name,
+        tower_code=request.tower_code,
+        tower_name=request.tower_name,
+        plan_name=request.plan_name,
+        trial_price=request.trial_price,
+        second_price=request.second_price,
+        phone=None,
+        otp_verified_at=request.otp_verified_at,
+        username=None,
+        marketer_name=request.marketer.name,
+        submitted_at=request.submitted_at,
+        numbers=None,
+        reasons=[
+            ReasonOut(
+                reason=row.reason,
+                state=row.state,
+                added_at_review=row.added_by is not None,
+                basis=row.details.get("basis"),
+                fields=row.details.get("fields", []) if row.reason == "numbers_edited" else [],
+                record=None,
+            )
+            for row in request.reasons
+        ],
+        warnings=[],
+        decision=_decision(request, names),
+        deleted=DeletedOut(
+            at=request.deleted_at,
+            by_name=names.get(request.deleted_by, ""),
+            reason=request.deletion_reason,
+        ),
+        can_delete=False,
+    )
+
+
+def to_file(db: Session, request: Request, viewer: User | None = None) -> RequestFileOut:
+    """The request file; `viewer` decides `can_delete` (specs/011)."""
+    if request.is_deleted:
+        return _deleted_file(db, request, viewer)
     names = _names(
         db,
         {request.approved_by, request.rejected_by} | {p.pinned_by for p in request.pins},
@@ -275,6 +357,7 @@ def to_file(db: Session, request: Request) -> RequestFileOut:
         # A decided request is read-only: its confirmed warnings are in `decision`.
         warnings=live_check(db, request).warnings if pending else [],
         decision=_decision(request, names),
+        can_delete=viewer is not None and deletable(viewer, request),
     )
 
 
@@ -293,6 +376,9 @@ def _lock_pending(db: Session, user: User, request_id: int) -> Request:
     ).one_or_none()
     if request is None or not can_review(user):
         raise AppError("request_not_found", 404)
+    # A deleted pending request keeps its status, so this comes first (specs/011 R3).
+    if request.is_deleted:
+        raise AppError("request_deleted", 409)
     if request.status != "pending_review":
         raise AppError("already_decided", 409, extra={"status": request.status})
     return request

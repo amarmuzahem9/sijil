@@ -2,8 +2,13 @@
  * The review file of one request (docs/system.md §6.4, specs/010 US1: FR-003, FR-004, FR-012):
  * البطاقة، الموقع، الاشتراك، الهاتف، الأسباب، «تثبيت الأرقام» (US3) and the decision area (US2). Every value sits in a
  * read-only box like the form's inputs; two columns on a computer, one on a phone.
+ *
+ * «حذف مشترك» (specs/011 FR-002, FR-017, R9): the «حذف» button follows `can_delete`; a deleted
+ * file shows the banner and the kept fields only (subscription, reasons), with no decision area.
  */
 import ArrowForward from '@mui/icons-material/ArrowForward';
+import DeleteIcon from '@mui/icons-material/Delete';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -12,17 +17,29 @@ import Paper from '@mui/material/Paper';
 import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useId, type ReactNode } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useId, useState, type ReactNode } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 
 import { ReadOnlyField, ReadOnlyFields } from '../../../components/ReadOnlyField';
-import { getRequestFile, type RequestFile } from '../../../lib/adminRequests';
-import { REASON_LABELS, REASON_STATE_LABELS, REQUEST_TYPE_LABELS } from '../../../lib/labels';
+import { ApiError } from '../../../lib/api';
+import {
+  deleteRequest,
+  getRequestFile,
+  type DeleteBody,
+  type RequestFile,
+} from '../../../lib/adminRequests';
+import {
+  DELETION_REASON_LABELS,
+  REASON_LABELS,
+  REASON_STATE_LABELS,
+  REQUEST_TYPE_LABELS,
+} from '../../../lib/labels';
 import { formatMoney } from '../../../lib/money';
 import { STATUS_COLORS, STATUS_LABELS } from '../../../lib/requestStatus';
 import { formatBaghdad } from '../../../lib/time';
 import { DecisionPanel } from './DecisionPanel';
+import { DeleteRequestDialog } from './DeleteRequestDialog';
 import { LinkedRecordCard } from './LinkedRecordCard';
 import { NumbersPinPanel } from './NumbersPinPanel';
 import { RequestImage } from './RequestImage';
@@ -106,6 +123,7 @@ function CardSection({ file }: { file: RequestFile }) {
 }
 
 function LocationSection({ file }: { file: RequestFile }) {
+  if (!file.location) return null;
   const { lat, lng } = file.location;
   return (
     <Section title="الموقع">
@@ -185,19 +203,40 @@ function ReasonsSection({ file }: { file: RequestFile }) {
   );
 }
 
+/** «تم حذف بيانات هذا الطلب» with who, when, the reason, and a rejection's reason name. */
+function DeletedBanner({ file }: { file: RequestFile }) {
+  if (!file.deleted) return null;
+  const { at, by_name, reason } = file.deleted;
+  return (
+    <Alert severity="info" role="status">
+      <Typography sx={{ fontWeight: 700 }}>تم حذف بيانات هذا الطلب</Typography>
+      <Typography variant="body2">
+        حذفه {by_name} في {formatBaghdad(at)}. سبب الحذف: {DELETION_REASON_LABELS[reason]}
+      </Typography>
+      {file.decision?.status === 'rejected' && (
+        <Typography variant="body2">سبب الرفض: {file.decision.label}</Typography>
+      )}
+    </Alert>
+  );
+}
+
 export function RequestReviewView({
   file,
   decision,
   onPinned = () => undefined,
+  onDelete,
 }: {
   file: RequestFile;
   /** The decision area (US2); rendered under the file. */
   decision?: ReactNode;
   /** The file after a pin (US3). */
   onPinned?: (file: RequestFile) => void;
+  /** «حذف» pressed (specs/011); the button shows only when the file allows it. */
+  onDelete?: () => void;
 }) {
   const edited = file.reasons.some((r) => r.reason === 'numbers_edited');
   const color = STATUS_COLORS[file.status];
+  const deleted = file.deleted !== null;
   return (
     <Stack spacing={2}>
       <Stack direction="row" sx={{ gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -213,14 +252,36 @@ export function RequestReviewView({
         <Typography variant="body2" color="text.secondary">
           أُرسل {formatBaghdad(file.submitted_at)}
         </Typography>
+        {file.can_delete && !deleted && onDelete && (
+          <Button
+            color="error"
+            variant="outlined"
+            size="small"
+            startIcon={<DeleteIcon />}
+            onClick={onDelete}
+            sx={{ ms: 'auto' }}
+          >
+            حذف
+          </Button>
+        )}
       </Stack>
-      <ReasonsSection file={file} />
-      {edited && <NumbersPinPanel file={file} onPinned={onPinned} />}
-      <CardSection file={file} />
-      <LocationSection file={file} />
-      <SubscriptionSection file={file} />
-      <PhoneSection file={file} />
-      {decision}
+      {deleted ? (
+        <>
+          <DeletedBanner file={file} />
+          <ReasonsSection file={file} />
+          <SubscriptionSection file={file} />
+        </>
+      ) : (
+        <>
+          <ReasonsSection file={file} />
+          {edited && <NumbersPinPanel file={file} onPinned={onPinned} />}
+          <CardSection file={file} />
+          <LocationSection file={file} />
+          <SubscriptionSection file={file} />
+          <PhoneSection file={file} />
+          {decision}
+        </>
+      )}
     </Stack>
   );
 }
@@ -237,6 +298,26 @@ export default function RequestReview() {
   }
   // A pin may change the type and the reasons shown in the list.
   const pinned = decided;
+
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const removal = useMutation({
+    mutationFn: (body: DeleteBody) => deleteRequest(Number(requestId), body),
+    onSuccess: (file) => {
+      decided(file);
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'home'] });
+      setDeleting(false);
+    },
+    onError: (err) => {
+      // Someone else deleted or decided it first: show the file as it is now.
+      if (
+        err instanceof ApiError &&
+        ['request_deleted', 'request_not_deletable'].includes(err.code)
+      )
+        void query.refetch();
+      setDeleteError(err instanceof Error ? err.message : String(err));
+    },
+  });
   return (
     <Stack spacing={2}>
       <div>
@@ -250,6 +331,10 @@ export default function RequestReview() {
         <RequestReviewView
           file={query.data}
           onPinned={pinned}
+          onDelete={() => {
+            setDeleteError(null);
+            setDeleting(true);
+          }}
           decision={
             <DecisionPanel
               file={query.data}
@@ -257,6 +342,16 @@ export default function RequestReview() {
               onRefresh={() => void query.refetch()}
             />
           }
+        />
+      )}
+      {query.data && deleting && (
+        <DeleteRequestDialog
+          open
+          numberLabel={query.data.number_label}
+          busy={removal.isPending}
+          error={deleteError}
+          onSubmit={(body) => removal.mutate(body)}
+          onClose={() => setDeleting(false)}
         />
       )}
     </Stack>

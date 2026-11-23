@@ -172,3 +172,17 @@ def add_otp_rows(
     db.add_all(rows)
     db.flush()
     return rows
+
+
+def mark_deleted(db: Session, request: Request, admin: User, reason: str = "test") -> Request:
+    """The deleted state written directly (data-model.md › requests), without the service: for
+    tests of the paths around a deleted request."""
+    from app.models.request import ERASED_COLUMNS
+
+    for column in ERASED_COLUMNS:
+        setattr(request, column, None)
+    request.deleted_at = utc_now()
+    request.deleted_by = admin.id
+    request.deletion_reason = reason
+    db.flush()
+    return request

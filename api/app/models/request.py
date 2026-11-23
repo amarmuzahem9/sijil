@@ -209,10 +209,11 @@ class Request(Base):
     expiry_date: Mapped[date | None] = mapped_column(Date)
     birth_place: Mapped[str | None] = mapped_column(Text)
     issuing_authority: Mapped[str | None] = mapped_column(Text)
-    card_fields: Mapped[dict | None] = mapped_column(JSONB)
-    national_id_check: Mapped[dict | None] = mapped_column(JSONB)
+    card_fields: Mapped[dict | None] = mapped_column(JSONB(none_as_null=True))
+    national_id_check: Mapped[dict | None] = mapped_column(JSONB(none_as_null=True))
     # Raw and ruled readings per side. Never returned to a page or logged (Principle II).
-    card_readings: Mapped[dict | None] = mapped_column(JSONB)
+    # `none_as_null`: a deletion stores SQL NULL, not JSON null (`requests_erasure`, specs/011).
+    card_readings: Mapped[dict | None] = mapped_column(JSONB(none_as_null=True))
 
     location_lat: Mapped[float | None] = mapped_column(Float)
     location_lng: Mapped[float | None] = mapped_column(Float)

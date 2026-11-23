@@ -187,3 +187,23 @@ describe('number pins (specs/010 T048)', () => {
     expect(formatAuditValue('numbers_edited_resolved', true)).toBe('نعم');
   });
 });
+
+describe('subscriber deletion (specs/011 T030)', () => {
+  it('labels «حذف مشترك» and shows its values in Arabic', () => {
+    expect(actionLabel(entry({ action: 'request.deleted' }))).toBe('حذف مشترك');
+    expect(formatAuditValue('reason', 'duplicate')).toBe('طلب مكرر');
+    expect(formatAuditValue('reason', 'entry_error')).toBe('خطأ إدخال');
+    expect(formatAuditValue('reason', 'other')).toBe('سبب آخر');
+    expect(formatAuditValue('status', 'pending_review')).toBe('بانتظار المراجعة');
+    expect(formatAuditValue('status', 'rejected')).toBe('مرفوض');
+    expect(formatAuditValue('deleted', true)).toBe('نعم');
+    expect(formatAuditValue('pin_count', 1)).toBe('1');
+  });
+
+  it('names the deletion fields', async () => {
+    const { AUDIT_FIELD_LABELS } = await import('../lib/labels');
+    expect(AUDIT_FIELD_LABELS.deleted).toBe('حُذفت البيانات');
+    expect(AUDIT_FIELD_LABELS.pin_count).toBe('عدد التثبيتات');
+    expect(AUDIT_FIELD_LABELS.image_count).toBe('عدد الصور');
+  });
+});

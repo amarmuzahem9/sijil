@@ -5,6 +5,7 @@
 import { ROLE_LABELS } from '../auth/roles';
 import type { AuditEntry } from './audit';
 import {
+  DELETION_REASON_LABELS,
   AUDIT_ACTION_LABELS,
   PERMISSION_LABELS,
   PIN_FIELD_LABELS,
@@ -16,6 +17,7 @@ import {
 } from './labels';
 import type { Permission } from './labels';
 import { formatMoney, formatNumber } from './money';
+import { STATUS_LABELS } from './requestStatus';
 import { formatBaghdad } from './time';
 
 const MONEY_FIELDS = new Set(['trial_price', 'second_price']);
@@ -44,6 +46,11 @@ export function formatAuditValue(field: string, value: unknown): string {
   // specs/010: the rejection reason code and the warnings confirmed at accept.
   if (field === 'reason' && typeof value === 'string' && value in REJECTION_REASON_LABELS)
     return REJECTION_REASON_LABELS[value as keyof typeof REJECTION_REASON_LABELS];
+  // specs/011: the deletion reason ('other' reads «سبب آخر» in both lists) and the status.
+  if (field === 'reason' && typeof value === 'string' && value in DELETION_REASON_LABELS)
+    return DELETION_REASON_LABELS[value as keyof typeof DELETION_REASON_LABELS];
+  if (field === 'status' && typeof value === 'string' && value in STATUS_LABELS)
+    return STATUS_LABELS[value as keyof typeof STATUS_LABELS];
   if (field === 'despite_warnings' && Array.isArray(value)) {
     if (value.length === 0) return '—';
     return value

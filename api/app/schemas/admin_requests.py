@@ -8,7 +8,7 @@ import uuid
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, StrictBool, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, model_validator
 
 from app.schemas.requests import ReasonCode, RequestStatus, RequestType
 
@@ -20,6 +20,8 @@ RejectionReason = Literal[
 ]
 PinField = Literal["national_id", "family_number"]
 PinSource = Literal["reading", "mrz", "marketer", "typed"]
+# specs/011 data-model.md › Deletion reasons
+DeletionReason = Literal["duplicate", "test", "entry_error", "other"]
 
 
 class _Body(BaseModel):
@@ -116,40 +118,54 @@ class DecisionOut(BaseModel):
     label: str | None = None
 
 
+class DeletedOut(BaseModel):
+    """The deletion mark (specs/011 contracts/api.md)."""
+
+    at: datetime
+    by_name: str
+    reason: DeletionReason
+
+
 class RequestFileOut(BaseModel):
+    """A deleted request (`deleted` set) carries only the kept fields: every personal field is
+    null, and names, images, numbers, linked records and warnings are empty (specs/011 R9)."""
+
     id: int
     number_label: str
     type: RequestType
     status: RequestStatus
     names: dict[str, str | None]
     names_reading: dict[str, str | None]
-    full_name: str
-    national_id: str
-    family_number: str
-    birth_date: date
-    issue_date: date
-    expiry_date: date
-    birth_place: str
-    issuing_authority: str
+    full_name: str | None
+    national_id: str | None
+    family_number: str | None
+    birth_date: date | None
+    issue_date: date | None
+    expiry_date: date | None
+    birth_place: str | None
+    issuing_authority: str | None
     images: list[ImageOut]
-    location: LocationOut
-    address: str
-    landmark: str
+    location: LocationOut | None
+    address: str | None
+    landmark: str | None
     area_name: str
     tower_code: str
     tower_name: str
     plan_name: str
     trial_price: int
     second_price: int
-    phone: str
+    phone: str | None
     otp_verified_at: datetime
-    username: str
+    username: str | None
     marketer_name: str
     submitted_at: datetime
-    numbers: NumbersOut
+    numbers: NumbersOut | None
     reasons: list[ReasonOut]
     warnings: list[ReviewWarning]
     decision: DecisionOut | None
+    deleted: DeletedOut | None = None
+    # «حذف» is offered: the caller holds `delete`, and the request is pending or rejected.
+    can_delete: bool = False
 
 
 # --- actions ---
@@ -163,6 +179,13 @@ class AcceptIn(_Body):
 class RejectIn(_Body):
     reason: RejectionReason
     note: str | None = None
+
+
+class DeleteIn(_Body):
+    """«حذف»: a reason from the list and the request number typed back (specs/011 R6)."""
+
+    reason: DeletionReason
+    confirm_number: str = Field(max_length=40)
 
 
 class PinIn(_Body):

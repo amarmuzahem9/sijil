@@ -127,6 +127,44 @@ export function requestFile(partial: Partial<RequestFile> = {}): RequestFile {
     ],
     warnings: [],
     decision: null,
+    deleted: null,
+    can_delete: false,
     ...partial,
   };
+}
+
+/** The same request after «حذف مشترك» (specs/011 R9): the kept fields and the mark only. */
+export function deletedRequestFile(partial: Partial<RequestFile> = {}): RequestFile {
+  return requestFile({
+    names: {},
+    names_reading: {},
+    full_name: null,
+    national_id: null,
+    family_number: null,
+    birth_date: null,
+    issue_date: null,
+    expiry_date: null,
+    birth_place: null,
+    issuing_authority: null,
+    images: [],
+    location: null,
+    address: null,
+    landmark: null,
+    phone: null,
+    username: null,
+    numbers: null,
+    reasons: [
+      {
+        reason: 'family_exists',
+        state: 'open',
+        added_at_review: false,
+        basis: null,
+        fields: [],
+        record: null,
+      },
+    ],
+    deleted: { at: '2026-11-24T09:30:00Z', by_name: 'أدمن الحذف', reason: 'duplicate' },
+    can_delete: false,
+    ...partial,
+  });
 }

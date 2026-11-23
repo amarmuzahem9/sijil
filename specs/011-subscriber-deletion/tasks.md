@@ -157,7 +157,7 @@ rows and image rows are gone, the row stays, and there is one audit line.
 
 ### Tests for User Story 1 (write first, run red)
 
-- [ ] T015 [P] [US1] Write `api/tests/integration/test_deletion.py`. A pending request with images,
+- [x] T015 [P] [US1] Write `api/tests/integration/test_deletion.py`. A pending request with images,
   pins, two orphan OTP rows for its phone and one live-draft OTP row for the same phone. After
   `POST /admin/requests/{id}/delete` with reason `duplicate` and `confirm_number` `"١٠٠٥"`-style
   input:
@@ -174,7 +174,7 @@ rows and image rows are gone, the row stays, and there is one audit line.
   `rejection_reason`, `rejected_at` and `rejected_by` are kept.
 
   Run: **red**.
-- [ ] T016 [P] [US1] In `api/tests/integration/test_deletion.py`, add the refusals in the order of
+- [x] T016 [P] [US1] In `api/tests/integration/test_deletion.py`, add the refusals in the order of
   [contracts/api.md](./contracts/api.md):
   - 404 for a missing request and for a caller without `review` (including `delete` only);
   - 403 for `review` without `delete`;
@@ -184,22 +184,22 @@ rows and image rows are gone, the row stays, and there is one audit line.
   - 422 `number_mismatch` for another number and for unparsable text.
 
   After every refusal the row is unchanged. Run: **red**.
-- [ ] T017 [P] [US1] In `api/tests/integration/test_deletion.py`, check:
+- [x] T017 [P] [US1] In `api/tests/integration/test_deletion.py`, check:
   - a missing image file still lets the deletion finish, and the log names the image id only;
   - a failure injected after the data erasure but before the unlink leaves no image rows, so
     `prune-uploads` removes the left files.
 
   Run: **red**.
-- [ ] T018 [P] [US1] Write `api/tests/integration/test_deletion_concurrency.py` on the pattern of
+- [x] T018 [P] [US1] Write `api/tests/integration/test_deletion_concurrency.py` on the pattern of
   `test_admin_decide_concurrency.py`:
   - delete and accept race on one request: exactly one wins, and the other gets 409
     (`request_deleted` or `request_not_deletable`);
   - delete and delete race: one 200 and one 409 `request_deleted`.
 
   Run: **red**.
-- [ ] T019 [P] [US1] Extend `api/tests/integration/test_admin_decide.py` and `test_admin_pin.py`:
+- [x] T019 [P] [US1] Extend `api/tests/integration/test_admin_decide.py` and `test_admin_pin.py`:
   accept, reject and pin on a deleted pending request return 409 `request_deleted`. Run: **red**.
-- [ ] T020 [P] [US1] Extend `api/tests/integration/test_audit_completeness.py` and
+- [x] T020 [P] [US1] Extend `api/tests/integration/test_audit_completeness.py` and
   `test_log_safety.py`:
   - a deletion writes exactly one `request.deleted` entry, with `before={status, image_count,
     pin_count}` and `after={deleted, reason}` (R12);
@@ -207,7 +207,7 @@ rows and image rows are gone, the row stays, and there is one audit line.
     phone, username, national ID, family number, address, landmark or coordinates.
 
   Run: **red**.
-- [ ] T021 [P] [US1] Extend `api/tests/integration/test_admin_request_file.py` and
+- [x] T021 [P] [US1] Extend `api/tests/integration/test_admin_request_file.py` and
   `test_admin_request_images.py`:
   - the file of a deleted request has `deleted` set, every personal field `null`, and empty
     `images`, `pins`, `linked` and `warnings`;
@@ -215,7 +215,7 @@ rows and image rows are gone, the row stays, and there is one audit line.
   - an old image id gives 404.
 
   Run: **red**.
-- [ ] T022 [P] [US1] Write `web/src/__tests__/deleteRequestDialog.test.tsx`. Check:
+- [x] T022 [P] [US1] Write `web/src/__tests__/deleteRequestDialog.test.tsx`. Check:
   - the warning text;
   - the four reasons;
   - the final button stays disabled until a reason is chosen and `parseRequestNumber` equals the
@@ -224,7 +224,7 @@ rows and image rows are gone, the row stays, and there is one audit line.
   - the server errors are shown in Arabic.
 
   Run: **red**.
-- [ ] T023 [P] [US1] Write `web/src/__tests__/deletedRequest.test.tsx`. Check:
+- [x] T023 [P] [US1] Write `web/src/__tests__/deletedRequest.test.tsx`. Check:
   - `RequestReview` shows «حذف» only when `can_delete`;
   - a deleted file shows the banner «تم حذف بيانات هذا الطلب» with who, when and the reason;
   - the decision, pin and delete panels are hidden.
@@ -233,29 +233,29 @@ rows and image rows are gone, the row stays, and there is one audit line.
 
 ### Implementation for User Story 1
 
-- [ ] T024 [US1] Add `DeleteIn` (`reason`, `confirm_number`), the `deleted` block, `can_delete`, and
+- [x] T024 [US1] Add `DeleteIn` (`reason`, `confirm_number`), the `deleted` block, `can_delete`, and
   nullable personal fields in `RequestFileOut` and its parts to `api/app/schemas/admin_requests.py`
   ([contracts/api.md](./contracts/api.md)).
-- [ ] T025 [US1] Write `api/app/services/deletion_service.py::delete(db, user, request_id, body)`.
+- [x] T025 [US1] Write `api/app/services/deletion_service.py::delete(db, user, request_id, body)`.
   It follows R3 (lock and check order), R1 (the erasure of every column in
   [data-model.md](./data-model.md) › requests, including `Request.rejection_note`), R4 (the rows in
   the transaction, the unlink after commit, missing files logged by id), R5 (OTP rows with
   `request_id IS NULL`), and R12 (the audit entry and the log line). Run T015–T018 and T020:
   **green**.
-- [ ] T026 [US1] Update `api/app/services/review_service.py`:
+- [x] T026 [US1] Update `api/app/services/review_service.py`:
   - `_lock_pending` refuses `is_deleted` with 409 `request_deleted` before the status check (R3);
   - `to_file` returns the deleted form and `can_delete` (R9);
   - `live_check` is skipped for a deleted request;
   - `list_pending` filters `deleted_at IS NULL`.
 
   Run T019 and T021: **green**.
-- [ ] T027 [US1] Add `POST /admin/requests/{request_id}/delete` to `api/app/api/admin_requests.py`. It
+- [x] T027 [US1] Add `POST /admin/requests/{request_id}/delete` to `api/app/api/admin_requests.py`. It
   calls `deletion_service.delete` and returns `to_file`.
-- [ ] T028 [P] [US1] Add `deleteRequest(id, body)` and the deleted fields to `web/src/lib/adminRequests.ts`.
-- [ ] T029 [US1] Write `web/src/pages/admin/pending/DeleteRequestDialog.tsx` (T022: **green**). Wire
+- [x] T028 [P] [US1] Add `deleteRequest(id, body)` and the deleted fields to `web/src/lib/adminRequests.ts`.
+- [x] T029 [US1] Write `web/src/pages/admin/pending/DeleteRequestDialog.tsx` (T022: **green**). Wire
   the «حذف» button, the banner and the hidden panels into
   `web/src/pages/admin/pending/RequestReview.tsx` (T023: **green**). Arabic, RTL, phone layout.
-- [ ] T030 [US1] Add `request.deleted` «حذف مشترك» with the Arabic reason to
+- [x] T030 [US1] Add `request.deleted` «حذف مشترك» with the Arabic reason to
   `web/src/lib/auditFormat.ts`. Extend `web/src/__tests__/audit-format.test.ts` first and run it
   **red**, then **green**.
 

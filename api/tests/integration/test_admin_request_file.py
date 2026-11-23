@@ -190,3 +190,85 @@ def test_others_get_404(client, db, make_user, marketer, who) -> None:
 
 def test_missing_id_is_404(client, review) -> None:
     assert _file(client, review, 999999).status_code == 404
+
+
+# --- specs/011 T021: the file of a deleted request and `can_delete` -------------------------------
+
+
+def _file_of(client, user, request_id):
+    return client.get(f"/api/admin/requests/{request_id}", headers=headers_for(client, user))
+
+
+def test_deleted_file_shows_the_mark_and_no_personal_data(client, db, make_user) -> None:
+    from tests.helpers.requests import mark_deleted
+
+    marketer = make_user("marketer")
+    deleter = admin_with(make_user, "review", "delete", name="أدمن الحذف")
+    old = request_factory(db, marketer)
+    request = pending_request(db, marketer, [("family_exists", old, {})], type="additional")
+    mark_deleted(db, request, deleter, "duplicate")
+
+    res = _file_of(client, deleter, request.id)
+
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["deleted"]["reason"] == "duplicate"
+    assert body["deleted"]["by_name"] == "أدمن الحذف"
+    assert body["deleted"]["at"]
+    assert body["can_delete"] is False
+    for field in (
+        "full_name",
+        "national_id",
+        "family_number",
+        "birth_date",
+        "issue_date",
+        "expiry_date",
+        "birth_place",
+        "issuing_authority",
+        "address",
+        "landmark",
+        "phone",
+        "username",
+        "location",
+        "numbers",
+    ):
+        assert body[field] is None, field
+    assert body["names"] == {} and body["names_reading"] == {}
+    assert body["images"] == [] and body["warnings"] == []
+    # The reasons stay (codes only), with no linked data.
+    assert [r["reason"] for r in body["reasons"]] == ["family_exists"]
+    assert body["reasons"][0]["record"] is None
+    # The kept fields.
+    assert body["number_label"] == request.number_label
+    assert body["tower_code"] == request.tower_code
+    assert body["trial_price"] == request.trial_price
+    blob = json.dumps(body, ensure_ascii=False)
+    assert old.full_name not in blob and old.phone not in blob
+
+
+@pytest.mark.parametrize(
+    "perms,status,expected",
+    [
+        (("review", "delete"), "pending_review", True),
+        (("review", "delete"), "rejected", True),
+        (("review", "delete"), "approved", False),
+        (("review", "delete"), "linked", False),
+        (("review",), "pending_review", False),
+    ],
+)
+def test_can_delete(client, db, make_user, perms, status, expected) -> None:
+    marketer = make_user("marketer")
+    request = request_factory(db, marketer, status=status)
+    res = _file_of(client, admin_with(make_user, *perms), request.id)
+    assert res.json()["can_delete"] is expected
+
+
+def test_main_admin_can_delete(client, db, make_user) -> None:
+    request = request_factory(db, make_user("marketer"), status="pending_review")
+    assert _file_of(client, make_user("super_admin"), request.id).json()["can_delete"] is True
+
+
+def test_live_file_has_no_mark(client, db, make_user) -> None:
+    request = request_factory(db, make_user("marketer"), status="pending_review")
+    body = _file_of(client, admin_with(make_user, "review"), request.id).json()
+    assert body["deleted"] is None
