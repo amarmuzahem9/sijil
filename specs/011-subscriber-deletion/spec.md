@@ -240,7 +240,8 @@ be deleted.
   application log (by image id only, no personal data).
 - **Erasure fails half-way** (for example storage error): the request must not end half-erased; either the
   whole erasure completes or nothing changes and the admin sees an error and can retry. Image files are
-  removed only after the data erasure is saved, and a file left behind by a failure is cleaned up on retry.
+  removed only after the data erasure is saved, and a file left behind by a failure is removed by the
+  regular uploads clean-up, since no record points to it any more.
 - **Return request**: its username is the historical one taken from the target record and contains a phone,
   so it is erased with the other fields.
 - **Rejection note («سبب آخر» text written by the reviewer)**: erased from the request; the reason's name
@@ -320,7 +321,7 @@ be deleted.
 
 - **FR-021**: The marketer who submitted the request MUST still see it in their requests, marked «محذوف»,
   with the deletion reason, the request number, the tower and the date only; no erased data and no copy or
-  share buttons.
+  share buttons. It stays under the tab of its status at deletion (pending or rejected), with the tag.
 
 **Reaching the request**
 
@@ -348,6 +349,8 @@ be deleted.
 
 - **SC-001**: After a deletion, none of the erased fields (FR-007, FR-008) can be found for that request on
   any screen, in any response the system sends, or in the database outside existing backups: 0 fields left.
+  The one exception is the reviewer's rejection note inside the earlier «رفض» audit line, which stays
+  unchanged by the owner's decision (FR-019).
 - **SC-002**: After a deletion, 0 card image files of that request remain in storage.
 - **SC-003**: Right after deleting a duplicate, the marketer can start, verify and submit the correct request
   for the same phone and the same person in one attempt, without being blocked by the deleted one.

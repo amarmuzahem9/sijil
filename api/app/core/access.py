@@ -13,6 +13,8 @@ ADMIN_PERMISSIONS: tuple[str, ...] = (
     "marketers",
     "reports",
     "commissions",
+    # «حذف مشترك»: erase a pending or rejected request (system.md v1.15 §7.4, specs/011 R7).
+    "delete",
 )
 
 AccessRule = Literal["any_admin", "super_admin"] | tuple[str, ...]

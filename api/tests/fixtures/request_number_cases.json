@@ -1,0 +1,24 @@
+{
+  "_comment": "specs/011 research R6 — shared by api/tests and web/src/__tests__; keep both copies identical",
+  "cases": [
+    { "text": "T3C-1005", "number": 1005 },
+    { "text": "t3c-1005", "number": 1005 },
+    { "text": "#T3C-1005", "number": 1005 },
+    { "text": "1005", "number": 1005 },
+    { "text": " 1005 ", "number": 1005 },
+    { "text": "T3C- 1005", "number": 1005 },
+    { "text": "١٠٠٥", "number": 1005 },
+    { "text": "T3C-١٠٠٥", "number": 1005 },
+    { "text": "۱۰۰۵", "number": 1005 },
+    { "text": "", "number": null },
+    { "text": "   ", "number": null },
+    { "text": "T3C-", "number": null },
+    { "text": "0", "number": null },
+    { "text": "10a5", "number": null },
+    { "text": "-1005", "number": null },
+    { "text": "T3C-1005-1", "number": null },
+    { "text": "١٠٠٥x", "number": null },
+    { "text": "1005.0", "number": null },
+    { "text": "99999999999", "number": null }
+  ]
+}

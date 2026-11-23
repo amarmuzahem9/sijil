@@ -36,7 +36,7 @@ class User(Base):
         ),
         CheckConstraint(
             'permissions <@ \'["review", "link", "settings", "marketers", '
-            '"reports", "commissions"]\'::jsonb',
+            '"reports", "commissions", "delete"]\'::jsonb',
             name="users_permissions_known",
         ),
         CheckConstraint("(archived_at IS NULL) = (archived_by IS NULL)", name="users_archive_pair"),

@@ -34,3 +34,15 @@ def test_normalize_permissions_dedupes_and_orders() -> None:
 def test_normalize_permissions_rejects_unknown() -> None:
     with pytest.raises(ValueError):
         normalize_permissions(["review", "delete_everything"])
+
+
+def test_delete_permission() -> None:
+    """specs/011 research R7: «حذف مشترك» is the last admin permission; the main admin holds it."""
+    from app.core.access import has_any_permission
+
+    assert ADMIN_PERMISSIONS[-2:] == ("commissions", "delete")
+    assert normalize_permissions(["delete", "review"]) == ["review", "delete"]
+    assert has_any_permission("super_admin", [], ["delete"]) is True
+    assert has_any_permission("admin", ["review"], ["delete"]) is False
+    assert has_any_permission("admin", ["delete"], ["delete"]) is True
+    assert has_any_permission("marketer", ["delete"], ["delete"]) is False

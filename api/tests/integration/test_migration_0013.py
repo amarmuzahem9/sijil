@@ -34,8 +34,11 @@ def _columns(engine, table: str) -> dict:
 
 def test_columns_exist(engine) -> None:
     req = _columns(engine, "requests")
-    for name in ("submitted_national_id", "submitted_family_number", "counts_commission"):
-        assert req[name]["nullable"] is False
+    assert req["counts_commission"]["nullable"] is False
+    # Required from 0013; nullable from 0014, where `requests_erasure` keeps them required on
+    # every live row (specs/011 data-model.md).
+    for name in ("submitted_national_id", "submitted_family_number"):
+        assert name in req
     for name in (
         "approval_warnings",
         "rejected_at",

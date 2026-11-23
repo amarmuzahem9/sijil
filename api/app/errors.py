@@ -81,6 +81,10 @@ MESSAGES: dict[str, str] = {
     "pin_source_empty": "لا توجد قيمة لهذا المصدر",
     "invalid_national_id": "الرقم الوطني يجب أن يكون 12 رقماً",
     "invalid_family_number": "الرقم العائلي غير صالح",
+    # Subscriber deletion (specs/011 contracts/api.md)
+    "request_deleted": "تم حذف هذا الطلب مسبقاً",
+    "request_not_deletable": "لا يمكن حذف طلب مقبول أو مربوط",
+    "number_mismatch": "رقم الطلب غير مطابق",
     "wrong_current_password": "كلمة السر الحالية غير صحيحة",
     "weak_password": "كلمة السر يجب أن تكون 8 أحرف على الأقل",
     "same_password": "كلمة السر الجديدة يجب أن تختلف عن الحالية",
@@ -90,6 +94,9 @@ MESSAGES: dict[str, str] = {
     "server_error": "حدث خطأ غير متوقع، حاول مرة أخرى",
     "service_unavailable": "الخدمة غير متاحة حالياً",
 }
+
+# «فتح طلب برقمه» answers `request_not_found` with this message (specs/011 contracts/api.md).
+NO_REQUEST_WITH_NUMBER = "لا يوجد طلب بهذا الرقم"
 
 
 class AppError(Exception):

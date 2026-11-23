@@ -8,6 +8,7 @@ export const PERMISSIONS = [
   'marketers',
   'reports',
   'commissions',
+  'delete',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -18,6 +19,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   marketers: 'إدارة المسوّقين وتصفير كلمات السر',
   reports: 'التقارير والتصدير والاستيراد',
   commissions: 'العمولات وزر تم الدفع',
+  delete: 'حذف مشترك (طلب بالانتظار أو مرفوض)',
 };
 
 export const AUDIT_ACTION_LABELS: Record<string, string> = {
@@ -180,3 +182,12 @@ export const PIN_FIELD_LABELS = {
   national_id: 'الرقم الوطني',
   family_number: 'الرقم العائلي',
 } as const;
+
+/** The fixed deletion reasons (system.md v1.15 §7.4); mirrors api/app/core/deletion_reasons.py. */
+export const DELETION_REASON_LABELS = {
+  duplicate: 'طلب مكرر',
+  test: 'طلب تجريبي',
+  entry_error: 'خطأ إدخال',
+  other: 'سبب آخر',
+} as const;
+export type DeletionReason = keyof typeof DELETION_REASON_LABELS;

@@ -1,7 +1,10 @@
 """Submitted requests (specs/008-submission-decision/data-model.md). Mirrors migration 0010.
 
 A request is a draft after submission: every value is copied and fixed (Principle IV), and the
-draft row is removed. Requests are never deleted (Principle III): there is no delete path.
+draft row is removed. Requests are never deleted (Principle III). A pending or rejected request
+may be erased in place (constitution III v1.3.0, specs/011): its personal columns become NULL and
+the row keeps a deletion mark. The personal columns are therefore nullable; `requests_erasure`
+keeps them required on every live row.
 """
 
 import uuid
@@ -45,6 +48,51 @@ REJECTION_REASONS = (
 )
 PIN_FIELDS = ("national_id", "family_number")
 PIN_SOURCES = ("reading", "mrz", "marketer", "typed")
+# specs/011 data-model.md › Deletion reasons; labels in app/core/deletion_reasons.py
+DELETION_REASONS = ("duplicate", "test", "entry_error", "other")
+DELETABLE_STATUSES = ("pending_review", "rejected")
+# specs/011 data-model.md › requests: required on a live row, NULL on a deleted one.
+MADE_NULLABLE = (
+    "first_name",
+    "father_name",
+    "grandfather_name",
+    "great_grandfather_name",
+    "full_name",
+    "mother_first_name",
+    "mother_second_name",
+    "no_surname",
+    "national_id",
+    "national_id_input",
+    "submitted_national_id",
+    "family_number",
+    "submitted_family_number",
+    "family_key",
+    "birth_date",
+    "issue_date",
+    "expiry_date",
+    "birth_place",
+    "issuing_authority",
+    "card_fields",
+    "card_readings",
+    "location_lat",
+    "location_lng",
+    "location_source",
+    "address",
+    "landmark",
+    "phone",
+    "username",
+)
+# Every column a deletion sets to NULL.
+ERASED_COLUMNS = MADE_NULLABLE + (
+    "surname",
+    "mother_third_name",
+    "mother_surname",
+    "national_id_check",
+    "location_accuracy_m",
+    "rejection_note",
+)
+_LIVE = " AND ".join(f"{c} IS NOT NULL" for c in MADE_NULLABLE)
+_ERASED = " AND ".join(f"{c} IS NULL" for c in ERASED_COLUMNS)
 
 
 def _ts() -> Mapped[datetime]:
@@ -62,8 +110,14 @@ class Request(Base):
         CheckConstraint(
             "status IN ('pending_review','approved','rejected','linked')", name="requests_status"
         ),
-        CheckConstraint("NOT no_surname OR surname IS NULL", name="requests_no_surname"),
-        CheckConstraint("no_surname OR surname IS NOT NULL", name="requests_surname_required"),
+        CheckConstraint(
+            "deleted_at IS NOT NULL OR (NOT no_surname OR surname IS NULL)",
+            name="requests_no_surname",
+        ),
+        CheckConstraint(
+            "deleted_at IS NOT NULL OR (no_surname OR surname IS NOT NULL)",
+            name="requests_surname_required",
+        ),
         CheckConstraint("national_id ~ '^[0-9]{12}$'", name="requests_national_id_format"),
         CheckConstraint("family_key ~ '^[A-Z0-9]+$'", name="requests_family_key_format"),
         CheckConstraint("phone ~ '^07[0-9]{9}$'", name="requests_phone_format"),
@@ -85,18 +139,37 @@ class Request(Base):
             name="requests_rejected_has_decision",
         ),
         CheckConstraint(
-            "CASE WHEN rejection_reason = 'other' "
+            "deleted_at IS NOT NULL OR (CASE WHEN rejection_reason = 'other' "
             "THEN rejection_note IS NOT NULL AND btrim(rejection_note) <> '' "
-            "ELSE rejection_note IS NULL END",
+            "ELSE rejection_note IS NULL END)",
             name="requests_rejection_note",
         ),
         CheckConstraint(
             "status <> 'rejected' OR approved_at IS NULL", name="requests_rejected_no_approval"
         ),
+        # specs/011 data-model.md (migration 0014)
+        CheckConstraint(
+            "(deleted_at IS NULL) = (deleted_by IS NULL) "
+            "AND (deleted_at IS NULL) = (deletion_reason IS NULL)",
+            name="requests_deletion_mark",
+        ),
+        CheckConstraint(
+            "deletion_reason IS NULL OR deletion_reason IN "
+            "('duplicate','test','entry_error','other')",
+            name="requests_deletion_reason",
+        ),
+        CheckConstraint(
+            "deleted_at IS NULL OR status IN ('pending_review','rejected')",
+            name="requests_deletable_status",
+        ),
+        CheckConstraint(
+            f"CASE WHEN deleted_at IS NULL THEN {_LIVE} ELSE {_ERASED} END",
+            name="requests_erasure",
+        ),
         Index(
             "requests_pending_idx",
             "submitted_at",
-            postgresql_where=text("status = 'pending_review'"),
+            postgresql_where=text("status = 'pending_review' AND deleted_at IS NULL"),
         ),
         Index("requests_phone_idx", "phone"),
         Index("requests_national_id_idx", "national_id"),
@@ -113,40 +186,40 @@ class Request(Base):
     type: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False)
 
-    first_name: Mapped[str] = mapped_column(Text, nullable=False)
-    father_name: Mapped[str] = mapped_column(Text, nullable=False)
-    grandfather_name: Mapped[str] = mapped_column(Text, nullable=False)
-    great_grandfather_name: Mapped[str] = mapped_column(Text, nullable=False)
+    first_name: Mapped[str | None] = mapped_column(Text)
+    father_name: Mapped[str | None] = mapped_column(Text)
+    grandfather_name: Mapped[str | None] = mapped_column(Text)
+    great_grandfather_name: Mapped[str | None] = mapped_column(Text)
     surname: Mapped[str | None] = mapped_column(Text)
-    mother_first_name: Mapped[str] = mapped_column(Text, nullable=False)
-    mother_second_name: Mapped[str] = mapped_column(Text, nullable=False)
+    mother_first_name: Mapped[str | None] = mapped_column(Text)
+    mother_second_name: Mapped[str | None] = mapped_column(Text)
     mother_third_name: Mapped[str | None] = mapped_column(Text)
     mother_surname: Mapped[str | None] = mapped_column(Text)
-    full_name: Mapped[str] = mapped_column(Text, nullable=False)
-    no_surname: Mapped[bool] = mapped_column(Boolean, nullable=False)
-    national_id: Mapped[str] = mapped_column(Text, nullable=False)
-    national_id_input: Mapped[str] = mapped_column(Text, nullable=False)
-    family_number: Mapped[str] = mapped_column(Text, nullable=False)
+    full_name: Mapped[str | None] = mapped_column(Text)
+    no_surname: Mapped[bool | None] = mapped_column(Boolean)
+    national_id: Mapped[str | None] = mapped_column(Text)
+    national_id_input: Mapped[str | None] = mapped_column(Text)
+    family_number: Mapped[str | None] = mapped_column(Text)
     # The marketer's values as submitted; a pin never changes them (specs/010 R4).
-    submitted_national_id: Mapped[str] = mapped_column(Text, nullable=False)
-    submitted_family_number: Mapped[str] = mapped_column(Text, nullable=False)
-    family_key: Mapped[str] = mapped_column(Text, nullable=False)
-    birth_date: Mapped[date] = mapped_column(Date, nullable=False)
-    issue_date: Mapped[date] = mapped_column(Date, nullable=False)
-    expiry_date: Mapped[date] = mapped_column(Date, nullable=False)
-    birth_place: Mapped[str] = mapped_column(Text, nullable=False)
-    issuing_authority: Mapped[str] = mapped_column(Text, nullable=False)
-    card_fields: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    submitted_national_id: Mapped[str | None] = mapped_column(Text)
+    submitted_family_number: Mapped[str | None] = mapped_column(Text)
+    family_key: Mapped[str | None] = mapped_column(Text)
+    birth_date: Mapped[date | None] = mapped_column(Date)
+    issue_date: Mapped[date | None] = mapped_column(Date)
+    expiry_date: Mapped[date | None] = mapped_column(Date)
+    birth_place: Mapped[str | None] = mapped_column(Text)
+    issuing_authority: Mapped[str | None] = mapped_column(Text)
+    card_fields: Mapped[dict | None] = mapped_column(JSONB)
     national_id_check: Mapped[dict | None] = mapped_column(JSONB)
     # Raw and ruled readings per side. Never returned to a page or logged (Principle II).
-    card_readings: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    card_readings: Mapped[dict | None] = mapped_column(JSONB)
 
-    location_lat: Mapped[float] = mapped_column(Float, nullable=False)
-    location_lng: Mapped[float] = mapped_column(Float, nullable=False)
-    location_source: Mapped[str] = mapped_column(Text, nullable=False)
+    location_lat: Mapped[float | None] = mapped_column(Float)
+    location_lng: Mapped[float | None] = mapped_column(Float)
+    location_source: Mapped[str | None] = mapped_column(Text)
     location_accuracy_m: Mapped[int | None] = mapped_column(Integer)
-    address: Mapped[str] = mapped_column(Text, nullable=False)
-    landmark: Mapped[str] = mapped_column(Text, nullable=False)
+    address: Mapped[str | None] = mapped_column(Text)
+    landmark: Mapped[str | None] = mapped_column(Text)
 
     area_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("areas.id", ondelete="RESTRICT"), nullable=False
@@ -164,8 +237,8 @@ class Request(Base):
     trial_price: Mapped[int] = mapped_column(Integer, nullable=False)
     second_price: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    phone: Mapped[str] = mapped_column(Text, nullable=False)
-    username: Mapped[str] = mapped_column(Text, nullable=False)
+    phone: Mapped[str | None] = mapped_column(Text)
+    username: Mapped[str | None] = mapped_column(Text)
     otp_verified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -180,6 +253,10 @@ class Request(Base):
     rejected_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id"))
     rejection_reason: Mapped[str | None] = mapped_column(Text)
     rejection_note: Mapped[str | None] = mapped_column(Text)
+    # The deletion mark (specs/011 data-model.md › requests). Set once, never cleared.
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    deleted_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id"))
+    deletion_reason: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = _ts()
     updated_at: Mapped[datetime] = _ts()
 
@@ -196,6 +273,10 @@ class Request(Base):
     @property
     def number_label(self) -> str:
         return f"T3C-{self.number}"
+
+    @property
+    def is_deleted(self) -> bool:
+        return self.deleted_at is not None
 
 
 class RequestReason(Base):

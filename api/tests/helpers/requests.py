@@ -5,6 +5,9 @@ real card, name or number. Rejected rows also come from here until feature 010 a
 """
 
 import itertools
+import uuid
+from datetime import timedelta
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy import text
@@ -12,7 +15,8 @@ from sqlalchemy.orm import Session
 
 from app.core.family_key import family_key
 from app.core.timeutil import utc_now
-from app.models import Area, Plan, Request, Tower, User
+from app.models import Area, Plan, Request, RequestImage, RequestNumberPin, Tower, User
+from app.models.otp import OtpChallenge
 
 _counter = itertools.count(1)
 
@@ -32,8 +36,6 @@ def _catalog(db: Session) -> tuple[Area, Tower, Plan]:
 def request_factory(db: Session, marketer: User, **overrides: Any) -> Request:
     """Insert a valid request. `status` defaults to approved; any field may be overridden.
     `family_key` follows `family_number` unless given."""
-    import uuid
-
     area, tower, plan = (
         (overrides.pop("area"), overrides.pop("tower"), overrides.pop("plan"))
         if "tower" in overrides
@@ -103,3 +105,70 @@ def request_factory(db: Session, marketer: User, **overrides: Any) -> Request:
     db.add(request)
     db.flush()
     return request
+
+
+# --- extras for deletion tests (specs/011 tasks T014) ---------------------------------------------
+
+
+def add_images(db: Session, request: Request, uploads: Path) -> list[RequestImage]:
+    """Front and back synthetic image files in `uploads`, with their `request_images` rows."""
+    from tests.helpers.card_images import scenario_jpeg
+
+    images = []
+    for side in ("front", "back"):
+        name = f"{uuid.uuid4().hex}.jpg"
+        (uploads / name).write_bytes(scenario_jpeg("clear_front", 120, 76))
+        images.append(
+            RequestImage(
+                id=uuid.uuid4(),
+                request_id=request.id,
+                side=side,
+                file_name=name,
+                size_bytes=1000,
+                width=120,
+                height=76,
+                uploaded_by=request.marketer_id,
+                created_at=utc_now(),
+            )
+        )
+    db.add_all(images)
+    db.flush()
+    return images
+
+
+def add_pin(db: Session, request: Request, admin: User) -> RequestNumberPin:
+    """One national-ID pin with made-up values before and after."""
+    pin = RequestNumberPin(
+        request_id=request.id,
+        field="national_id",
+        previous_value=request.national_id,
+        value="199000000099",
+        source="typed",
+        pinned_by=admin.id,
+        pinned_at=utc_now(),
+    )
+    db.add(pin)
+    db.flush()
+    return pin
+
+
+def add_otp_rows(
+    db: Session, phone: str, count: int, *, draft_id: uuid.UUID | None = None
+) -> list[OtpChallenge]:
+    """`count` OTP rows for `phone` sent in the last hour; `draft_id` None = a submitted draft."""
+    now = utc_now()
+    rows = [
+        OtpChallenge(
+            id=uuid.uuid4(),
+            request_id=draft_id,
+            phone=phone,
+            code_hash="synthetic",
+            context_hash="synthetic",
+            expires_at=now + timedelta(minutes=5),
+            created_at=now - timedelta(minutes=count - i),
+        )
+        for i in range(count)
+    ]
+    db.add_all(rows)
+    db.flush()
+    return rows

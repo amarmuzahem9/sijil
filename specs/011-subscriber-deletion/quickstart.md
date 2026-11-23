@@ -8,11 +8,8 @@ How to check 011 end to end.
 
 - The app runs with `docker compose up`, using the fake card reader and the fake OTP sender, as in
   008–010.
-- The demo seed has these accounts:
-  - one marketer;
-  - the main admin;
-  - one admin with `review` only;
-  - one admin with `review` and `delete`.
+- The accounts: the demo marketer from the seed, the main admin, and two admins the main admin creates
+  in «الأدمنية والصلاحيات»: one with `review` only, and one with `review` and `delete`.
 - Use test cards from `test-cards/` only. No real card images.
 
 ## Automated
