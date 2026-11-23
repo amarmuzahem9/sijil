@@ -1,7 +1,7 @@
 /**
  * «الطلبات» (docs/system.md §4.3): tabs بالانتظار / مقبولة / تم الربط / مرفوضة / مسودات.
- * «مسودات» since 005; «بالانتظار» and «مقبولة» since 008; «تم الربط» (012) and «مرفوضة» (010)
- * stay empty until then. With no tab in the URL the page opens on «بالانتظار» once the marketer
+ * «مسودات» since 005; «بالانتظار» and «مقبولة» since 008; «مرفوضة» since 010; «تم الربط» (012)
+ * stays empty until then. With no tab in the URL the page opens on «بالانتظار» once the marketer
  * has requests, else on «مسودات» (specs/008 research R11).
  */
 import Paper from '@mui/material/Paper';
@@ -48,6 +48,8 @@ export default function Requests() {
         <SubmittedTab statuses={['pending_review']} />
       ) : tab === 'approved' ? (
         <SubmittedTab statuses={['approved']} />
+      ) : tab === 'rejected' ? (
+        <SubmittedTab statuses={['rejected']} />
       ) : (
         <Paper variant="outlined" sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>
           لا توجد طلبات بعد

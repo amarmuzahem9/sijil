@@ -34,6 +34,9 @@ function request(partial: Partial<SubmittedRequest> = {}): SubmittedRequest {
     submitted_at: '2026-11-23T10:00:00Z',
     approved_at: '2026-11-23T10:00:00Z',
     result: 'approved',
+    rejection_reason: null,
+    rejection_label: null,
+    rejected_at: null,
     ...partial,
   };
 }
@@ -165,5 +168,23 @@ describe('RequestResultView', () => {
   it('shows the status with its fixed label', () => {
     show(request({ status: 'pending_review', result: 'pending_review', username: null }));
     expect(screen.getByTestId('request-status').textContent).toBe('بانتظار المراجعة');
+  });
+
+  it('rejected: «تم رفض الطلب» with the reason, no username (specs/010 FR-011)', () => {
+    show(
+      request({
+        status: 'rejected',
+        result: 'rejected',
+        username: null,
+        approved_at: null,
+        rejection_reason: 'other',
+        rejection_label: 'طلب مكرر',
+        rejected_at: '2026-11-23T11:00:00Z',
+      }),
+    );
+    expect(screen.getByText('تم رفض الطلب')).toBeTruthy();
+    expect(screen.getByTestId('rejection-label').textContent).toBe('طلب مكرر');
+    expect(screen.getByTestId('request-status').textContent).toBe('مرفوض');
+    expect(screen.queryByRole('button', { name: 'نسخ اليوزر' })).toBeNull();
   });
 });

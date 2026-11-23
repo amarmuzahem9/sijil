@@ -58,6 +58,9 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'draft.return_withdrawn': 'إلغاء طلب العودة للخدمة',
   'draft.contact_admin_opened': 'فتح «الاتصال بالإدارة»',
   'request.submit_refused': 'رفض إرسال طلب',
+  // specs/010: the admin's decision (no card data in the entry)
+  'request.approved': 'قبول طلب',
+  'request.rejected': 'رفض طلب',
 };
 
 export const AUDIT_FIELD_LABELS: Record<string, string> = {
@@ -81,6 +84,13 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   tower_code: 'البرج',
   image_count: 'عدد الصور',
   missing_count: 'عدد النواقص',
+  // specs/010
+  status: 'الحالة',
+  type: 'النوع',
+  counts_commission: 'احتساب العمولة',
+  despite_warnings: 'رغم التحذير',
+  reason: 'السبب',
+  note: 'النص',
 };
 
 export const STATE_LABELS = { active: 'فعّال', inactive: 'موقوف' } as const;
@@ -123,3 +133,22 @@ export const SOURCE_LABELS: Record<string, string> = {
 };
 
 export type { Role };
+
+/** The fixed rejection reasons (system.md v1.14 §6.4); mirrors api/app/core/rejection_reasons.py. */
+export const REJECTION_REASON_LABELS = {
+  card_unclear: 'صورة البطاقة غير واضحة',
+  numbers_mismatch: 'الأرقام غير مطابقة للبطاقة',
+  under_15_days: 'المتبقي من الاشتراك الأول أقل من 15 يوماً',
+  active_subscription: 'المشترك لديه اشتراك فعّال',
+  other: 'سبب آخر',
+} as const;
+
+export const REJECTION_NOTE_MIN = 3;
+export const REJECTION_NOTE_MAX = 300;
+
+/** The review warnings (system.md v1.14 §6.4, specs/010 FR-019a), short form. */
+export const WARNING_LABELS = {
+  same_person: 'نفس الشخص',
+  id_conflict: 'تعارض بالأرقام',
+  return_target_lost: 'لم تعد الأرقام تطابق المشترك المرتبط',
+} as const;

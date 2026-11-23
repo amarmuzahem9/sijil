@@ -43,7 +43,15 @@ def test_list_is_own_newest_first_and_filters(client, db, h, make_user, catalog)
 
     items = client.get("/api/requests", headers=h).json()["items"]
     assert [i["id"] for i in items] == [pending["id"], approved["id"]]
-    assert set(items[0]) == {"id", "number_label", "full_name", "status", "type", "submitted_at"}
+    assert set(items[0]) == {
+        "id",
+        "number_label",
+        "full_name",
+        "status",
+        "type",
+        "submitted_at",
+        "rejection_label",
+    }
     assert items[1]["number_label"] == approved["number_label"]
 
     only = client.get("/api/requests", params={"status": "pending_review"}, headers=h)
@@ -101,3 +109,63 @@ def test_tower_name_is_fixed_at_submission(client, db, h, catalog, make_user) ->
     assert res.status_code == 200, res.json()
     body = client.get(f"/api/requests/{created['id']}", headers=h).json()
     assert body["tower_name"] == "برج 3"
+
+
+# --- after the admin's decision (specs/010 T027, FR-011, research R11) ---------------------------
+
+
+def _decide(client, make_user, request_id, action, body=None):
+    admin = make_user("super_admin")
+    res = client.post(
+        f"/api/admin/requests/{request_id}/{action}",
+        json=body or {},
+        headers=auth_header(login(client, admin.phone)),
+    )
+    assert res.status_code == 200, res.json()
+
+
+def _pending(db, me):
+    return request_factory(db, me, status="pending_review", type="new")
+
+
+def test_accepted_request_shows_approval_and_username(client, db, h, me, make_user) -> None:
+    request = _pending(db, me)
+    _decide(client, make_user, request.id, "accept")
+
+    body = client.get(f"/api/requests/{request.id}", headers=h).json()
+    assert (body["status"], body["result"]) == ("approved", "approved")
+    assert body["username"] == request.username
+    assert body["approved_at"] is not None
+    assert (body["rejection_reason"], body["rejection_label"], body["rejected_at"]) == (
+        None,
+        None,
+        None,
+    )
+
+
+def test_rejected_with_other_shows_the_note(client, db, h, me, make_user) -> None:
+    request = _pending(db, me)
+    _decide(client, make_user, request.id, "reject", {"reason": "other", "note": "طلب مكرر"})
+
+    body = client.get(f"/api/requests/{request.id}", headers=h).json()
+    assert (body["status"], body["result"]) == ("rejected", "rejected")
+    assert (body["rejection_reason"], body["rejection_label"]) == ("other", "طلب مكرر")
+    assert body["rejected_at"] is not None
+    assert body["username"] is None
+
+
+def test_rejected_with_a_fixed_reason_shows_its_label(client, db, h, me, make_user) -> None:
+    request = _pending(db, me)
+    _decide(client, make_user, request.id, "reject", {"reason": "card_unclear"})
+
+    body = client.get(f"/api/requests/{request.id}", headers=h).json()
+    assert body["rejection_label"] == "صورة البطاقة غير واضحة"
+
+
+def test_rejected_list_rows_carry_the_reason(client, db, h, me, make_user) -> None:
+    request = _pending(db, me)
+    _decide(client, make_user, request.id, "reject", {"reason": "numbers_mismatch"})
+
+    items = client.get("/api/requests", params={"status": "rejected"}, headers=h).json()["items"]
+    assert [i["id"] for i in items] == [request.id]
+    assert items[0]["rejection_label"] == "الأرقام غير مطابقة للبطاقة"

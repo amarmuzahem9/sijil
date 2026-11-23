@@ -134,3 +134,22 @@ export async function requestImageUrl(imageId: string): Promise<string> {
   const blob = await apiFetchBlob(`/api/admin/request-images/${encodeURIComponent(imageId)}`);
   return URL.createObjectURL(blob);
 }
+
+export interface AcceptBody {
+  /** Only for a return (system.md §6.4). */
+  counts_commission?: boolean;
+  /** The warnings shown when «القبول رغم التحذير؟» was confirmed (research R7). */
+  confirm_warnings?: ReviewWarning[];
+}
+
+export interface RejectBody {
+  reason: RejectionReason;
+  /** Only with «سبب آخر». */
+  note?: string;
+}
+
+export const accept = (id: number, body: AcceptBody) =>
+  apiFetch<RequestFile>(`/api/admin/requests/${id}/accept`, { method: 'POST', body });
+
+export const reject = (id: number, body: RejectBody) =>
+  apiFetch<RequestFile>(`/api/admin/requests/${id}/reject`, { method: 'POST', body });

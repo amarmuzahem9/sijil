@@ -17,10 +17,12 @@ from app.core import rejection_reasons
 from app.core.access import has_any_permission
 from app.core.matches import Matches, MatchRef
 from app.core.review_check import ReviewCheck, review
+from app.core.timeutil import utc_now
 from app.errors import AppError
 from app.models import ImageAccessLog, Request, RequestImage, RequestReason, User
 from app.models.draft import NAME_FIELDS
 from app.schemas.admin_requests import (
+    AcceptIn,
     DecisionOut,
     ImageOut,
     LinkedRecordOut,
@@ -31,9 +33,10 @@ from app.schemas.admin_requests import (
     PendingList,
     PinOut,
     ReasonOut,
+    RejectIn,
     RequestFileOut,
 )
-from app.services import image_store, linked_records, match_service
+from app.services import audit_service, image_store, linked_records, match_service
 
 log = logging.getLogger("sijil.review")
 
@@ -261,6 +264,95 @@ def to_file(db: Session, request: Request) -> RequestFileOut:
         warnings=live_check(db, request).warnings if pending else [],
         decision=_decision(request, names),
     )
+
+
+# --- the decision (R1, R2, R6, R7) ---------------------------------------------------------------
+
+
+def _lock_pending(db: Session, user: User, request_id: int) -> Request:
+    """The request row under `FOR UPDATE`, still pending. A second admin waits on the lock and then
+    sees the first decision (FR-009, SC-003)."""
+    request = db.scalars(
+        select(Request)
+        .where(Request.id == request_id)
+        # Only the request row: the marketer is joined for display (lazy="joined").
+        .with_for_update(of=Request)
+        .execution_options(populate_existing=True)
+    ).one_or_none()
+    if request is None or not can_review(user):
+        raise AppError("request_not_found", 404)
+    if request.status != "pending_review":
+        raise AppError("already_decided", 409, extra={"status": request.status})
+    return request
+
+
+def accept(db: Session, user: User, request_id: int, body: AcceptIn) -> Request:
+    request = _lock_pending(db, user, request_id)
+    if request.type == "return":
+        if body.counts_commission is None:
+            raise AppError("commission_answer_required", 422)
+        counts = body.counts_commission
+    else:
+        # New and second subscriptions always count (§6.4); the question is not theirs.
+        if body.counts_commission is not None:
+            raise AppError("validation_error", 422)
+        counts = True
+    # Warnings are recomputed under the lock; a set that changed since the page loaded needs its
+    # own confirmation (R7).
+    warnings = live_check(db, request).warnings
+    if warnings and set(warnings) != set(body.confirm_warnings):
+        raise AppError("warnings_unconfirmed", 409, extra={"warnings": warnings})
+
+    now = utc_now()
+    request.status = "approved"
+    request.approved_at = now
+    request.approved_by = user.id
+    request.counts_commission = counts
+    request.approval_warnings = list(warnings) or None
+    request.updated_at = now
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="request.approved",
+        entity_type="request",
+        entity_id=str(request.number),
+        before={"status": "pending_review"},
+        after={
+            "status": "approved",
+            "type": request.type,
+            "counts_commission": counts,
+            "despite_warnings": list(warnings),
+        },
+    )
+    db.commit()
+    log.info("review accept number=%s warnings=%s", request.number, len(warnings))
+    return request
+
+
+def reject(db: Session, user: User, request_id: int, body: RejectIn) -> Request:
+    request = _lock_pending(db, user, request_id)
+    note = rejection_reasons.validate(body.reason, body.note)
+
+    now = utc_now()
+    request.status = "rejected"
+    request.rejected_at = now
+    request.rejected_by = user.id
+    request.rejection_reason = body.reason
+    request.rejection_note = note
+    request.updated_at = now
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="request.rejected",
+        entity_type="request",
+        entity_id=str(request.number),
+        before={"status": "pending_review"},
+        # The note is the admin's own text, written for the marketer to read (research R12).
+        after={"status": "rejected", "reason": body.reason, "note": note},
+    )
+    db.commit()
+    log.info("review reject number=%s reason=%s", request.number, body.reason)
+    return request
 
 
 # --- images (R9) ---------------------------------------------------------------------------------

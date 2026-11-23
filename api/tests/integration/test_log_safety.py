@@ -364,3 +364,36 @@ def test_existing_subscriber_paths_never_log_card_data(
     everything = raw + _formatted(list(caplog.records)) + printed.out + printed.err
     for secret in (NID, FAMILY, "07709990004", old.full_name, old.username):
         assert secret not in everything
+
+
+def test_review_decisions_never_log_card_data(client, db, make_user, caplog, capsys) -> None:
+    """Feature 010 (T038): accept, reject and the review file log only the number and the action."""
+    from tests.helpers.requests import request_factory
+
+    marketer = make_user("marketer")
+    h = auth_header(login(client, make_user("super_admin").phone))
+    one = request_factory(db, marketer, status="pending_review", full_name="اسم سري للوغ أ")
+    two = request_factory(db, marketer, status="pending_review", full_name="اسم سري للوغ ب")
+    caplog.set_level(logging.DEBUG)
+
+    client.get(f"/api/admin/requests/{one.id}", headers=h)
+    client.post(f"/api/admin/requests/{one.id}/accept", json={}, headers=h)
+    client.post(
+        f"/api/admin/requests/{two.id}/reject",
+        json={"reason": "other", "note": "طلب مكرر"},
+        headers=h,
+    )
+
+    raw = "\n".join(r.getMessage() for r in caplog.records)
+    printed = capsys.readouterr()
+    everything = raw + _formatted(list(caplog.records)) + printed.out + printed.err
+    assert "review accept" in raw and "review reject" in raw
+    for request in (one, two):
+        for secret in (
+            request.national_id,
+            request.family_number,
+            request.phone,
+            request.full_name,
+        ):
+            assert secret not in everything, secret
+    assert "طلب مكرر" not in everything  # the note is for the marketer, not the logs

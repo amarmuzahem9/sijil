@@ -15,7 +15,7 @@ import uuid
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from app.core import otp
+from app.core import otp, rejection_reasons
 from app.core.decision import decide
 from app.core.family_key import family_key
 from app.core.matches import MatchRecord
@@ -338,6 +338,9 @@ def to_out(request: Request) -> RequestOut:
         submitted_at=request.submitted_at,
         approved_at=request.approved_at,
         result=_result(request),
+        rejection_reason=request.rejection_reason,
+        rejection_label=rejection_reasons.label(request.rejection_reason, request.rejection_note),
+        rejected_at=request.rejected_at,
     )
 
 
@@ -361,6 +364,7 @@ def list_own(db: Session, user: User, statuses: list[str] | None = None) -> list
             status=r.status,
             type=r.type,
             submitted_at=r.submitted_at,
+            rejection_label=rejection_reasons.label(r.rejection_reason, r.rejection_note),
         )
         for r in rows
     ]

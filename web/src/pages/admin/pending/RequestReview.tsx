@@ -12,7 +12,7 @@ import Paper from '@mui/material/Paper';
 import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useId, type ReactNode } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 
@@ -22,6 +22,7 @@ import { REASON_LABELS, REASON_STATE_LABELS, REQUEST_TYPE_LABELS } from '../../.
 import { formatMoney } from '../../../lib/money';
 import { STATUS_COLORS, STATUS_LABELS } from '../../../lib/requestStatus';
 import { formatBaghdad } from '../../../lib/time';
+import { DecisionPanel } from './DecisionPanel';
 import { LinkedRecordCard } from './LinkedRecordCard';
 import { RequestImage } from './RequestImage';
 
@@ -220,10 +221,14 @@ export function RequestReviewView({
 
 export default function RequestReview() {
   const { requestId = '' } = useParams<{ requestId: string }>();
-  const query = useQuery({
-    queryKey: ['admin', 'request', requestId],
-    queryFn: () => getRequestFile(requestId),
-  });
+  const queryClient = useQueryClient();
+  const key = ['admin', 'request', requestId];
+  const query = useQuery({ queryKey: key, queryFn: () => getRequestFile(requestId) });
+
+  function decided(file: RequestFile) {
+    queryClient.setQueryData(key, file);
+    void queryClient.invalidateQueries({ queryKey: ['admin', 'pending'] });
+  }
   return (
     <Stack spacing={2}>
       <div>
@@ -233,7 +238,18 @@ export default function RequestReview() {
       </div>
       {query.isPending && <Skeleton variant="rounded" height={320} />}
       {query.isError && <Paper sx={{ p: 2 }}>{query.error.message}</Paper>}
-      {query.data && <RequestReviewView file={query.data} />}
+      {query.data && (
+        <RequestReviewView
+          file={query.data}
+          decision={
+            <DecisionPanel
+              file={query.data}
+              onDecided={decided}
+              onRefresh={() => void query.refetch()}
+            />
+          }
+        />
+      )}
     </Stack>
   );
 }

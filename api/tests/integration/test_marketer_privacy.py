@@ -200,3 +200,35 @@ def test_the_test_catches_a_leak(client, db, h, make_user):
     with pytest.raises(AssertionError):
         seen.assert_hides(old)
     assert uuid.UUID(str(old.draft_id))
+
+
+# --- after the admin's decision (specs/010 T028, FR-011, SC-004) ---------------------------------
+
+ADMIN_NAME = "أدمن سري للمراجعة"
+
+
+@pytest.mark.parametrize("action", ["accept", "reject"])
+def test_decision_shows_nothing_of_the_linked_record(client, db, h, catalog, make_user, action):
+    old = _record(db, make_user, family_number=FAMILY, national_id=OTHER_NID, phone=OTHER_PHONE)
+    seen = Seen(client, h)
+    draft_id = complete_draft(client, h, catalog, verified=False)
+    seen.patch(draft_id, {"additional_confirmed": True})
+    res = seen.verify_and_submit(draft_id)
+    assert res.status_code == 201, res.json()
+    request_id = res.json()["id"]
+
+    admin = make_user("super_admin", name=ADMIN_NAME)
+    body = {} if action == "accept" else {"reason": "under_15_days"}
+    decided = client.post(
+        f"/api/admin/requests/{request_id}/{action}",
+        json=body,
+        headers=auth_header(login(client, admin.phone)),
+    )
+    assert decided.status_code == 200, decided.json()
+
+    mine = seen.get(f"/api/requests/{request_id}").json()
+    seen.get("/api/requests")
+    # The decision fields are there, and nothing more (FR-011).
+    assert {"rejection_reason", "rejection_label", "rejected_at"} <= set(mine)
+    assert not {"warnings", "decision", "approval_warnings", "approved_by"} & set(mine)
+    seen.assert_hides(old, OTHER_PHONE, OTHER_NID, ADMIN_NAME, '"despite_warnings"', '"record"')

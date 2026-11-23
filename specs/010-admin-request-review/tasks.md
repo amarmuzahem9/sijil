@@ -287,7 +287,7 @@ return, and the rejection reason comes from the fixed list. The marketer sees th
 
 ### Tests for User Story 2
 
-- [ ] T025 [P] [US2] Write `api/tests/integration/test_admin_decide.py`. Check accept:
+- [x] T025 [P] [US2] Write `api/tests/integration/test_admin_decide.py`. Check accept:
   - a family request accepted → `approved`, `approved_by` = the admin, `approved_at` = the frozen
     clock, `counts_commission=true`, username unchanged;
   - a return without `counts_commission` → 422 `commission_answer_required`; with `false` → it is
@@ -306,22 +306,22 @@ return, and the rejection reason comes from the fixed list. The marketer sees th
     not exist (FR-018).
 
   Run: **red**.
-- [ ] T026 [P] [US2] Write `api/tests/integration/test_admin_decide_concurrency.py` on the pattern of
+- [x] T026 [P] [US2] Write `api/tests/integration/test_admin_decide_concurrency.py` on the pattern of
   `test_submit_concurrency.py`. Two sessions accept and reject the same request at once: exactly one
   succeeds, the other gets 409 `already_decided`, and the row holds one decision (SC-003). Run:
   **red**.
-- [ ] T027 [P] [US2] Extend `api/tests/integration/test_requests_api.py` (marketer). After an accept:
+- [x] T027 [P] [US2] Extend `api/tests/integration/test_requests_api.py` (marketer). After an accept:
   `result='approved'` and the username is present. After a reject with `other`: `result='rejected'`,
   `rejection_reason='other'`, `rejection_label` = the note, and `rejected_at` is set. After a reject
   with `card_unclear`: the label is «صورة البطاقة غير واضحة». Run: **red**.
-- [ ] T028 [P] [US2] Extend `api/tests/integration/test_marketer_privacy.py`. After accept and after
+- [x] T028 [P] [US2] Extend `api/tests/integration/test_marketer_privacy.py`. After accept and after
   reject, the marketer's `GET /requests/{id}` and the list contain no linked record field, no
   warnings, no admin name and no reason details (SC-004). Run: **red** (the new fields do not exist
   yet, so the shape assertion fails).
 
 ### Implementation for User Story 2
 
-- [ ] T029 [US2] Add `accept(db, user, request_id, body)` to `api/app/services/review_service.py`
+- [x] T029 [US2] Add `accept(db, user, request_id, body)` to `api/app/services/review_service.py`
   ([research R2](./research.md#r2-one-decision-per-request-fr-009),
   [R7](./research.md#r7-accept-with-the-commission-answer-and-with-warnings)). It:
   1. locks the row with `SELECT … FOR UPDATE`;
@@ -335,43 +335,43 @@ return, and the rejection reason comes from the fixed list. The marketer sees th
   7. commits.
 
   Log only the number and the action.
-- [ ] T030 [US2] Add `reject(db, user, request_id, body)` to `api/app/services/review_service.py`. It
+- [x] T030 [US2] Add `reject(db, user, request_id, body)` to `api/app/services/review_service.py`. It
   takes the same lock and pending check, calls `rejection_reasons.validate`, sets `rejected_at`,
   `rejected_by`, `rejection_reason` and `rejection_note` (data-model.md › requests.rejected_at,
   requests.rejected_by, requests.rejection_reason, requests.rejection_note), and writes the audit
   `request.rejected` (R12).
-- [ ] T031 [US2] Add `POST /admin/requests/{id}/accept` and `POST /admin/requests/{id}/reject` to
+- [x] T031 [US2] Add `POST /admin/requests/{id}/accept` and `POST /admin/requests/{id}/reject` to
   `api/app/api/admin_requests.py`. Both return the request file, and non-review callers get 404.
   T025 and T026 **green**.
-- [ ] T032 [US2] Add `rejection_reason`, `rejection_label` and `rejected_at` to `RequestOut` in
+- [x] T032 [US2] Add `rejection_reason`, `rejection_label` and `rejected_at` to `RequestOut` in
   `api/app/schemas/requests.py`, and fill them in `submit_service.to_out` through
   `rejection_reasons.label` ([research R11](./research.md#r11-marketer-view-fr-011)). T027 and T028
   **green**.
-- [ ] T033 [P] [US2] Write `web/src/__tests__/decisionPanel.test.tsx`. Check:
+- [x] T033 [P] [US2] Write `web/src/__tests__/decisionPanel.test.tsx`. Check:
   - «قبول» on a family request calls `accept` with `{}` after the confirm dialog;
   - on a return, the dialog «هل تُحتسب عمولة للمسوّق؟» needs نعم or لا before sending;
   - a 409 `already_decided` shows «تم البت في هذا الطلب مسبقاً» and reloads the file;
   - a decided request shows the decision read-only with no buttons.
 
   Run: **red**.
-- [ ] T034 [P] [US2] Write `web/src/__tests__/rejectDialog.test.tsx`. Check:
+- [x] T034 [P] [US2] Write `web/src/__tests__/rejectDialog.test.tsx`. Check:
   - the five reasons are listed;
   - «سبب آخر» shows a required text field with the hint «لا تكتب أي معلومة عن مشترك آخر», and sending
     is disabled until it has 3 or more characters after trimming;
   - another reason sends no note.
 
   Run: **red**.
-- [ ] T035 [US2] Add `accept(id, body)` and `reject(id, body)` to `web/src/lib/adminRequests.ts`, and
+- [x] T035 [US2] Add `accept(id, body)` and `reject(id, body)` to `web/src/lib/adminRequests.ts`, and
   the rejection labels to `web/src/lib/labels.ts`, mirroring `api/app/core/rejection_reasons.py`.
-- [ ] T036 [US2] Create `web/src/pages/admin/pending/RejectDialog.tsx` and
+- [x] T036 [US2] Create `web/src/pages/admin/pending/RejectDialog.tsx` and
   `web/src/pages/admin/pending/DecisionPanel.tsx` (accept confirm, return commission dialog,
   already-decided handling, read-only decision view), and mount the panel in `RequestReview.tsx`.
   T033 and T034 **green**.
-- [ ] T037 [US2] Show «تم رفض الطلب» with `rejection_label` in
+- [x] T037 [US2] Show «تم رفض الطلب» with `rejection_label` in
   `web/src/pages/marketer/RequestResult.tsx` and in the rejected rows of
   `web/src/pages/marketer/SubmittedTab.tsx`, and add the fields to `web/src/lib/requests.ts`. Extend
   `web/src/__tests__/requestResult.test.tsx`: run red, then green.
-- [ ] T038 [US2] Add the labels for `request.approved` and `request.rejected` to
+- [x] T038 [US2] Add the labels for `request.approved` and `request.rejected` to
   `web/src/lib/auditFormat.ts`, including «قبول رغم التحذير» when `despite_warnings` is not empty.
   Extend `api/tests/integration/test_audit_completeness.py` and `test_log_safety.py`: accept and
   reject entries exist, and neither they nor the log lines contain the national ID, family number,

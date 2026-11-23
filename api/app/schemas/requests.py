@@ -47,6 +47,11 @@ class RequestOut(BaseModel):
     submitted_at: datetime
     approved_at: datetime | None
     result: ResultCode
+    # The admin's rejection (specs/010 research R11): the code, and what the marketer reads (the
+    # fixed label, or the admin's note for «سبب آخر»). No admin name, no linked record.
+    rejection_reason: str | None = None
+    rejection_label: str | None = None
+    rejected_at: datetime | None = None
 
 
 class RequestListItem(BaseModel):
@@ -56,6 +61,8 @@ class RequestListItem(BaseModel):
     status: RequestStatus
     type: RequestType
     submitted_at: datetime
+    # «مرفوضة» rows show why (specs/010 FR-011).
+    rejection_label: str | None = None
 
 
 class RequestList(BaseModel):

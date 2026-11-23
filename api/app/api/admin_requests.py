@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import AuthContext, current_user, require_permission
 from app.db import get_db
-from app.schemas.admin_requests import PendingList, RequestFileOut
+from app.schemas.admin_requests import AcceptIn, PendingList, RejectIn, RequestFileOut
 from app.services import review_service
 
 router = APIRouter(prefix="/admin", tags=["admin-review"])
@@ -43,6 +43,30 @@ def get_request_file(
 ) -> RequestFileOut:
     """404 for a caller without `review`, the same as for a missing request."""
     return review_service.to_file(db, review_service.get_for_review(db, ctx.user, request_id))
+
+
+@router.post("/requests/{request_id}/accept", response_model=RequestFileOut)
+def accept_request(
+    request_id: int,
+    body: AcceptIn,
+    ctx: AuthContext = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> RequestFileOut:
+    """«قبول». A return needs `counts_commission`; warnings need `confirm_warnings` (R7)."""
+    request = review_service.accept(db, ctx.user, request_id, body)
+    return review_service.to_file(db, request)
+
+
+@router.post("/requests/{request_id}/reject", response_model=RequestFileOut)
+def reject_request(
+    request_id: int,
+    body: RejectIn,
+    ctx: AuthContext = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> RequestFileOut:
+    """«رفض» with a fixed reason, or «سبب آخر» with the admin's note (R6)."""
+    request = review_service.reject(db, ctx.user, request_id, body)
+    return review_service.to_file(db, request)
 
 
 @router.get("/request-images/{image_id}", response_class=FileResponse)

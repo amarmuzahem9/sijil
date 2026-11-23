@@ -4,7 +4,12 @@
  */
 import { ROLE_LABELS } from '../auth/roles';
 import type { AuditEntry } from './audit';
-import { AUDIT_ACTION_LABELS, PERMISSION_LABELS } from './labels';
+import {
+  AUDIT_ACTION_LABELS,
+  PERMISSION_LABELS,
+  REJECTION_REASON_LABELS,
+  WARNING_LABELS,
+} from './labels';
 import type { Permission } from './labels';
 import { formatMoney, formatNumber } from './money';
 import { formatBaghdad } from './time';
@@ -32,6 +37,15 @@ export function formatAuditValue(field: string, value: unknown): string {
       : value.map((p) => PERMISSION_LABELS[p as Permission] ?? String(p)).join('، ');
   }
   if (field === 'is_active' && typeof value === 'boolean') return value ? 'فعّال' : 'موقوف';
+  // specs/010: the rejection reason code and the warnings confirmed at accept.
+  if (field === 'reason' && typeof value === 'string' && value in REJECTION_REASON_LABELS)
+    return REJECTION_REASON_LABELS[value as keyof typeof REJECTION_REASON_LABELS];
+  if (field === 'despite_warnings' && Array.isArray(value)) {
+    if (value.length === 0) return '—';
+    return value
+      .map((w) => WARNING_LABELS[w as keyof typeof WARNING_LABELS] ?? String(w))
+      .join('، ');
+  }
   if (field === 'role' && typeof value === 'string' && value in ROLE_LABELS) {
     return ROLE_LABELS[value as keyof typeof ROLE_LABELS];
   }
@@ -48,6 +62,9 @@ export function formatAuditValue(field: string, value: unknown): string {
 /** Arabic action label; account creation also names the role (002 analysis fix I3). */
 export function actionLabel(entry: AuditEntry): string {
   const label = AUDIT_ACTION_LABELS[entry.action] ?? entry.action;
+  const despite = entry.after?.despite_warnings;
+  if (entry.action === 'request.approved' && Array.isArray(despite) && despite.length > 0)
+    return `${label} رغم التحذير`;
   const role = entry.after?.role;
   if (entry.action === 'user.created' && typeof role === 'string' && role in ROLE_LABELS) {
     return `${label} (${ROLE_LABELS[role as keyof typeof ROLE_LABELS]})`;

@@ -150,3 +150,26 @@ describe('submission (specs/008 T046)', () => {
     ).toBe('رفض إرسال طلب');
   });
 });
+
+describe('admin review (specs/010 T038)', () => {
+  it('labels accept and reject, and an accept despite a warning', () => {
+    expect(
+      actionLabel(entry({ action: 'request.approved', after: { despite_warnings: [] } })),
+    ).toBe('قبول طلب');
+    expect(
+      actionLabel(
+        entry({ action: 'request.approved', after: { despite_warnings: ['same_person'] } }),
+      ),
+    ).toBe('قبول طلب رغم التحذير');
+    expect(actionLabel(entry({ action: 'request.rejected' }))).toBe('رفض طلب');
+  });
+
+  it('shows the rejection reason and the warnings in Arabic', () => {
+    expect(formatAuditValue('reason', 'under_15_days')).toBe(
+      'المتبقي من الاشتراك الأول أقل من 15 يوماً',
+    );
+    expect(formatAuditValue('despite_warnings', ['same_person'])).toBe('نفس الشخص');
+    expect(formatAuditValue('despite_warnings', [])).toBe('—');
+    expect(formatAuditValue('counts_commission', false)).toBe('لا');
+  });
+});

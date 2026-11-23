@@ -5,6 +5,7 @@
  * «نسخ التفاصيل» copies the ordered text of system.md v1.11 §5.5 in both cases.
  * The link message and its share button come with feature 011.
  */
+import CancelOutlined from '@mui/icons-material/CancelOutlined';
 import CheckCircleOutlined from '@mui/icons-material/CheckCircleOutlined';
 import ContentCopyOutlined from '@mui/icons-material/ContentCopyOutlined';
 import HourglassTopOutlined from '@mui/icons-material/HourglassTopOutlined';
@@ -41,6 +42,7 @@ function Row({ label, value }: { label: string; value: string }) {
 export function RequestResultView({ request }: { request: SubmittedRequest }) {
   const [copied, setCopied] = useState<'details' | 'username' | null>(null);
   const approved = request.result === 'approved' || request.result === 'linked';
+  const rejected = request.result === 'rejected';
   const colors = STATUS_COLORS[request.status];
 
   const copy = async (what: 'details' | 'username') => {
@@ -57,11 +59,24 @@ export function RequestResultView({ request }: { request: SubmittedRequest }) {
   return (
     <Stack spacing={2} sx={{ maxWidth: 640 }} data-testid="request-result">
       <Alert
-        severity={approved ? 'success' : 'warning'}
-        icon={approved ? <CheckCircleOutlined /> : <HourglassTopOutlined />}
+        severity={approved ? 'success' : rejected ? 'error' : 'warning'}
+        icon={
+          approved ? (
+            <CheckCircleOutlined />
+          ) : rejected ? (
+            <CancelOutlined />
+          ) : (
+            <HourglassTopOutlined />
+          )
+        }
         sx={{ fontSize: '1.15rem', fontWeight: 700, alignItems: 'center' }}
       >
         {RESULT_TEXT[request.result]}
+        {rejected && request.rejection_label && (
+          <Typography sx={{ mt: 0.5, fontWeight: 400 }}>
+            سبب الرفض: <span data-testid="rejection-label">{request.rejection_label}</span>
+          </Typography>
+        )}
       </Alert>
 
       <Paper variant="outlined" sx={{ p: 2 }}>

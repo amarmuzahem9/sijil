@@ -56,6 +56,11 @@ export function SubmittedTab({ statuses }: { statuses: SubmittedStatus[] }) {
                     <span dir="ltr">{`#${item.number_label}`}</span> ·{' '}
                     {formatBaghdad(item.submitted_at)}
                   </Typography>
+                  {item.rejection_label && (
+                    <Typography variant="body2" color="error.main">
+                      سبب الرفض: {item.rejection_label}
+                    </Typography>
+                  )}
                 </Stack>
                 <Chip
                   size="small"

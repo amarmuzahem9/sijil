@@ -37,6 +37,10 @@ export interface SubmittedRequest {
   submitted_at: string;
   approved_at: string | null;
   result: RequestResultCode;
+  /** The admin's rejection (specs/010 FR-011): the fixed label, or the note for «سبب آخر». */
+  rejection_reason: string | null;
+  rejection_label: string | null;
+  rejected_at: string | null;
 }
 
 export interface RequestListItem {
@@ -46,6 +50,7 @@ export interface RequestListItem {
   status: SubmittedStatus;
   type: RequestType;
   submitted_at: string;
+  rejection_label: string | null;
 }
 
 /** «نسخ التفاصيل» (system.md v1.11 §5.5): one line each, no phone, card numbers or images. */

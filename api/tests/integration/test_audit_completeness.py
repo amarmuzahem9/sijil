@@ -168,3 +168,45 @@ def test_existing_subscriber_actions_are_audited_once_without_card_data(
     for secret in (NID, FAMILY, "07801234567", "07709990003", old.full_name, old.username):
         assert secret not in blob
     assert f'"{old.id}"' not in blob and str(old.draft_id) not in blob
+
+
+def test_review_decisions_are_audited_once_without_card_data(client, db, make_user) -> None:
+    """Feature 010 (T038, FR-017): accept and reject each write one entry by the admin, with the
+    number, the status before and after, the reason or the commission answer, and no card number,
+    phone or name."""
+    from tests.helpers.requests import request_factory
+
+    marketer = make_user("marketer")
+    admin = make_user("super_admin")
+    h = auth_header(login(client, admin.phone))
+    one = request_factory(db, marketer, status="pending_review", full_name="اسم سري للقبول")
+    two = request_factory(db, marketer, status="pending_review", full_name="اسم سري للرفض")
+
+    assert (
+        client.post(f"/api/admin/requests/{one.id}/accept", json={}, headers=h).status_code == 200
+    )
+    res = client.post(
+        f"/api/admin/requests/{two.id}/reject", json={"reason": "card_unclear"}, headers=h
+    )
+    assert res.status_code == 200
+
+    entries = list(
+        db.scalars(
+            select(AuditLog)
+            .where(AuditLog.action.in_(("request.approved", "request.rejected")))
+            .order_by(AuditLog.id)
+        )
+    )
+    assert [(e.action, e.entity_id, e.actor_id) for e in entries] == [
+        ("request.approved", str(one.number), admin.id),
+        ("request.rejected", str(two.number), admin.id),
+    ]
+    blob = json.dumps([[e.before, e.after] for e in entries], ensure_ascii=False)
+    for request in (one, two):
+        for secret in (
+            request.national_id,
+            request.family_number,
+            request.phone,
+            request.full_name,
+        ):
+            assert secret not in blob, secret
