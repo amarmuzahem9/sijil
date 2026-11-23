@@ -455,6 +455,15 @@ def test_family_number_changed_from_the_reading_goes_to_review(client, db, h, ca
     assert _reasons(db, body["id"]) == [("numbers_edited", {"fields": ["family_number"]})]
 
 
+def test_marketer_values_are_kept_as_submitted(client, db, h, catalog):
+    """specs/010 research R4: a pin may change the working values later, never these."""
+    draft_id = complete_draft(client, h, catalog, changes={"family_number": "1064l00m-1234567891"})
+    body = submit(client, h, draft_id).json()
+    request = db.get(Request, body["id"])
+    assert request.submitted_family_number == "1064l00m-1234567891"
+    assert request.submitted_national_id == request.national_id_input
+
+
 def test_only_a_name_edited_is_approved(client, db, h, catalog):
     draft_id = complete_draft(client, h, catalog, changes={"grandfather_name": "مختلف"})
     body = submit(client, h, draft_id).json()

@@ -33,6 +33,18 @@ REQUEST_STATUSES = ("pending_review", "approved", "rejected", "linked")
 # Statuses that make a request an "existing subscriber" for the checks (system.md §6.1 v1.9).
 ACTIVE_STATUSES = ("pending_review", "approved", "linked")
 REASONS = ("family_exists", "numbers_edited", "return", "numbers_conflict")
+# specs/010 data-model.md › request_reasons.state
+REASON_STATES = ("open", "resolved", "not_applicable")
+# specs/010 research R6; labels in app/core/rejection_reasons.py
+REJECTION_REASONS = (
+    "card_unclear",
+    "numbers_mismatch",
+    "under_15_days",
+    "active_subscription",
+    "other",
+)
+PIN_FIELDS = ("national_id", "family_number")
+PIN_SOURCES = ("reading", "mrz", "marketer", "typed")
 
 
 def _ts() -> Mapped[datetime]:
@@ -60,6 +72,31 @@ class Request(Base):
         ),
         CheckConstraint(
             "status <> 'pending_review' OR approved_at IS NULL", name="requests_pending_no_time"
+        ),
+        # specs/010 data-model.md (migration 0013)
+        CheckConstraint(
+            "rejection_reason IS NULL OR rejection_reason IN ('card_unclear','numbers_mismatch',"
+            "'under_15_days','active_subscription','other')",
+            name="requests_rejection_reason",
+        ),
+        CheckConstraint(
+            "(status = 'rejected') = (rejected_at IS NOT NULL AND rejected_by IS NOT NULL "
+            "AND rejection_reason IS NOT NULL)",
+            name="requests_rejected_has_decision",
+        ),
+        CheckConstraint(
+            "CASE WHEN rejection_reason = 'other' "
+            "THEN rejection_note IS NOT NULL AND btrim(rejection_note) <> '' "
+            "ELSE rejection_note IS NULL END",
+            name="requests_rejection_note",
+        ),
+        CheckConstraint(
+            "status <> 'rejected' OR approved_at IS NULL", name="requests_rejected_no_approval"
+        ),
+        Index(
+            "requests_pending_idx",
+            "submitted_at",
+            postgresql_where=text("status = 'pending_review'"),
         ),
         Index("requests_phone_idx", "phone"),
         Index("requests_national_id_idx", "national_id"),
@@ -90,6 +127,9 @@ class Request(Base):
     national_id: Mapped[str] = mapped_column(Text, nullable=False)
     national_id_input: Mapped[str] = mapped_column(Text, nullable=False)
     family_number: Mapped[str] = mapped_column(Text, nullable=False)
+    # The marketer's values as submitted; a pin never changes them (specs/010 R4).
+    submitted_national_id: Mapped[str] = mapped_column(Text, nullable=False)
+    submitted_family_number: Mapped[str] = mapped_column(Text, nullable=False)
     family_key: Mapped[str] = mapped_column(Text, nullable=False)
     birth_date: Mapped[date] = mapped_column(Date, nullable=False)
     issue_date: Mapped[date] = mapped_column(Date, nullable=False)
@@ -131,6 +171,15 @@ class Request(Base):
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Null with approved_at set = the automatic approval of §6.1 row 5.
     approved_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id"))
+    # The decision (specs/010 data-model.md › requests).
+    counts_commission: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=text("true")
+    )
+    approval_warnings: Mapped[list | None] = mapped_column(JSONB)
+    rejected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    rejected_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id"))
+    rejection_reason: Mapped[str | None] = mapped_column(Text)
+    rejection_note: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = _ts()
     updated_at: Mapped[datetime] = _ts()
 
@@ -138,6 +187,9 @@ class Request(Base):
         back_populates="request", lazy="selectin", order_by="RequestReason.id"
     )
     images: Mapped[list["RequestImage"]] = relationship(back_populates="request", lazy="selectin")
+    pins: Mapped[list["RequestNumberPin"]] = relationship(
+        back_populates="request", lazy="selectin", order_by="RequestNumberPin.id"
+    )
     # «المسوّق» in «نسخ التفاصيل» (system.md v1.11 §5.5). `approved_by` also points at users.
     marketer: Mapped["User"] = relationship(foreign_keys=[marketer_id], lazy="joined")  # noqa: F821
 
@@ -162,6 +214,9 @@ class RequestReason(Base):
             name="request_reasons_unique",
             postgresql_nulls_not_distinct=True,
         ),
+        CheckConstraint(
+            "state IN ('open','resolved','not_applicable')", name="request_reasons_state"
+        ),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
@@ -175,6 +230,14 @@ class RequestReason(Base):
         JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb")
     )
     created_at: Mapped[datetime] = _ts()
+    # specs/010 research R3: rows are marked, never deleted.
+    state: Mapped[str] = mapped_column(
+        Text, nullable=False, default="open", server_default=text("'open'")
+    )
+    state_changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    state_changed_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id"))
+    # Null: recorded at submission. Set: added by the re-check after a pin.
+    added_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id"))
 
     request: Mapped[Request] = relationship(back_populates="reasons")
 
@@ -201,3 +264,37 @@ class RequestImage(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     request: Mapped[Request] = relationship(back_populates="images")
+
+
+class RequestNumberPin(Base):
+    """One pin of a national ID or family number by a review admin (specs/010 data-model.md >
+    request_number_pins). Append-only: there is no update or delete path. It holds the value
+    before and after, which the audit entry reaches through `pin_id` (constitution III v1.2.1).
+    Its values never go into an audit entry or a log line (Principle II)."""
+
+    __tablename__ = "request_number_pins"
+    __table_args__ = (
+        CheckConstraint(
+            "field IN ('national_id','family_number')", name="request_number_pins_field"
+        ),
+        CheckConstraint(
+            "source IN ('reading','mrz','marketer','typed')", name="request_number_pins_source"
+        ),
+        CheckConstraint(
+            "source <> 'mrz' OR field = 'national_id'", name="request_number_pins_mrz_nid"
+        ),
+        Index("request_number_pins_request_idx", "request_id", "pinned_at"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    request_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("requests.id", ondelete="RESTRICT"), nullable=False
+    )
+    field: Mapped[str] = mapped_column(Text, nullable=False)
+    previous_value: Mapped[str] = mapped_column(Text, nullable=False)
+    value: Mapped[str] = mapped_column(Text, nullable=False)
+    source: Mapped[str] = mapped_column(Text, nullable=False)
+    pinned_by: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
+    pinned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    request: Mapped[Request] = relationship(back_populates="pins")

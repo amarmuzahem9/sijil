@@ -42,12 +42,12 @@ red before its code is written**. Report red and green for every test task.
 
 ## Phase 1: Setup
 
-- [ ] T001 Add the error codes of [contracts/api.md](./contracts/api.md) › New error messages to
+- [x] T001 Add the error codes of [contracts/api.md](./contracts/api.md) › New error messages to
   `api/app/errors.py`, with their Arabic messages and statuses:
   - 409: `already_decided`, `warnings_unconfirmed`;
   - 422: `commission_answer_required`, `rejection_note_required`, `pin_source_empty`,
     `invalid_national_id`, `invalid_family_number`.
-- [ ] T002 [P] Write `api/tests/integration/test_migration_0013.py` on the pattern of
+- [x] T002 [P] Write `api/tests/integration/test_migration_0013.py` on the pattern of
   `test_migration_0012.py`. Check:
   - the new columns exist;
   - `submitted_national_id` and `submitted_family_number` are backfilled from existing rows;
@@ -58,7 +58,7 @@ red before its code is written**. Report red and green for every test task.
   - downgrade and upgrade round-trip.
 
   Run: **red**.
-- [ ] T003 Write migration `api/migrations/versions/0013_admin_review.py` (down revision `0012`)
+- [x] T003 Write migration `api/migrations/versions/0013_admin_review.py` (down revision `0012`)
   exactly as in [data-model.md](./data-model.md). It covers:
   - `requests.submitted_national_id` and `requests.submitted_family_number` (backfill, then not
     null), `requests.counts_commission`, `requests.approval_warnings`, `requests.rejected_at`,
@@ -75,7 +75,7 @@ red before its code is written**. Report red and green for every test task.
   The downgrade reverses all of it. Under `pending_review → rejected` the 008 check
   `requests_pending_no_time` still holds, and the new check `status = 'rejected'` ⇒
   `approved_at IS NULL` is added. T002 **green**.
-- [ ] T004 Mirror the migration in the models:
+- [x] T004 Mirror the migration in the models:
   - `api/app/models/request.py`: the new `Request` columns and checks, the `RequestReason` state
     columns, `REASON_STATES`, and the new `RequestNumberPin` model with a `Request.pins`
     relationship;
@@ -83,7 +83,7 @@ red before its code is written**. Report red and green for every test task.
   - export `RequestNumberPin` from `api/app/models/__init__.py`.
 
   Run the full api suite: green, with no change in 008/009 behavior.
-- [ ] T005 Set `submitted_national_id=draft.national_id` and
+- [x] T005 Set `submitted_national_id=draft.national_id` and
   `submitted_family_number=draft.family_number` when a request is created in
   `api/app/services/submit_service.py`, and in the test factory
   `api/tests/helpers/requests.py::request_factory` (defaults equal to `national_id` and
@@ -98,7 +98,7 @@ red before its code is written**. Report red and green for every test task.
 **Purpose**: the pure rules (R5, R6), the linked-record registry (R8), the Baghdad day bounds (R10) and
 the permission dependency used by every review route.
 
-- [ ] T006 [P] Write `api/tests/unit/test_review_check.py` for `review(type, return_refs, return_basis,
+- [x] T006 [P] Write `api/tests/unit/test_review_check.py` for `review(type, return_refs, return_basis,
   matches, prior_conflict_refs)` ([research R5](./research.md#r5-re-check-and-warnings)). Cover:
   - `new` with a family-only record → open `family_exists` row, `new_type='additional'`, no warning;
   - `additional` with the family record gone → no open family row, type stays `additional`;
@@ -114,11 +114,11 @@ the permission dependency used by every review route.
   - no matches → nothing.
 
   Run: **red**.
-- [ ] T007 Implement `api/app/core/review_check.py` (pure, no database). It defines the `ReviewCheck`
+- [x] T007 Implement `api/app/core/review_check.py` (pure, no database). It defines the `ReviewCheck`
   dataclass of data-model.md › ReviewCheck (`open_rows`, `new_type`, `warnings`), with warning kinds
   limited to `same_person`, `id_conflict`, `return_target_lost`, and the function `review(...)`.
   It reuses the views in `app/core/matches.py`. T006 **green**.
-- [ ] T008 [P] Write `api/tests/unit/test_rejection_reasons.py`. Cover:
+- [x] T008 [P] Write `api/tests/unit/test_rejection_reasons.py`. Cover:
   - each code has its Arabic label;
   - `other` needs a note of 3 to 300 characters after trimming; spaces only count as empty;
   - a note with any other code is refused;
@@ -128,11 +128,11 @@ the permission dependency used by every review route.
   [research R6](./research.md#r6-rejection-reasons-fr-019) (data-model.md ›
   requests.rejection_reason and requests.rejection_note), `validate(reason, note) -> str | None`
   raising `AppError`, and `label(reason, note)`. Run red, then green.
-- [ ] T009 [P] Add `baghdad_today_bounds(at=None) -> tuple[datetime, datetime]` to
+- [x] T009 [P] Add `baghdad_today_bounds(at=None) -> tuple[datetime, datetime]` to
   `api/app/core/timeutil.py`, with tests in `api/tests/unit/test_timeutil.py`: 23:30 Baghdad belongs to
   that Baghdad day, and 00:30 Baghdad to the next one, which is still the previous UTC day. Run red,
   then green.
-- [ ] T010 Create `api/app/services/linked_records.py`
+- [x] T010 Create `api/app/services/linked_records.py`
   ([research R8](./research.md#r8-linked-records)):
   - `register_resolver(source, fn)` and `resolve(db, refs) -> dict[(source, ref), LinkedRecordOut]`;
   - a missing resolver or a missing row gives `available=False`;
@@ -143,7 +143,7 @@ the permission dependency used by every review route.
   Test it in `api/tests/integration/test_linked_records.py`: a sijil record resolves, an unknown
   source and a missing id give unavailable, and the result never includes `card_readings`. Run red,
   then green.
-- [ ] T011 Create `api/app/schemas/admin_requests.py` with the response and body models of
+- [x] T011 Create `api/app/schemas/admin_requests.py` with the response and body models of
   [contracts/api.md](./contracts/api.md). Use `extra="forbid"` on the bodies:
   - `PendingList` and `PendingItem`;
   - `RequestFileOut`, `NumbersOut`, `ReasonOut`, `LinkedRecordOut` and `DecisionOut`;

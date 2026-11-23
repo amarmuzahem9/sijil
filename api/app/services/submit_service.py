@@ -192,6 +192,9 @@ def submit(db: Session, user: User, draft_id: uuid.UUID, version: int) -> tuple[
         national_id=national_id,
         national_id_input=draft.national_id,
         family_key=key,
+        # The marketer's values as submitted; a review pin never changes them (specs/010 R4).
+        submitted_national_id=draft.national_id,
+        submitted_family_number=draft.family_number,
         card_fields=dict(draft.card_fields or {}),
         card_readings=_card_readings(draft),
         phone=phone,

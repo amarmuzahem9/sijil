@@ -12,6 +12,7 @@ from sqlalchemy import select
 
 from app.config import get_settings
 from app.core.family_key import family_key
+from app.core.timeutil import utc_now
 from app.models import AuditLog, Draft, Request, RequestReason
 from app.services.card_reader_fake_data import FAMILY, NID
 from app.services.otp_sender import get_otp_sender
@@ -211,7 +212,12 @@ def test_choice_gone_stale_at_submission_falls_back(client, db, h, catalog, make
     draft_id = complete_draft(client, h, catalog, verified=False)
     patch(client, h, draft_id, {"return_chosen": True})
     verify(client, h, draft_id)
-    old.status = "rejected"  # the record stops counting before the submission
+    # The record stops counting before the submission (with the 010 decision columns).
+    old.status = "rejected"
+    old.approved_at = None
+    old.rejected_at = utc_now()
+    old.rejected_by = old.marketer_id
+    old.rejection_reason = "card_unclear"
     db.flush()
 
     res = submit(client, h, draft_id)

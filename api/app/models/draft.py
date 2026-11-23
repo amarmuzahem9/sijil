@@ -238,7 +238,10 @@ class ImageAccessLog(Base):
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
     # Plain values, not FKs: the history outlives draft deletion (research.md R8).
     image_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    draft_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    # A request image open writes the request's kept draft id too (specs/010 R9).
+    draft_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    # Set when a review admin opens a request image (specs/010 research R9).
+    request_id: Mapped[int | None] = mapped_column(BigInteger)
     side: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = _ts()
     # `view` = a person opened the image (005); `ocr` = the server sent it to the card reader

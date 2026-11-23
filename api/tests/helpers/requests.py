@@ -92,6 +92,13 @@ def request_factory(db: Session, marketer: User, **overrides: Any) -> Request:
     values.update(overrides)
     if "family_key" not in overrides:
         values["family_key"] = family_key(values["family_number"])
+    values.setdefault("submitted_national_id", values["national_id_input"])
+    values.setdefault("submitted_family_number", values["family_number"])
+    if values["status"] == "rejected":
+        # The 010 decision columns a rejected request must carry (specs/010 data-model.md).
+        values.setdefault("rejected_at", now)
+        values.setdefault("rejected_by", marketer.id)
+        values.setdefault("rejection_reason", "card_unclear")
     request = Request(**values)
     db.add(request)
     db.flush()

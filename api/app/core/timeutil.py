@@ -49,6 +49,14 @@ def baghdad_month_bounds(at: datetime | None = None) -> tuple[datetime, datetime
     return start.astimezone(UTC), nxt.astimezone(UTC)
 
 
+def baghdad_today_bounds(at: datetime | None = None) -> tuple[datetime, datetime]:
+    """[start, end) of the Baghdad calendar day containing `at`, returned in UTC (specs/010 R10)."""
+    local = (at or utc_now()).astimezone(BAGHDAD)
+    start = local.replace(hour=0, minute=0, second=0, microsecond=0)
+    nxt = datetime.combine(start.date() + timedelta(days=1), time.min, tzinfo=BAGHDAD)
+    return start.astimezone(UTC), nxt.astimezone(UTC)
+
+
 def baghdad_month_label(at: datetime | None = None) -> str:
     local = (at or utc_now()).astimezone(BAGHDAD)
     return f"{ARABIC_MONTHS[local.month - 1]} {local.year}"

@@ -7,6 +7,7 @@ from fastapi import FastAPI
 
 from app.api import (
     admin,
+    admin_requests,
     admins,
     archive,
     audit,
@@ -53,6 +54,7 @@ def create_app() -> FastAPI:
         auth,
         marketer,
         admin,
+        admin_requests,
         admins,
         marketers,
         audit,
