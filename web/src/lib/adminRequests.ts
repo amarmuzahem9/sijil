@@ -163,3 +163,14 @@ export interface PinBody {
 
 export const pin = (id: number, body: PinBody) =>
   apiFetch<RequestFile>(`/api/admin/requests/${id}/pin`, { method: 'POST', body });
+
+export interface HomeCounts {
+  submitted: number;
+  approved: number;
+  pending: number;
+  linked: number;
+  rejected: number;
+}
+
+/** The admin home counts, Baghdad days and months (specs/010 research R10). Any admin. */
+export const getHome = () => apiFetch<{ today: HomeCounts; month: HomeCounts }>('/api/admin/home');

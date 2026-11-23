@@ -1,5 +1,7 @@
 """require_permission (specs/002 research R1, FR-003)."""
 
+import uuid
+
 import pytest
 from fastapi import APIRouter, Depends
 
@@ -66,3 +68,48 @@ def test_permission_change_applies_on_next_request(client, make_user, db) -> Non
     u.permissions = []
     db.flush()
     assert client.get(URL, headers=headers).status_code == 403
+
+
+# --- specs/010 T057 (SC-006): every review route needs `review`; the home counts do not ---
+
+_REVIEW_ROUTES = [
+    ("get", "/api/admin/requests/pending", None, 403),
+    ("get", "/api/admin/requests/{id}", None, 404),
+    ("post", "/api/admin/requests/{id}/accept", {}, 404),
+    ("post", "/api/admin/requests/{id}/reject", {"reason": "card_unclear"}, 404),
+    ("post", "/api/admin/requests/{id}/pin", {"field": "national_id", "source": "marketer"}, 404),
+    ("get", "/api/admin/request-images/{image}", None, 404),
+]
+
+
+@pytest.mark.parametrize(
+    "perms", [[], ["settings"], ["link", "marketers", "reports", "commissions"]]
+)
+@pytest.mark.parametrize(("method", "path", "body", "status"), _REVIEW_ROUTES)
+def test_review_routes_need_review(
+    client, make_user, db, perms, method, path, body, status
+) -> None:
+    from app.models import Request
+    from tests.helpers.requests import request_factory
+
+    request = request_factory(db, make_user("marketer"), status="pending_review")
+    url = path.format(id=request.id, image=uuid.uuid4())
+    admin = make_user("admin")
+    admin.permissions = perms
+    db.flush()
+
+    h = auth_header(login(client, admin.phone))
+    res = getattr(client, method)(url, headers=h, **({"json": body} if body is not None else {}))
+
+    assert res.status_code == status
+    db.expire_all()
+    assert db.get(Request, request.id).status == "pending_review"
+
+
+def test_the_home_counts_are_open_to_every_admin(client, make_user, db) -> None:
+    for perms in ([], ["settings"]):
+        admin = make_user("admin")
+        admin.permissions = perms
+        db.flush()
+        res = client.get("/api/admin/home", headers=auth_header(login(client, admin.phone)))
+        assert res.status_code == 200

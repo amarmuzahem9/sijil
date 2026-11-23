@@ -185,4 +185,53 @@ describe('DecisionPanel', () => {
       }),
     );
   });
+  describe('rule reminders (US4)', () => {
+    const REMINDER = 'إذا كان للاشتراك الأول 15 يوماً أو أكثر متبقية: قبول. أقل من ذلك: رفض.';
+
+    it('shows the 15-day reminder with «تاريخ الانتهاء غير متوفر» for a family request', () => {
+      show();
+      expect(screen.getByText(REMINDER)).toBeTruthy();
+      expect(screen.getByText('تاريخ الانتهاء غير متوفر')).toBeTruthy();
+    });
+
+    it('shows the expiry «حسب آخر استيراد» when the record has one', () => {
+      const file = requestFile();
+      const [family, ...rest] = file.reasons;
+      show({
+        ...file,
+        reasons: [{ ...family, record: { ...family.record!, expiry: '2026-12-20' } }, ...rest],
+      });
+      expect(screen.getByText(/2026-12-20/).textContent).toContain('حسب آخر استيراد');
+      expect(screen.queryByText('تاريخ الانتهاء غير متوفر')).toBeNull();
+    });
+
+    it('announces the commission question on a return', () => {
+      const file = requestFile();
+      show({ ...file, type: 'return', reasons: [] });
+      expect(screen.getByText('سيُطلب تحديد احتساب العمولة')).toBeTruthy();
+      expect(screen.queryByText(REMINDER)).toBeNull();
+    });
+
+    it('shows neither on a new request with only edited numbers', () => {
+      const file = requestFile();
+      show({
+        ...file,
+        type: 'new',
+        reasons: file.reasons.filter((r) => r.reason === 'numbers_edited'),
+      });
+      expect(screen.queryByText(REMINDER)).toBeNull();
+      expect(screen.queryByText('سيُطلب تحديد احتساب العمولة')).toBeNull();
+    });
+
+    it('drops the reminder once the family reason no longer applies', () => {
+      const file = requestFile();
+      show({
+        ...file,
+        reasons: file.reasons.map((r) =>
+          r.reason === 'family_exists' ? { ...r, state: 'not_applicable' as const } : r,
+        ),
+      });
+      expect(screen.queryByText(REMINDER)).toBeNull();
+    });
+  });
 });

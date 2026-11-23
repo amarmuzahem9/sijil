@@ -17,12 +17,12 @@ import AccountPanel from './pages/AccountPanel';
 import {
   AdminAwaitingLink,
   AdminBackup,
-  AdminHome,
   AdminImport,
   AdminReports,
   AdminSubscribers,
 } from './pages/admin/placeholders';
 import Admins from './pages/admin/Admins';
+import AdminHome from './pages/admin/Home';
 import PendingList from './pages/admin/pending/PendingList';
 import RequestReview from './pages/admin/pending/RequestReview';
 import Archive from './pages/admin/Archive';

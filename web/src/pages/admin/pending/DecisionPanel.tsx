@@ -39,6 +39,41 @@ import { WARNING_ALERT_LABELS } from '../../../lib/labels';
 import { formatBaghdad } from '../../../lib/time';
 import { RejectDialog } from './RejectDialog';
 
+/** The rule reminders next to the buttons (system.md §6.4, specs/010 US4: FR-016). The admin
+ * applies the 15-day rule by hand; the SAS expiry exists only after 014. */
+/** A left-to-right value isolated inside an Arabic line (LRI … PDI). */
+const LRI = String.fromCodePoint(0x2066);
+const PDI = String.fromCodePoint(0x2069);
+const ltr = (value: string) => `${LRI}${value}${PDI}`;
+
+function Reminders({ file }: { file: RequestFile }) {
+  const family = file.reasons.filter((r) => r.reason === 'family_exists' && r.state === 'open');
+  const isReturn = file.type === 'return';
+  if (family.length === 0 && !isReturn) return null;
+  return (
+    // A standing note, not an alert: screen readers should not announce it as one.
+    <Alert severity="info" variant="outlined" role="note" sx={{ mb: 2 }}>
+      <Stack spacing={0.5}>
+        {family.length > 0 && (
+          <>
+            <span>إذا كان للاشتراك الأول 15 يوماً أو أكثر متبقية: قبول. أقل من ذلك: رفض.</span>
+            {family.map((r, i) =>
+              r.record?.expiry ? (
+                <span key={i}>
+                  {`تاريخ انتهاء الاشتراك الأول: ${ltr(r.record.expiry)} (حسب آخر استيراد)`}
+                </span>
+              ) : (
+                <span key={i}>تاريخ الانتهاء غير متوفر</span>
+              ),
+            )}
+          </>
+        )}
+        {isReturn && <span>سيُطلب تحديد احتساب العمولة</span>}
+      </Stack>
+    </Alert>
+  );
+}
+
 function DecidedView({ file }: { file: RequestFile }) {
   const d = file.decision;
   if (!d) return null;
@@ -133,6 +168,7 @@ export function DecisionPanel({
           </Stack>
         </Alert>
       )}
+      {file.status === 'pending_review' && <Reminders file={file} />}
       {file.status !== 'pending_review' ? (
         <DecidedView file={file} />
       ) : (

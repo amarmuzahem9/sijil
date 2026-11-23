@@ -494,7 +494,7 @@ commission question on a return.
 
 **Independent Test**: spec.md › User Story 4 › Independent Test.
 
-- [ ] T050 [P] [US4] Extend `web/src/__tests__/decisionPanel.test.tsx`. Check:
+- [x] T050 [P] [US4] Extend `web/src/__tests__/decisionPanel.test.tsx`. Check:
   - with an open `family_exists` reason, the reminder «إذا كان للاشتراك الأول 15 يوماً أو أكثر
     متبقية: قبول. أقل من ذلك: رفض.» is shown, with «تاريخ الانتهاء غير متوفر» when the linked
     record's `expiry` is null, and the date with «حسب آخر استيراد» when it is set;
@@ -502,7 +502,7 @@ commission question on a return.
   - a new request with only edited numbers shows neither.
 
   Run: **red**.
-- [ ] T051 [US4] Implement both reminders in `web/src/pages/admin/pending/DecisionPanel.tsx`. T050
+- [x] T051 [US4] Implement both reminders in `web/src/pages/admin/pending/DecisionPanel.tsx`. T050
   **green**.
 
 ---
@@ -513,7 +513,7 @@ commission question on a return.
 
 **Independent Test**: spec.md › User Story 5 › Independent Test.
 
-- [ ] T052 [P] [US5] Write `api/tests/integration/test_admin_home.py` with a frozen clock.
+- [x] T052 [P] [US5] Write `api/tests/integration/test_admin_home.py` with a frozen clock.
   - Data: three submissions today (one auto-approved, two pending), one of them rejected, and one
     request from earlier in the month.
   - Expect `today = {submitted: 3, approved: 1, pending: 1, rejected: 1, linked: 0}`, and `month`
@@ -523,12 +523,12 @@ commission question on a return.
   - The JSON has only numbers.
 
   Run: **red**.
-- [ ] T053 [US5] Create `api/app/services/admin_home.py` with `counts(db)`
+- [x] T053 [US5] Create `api/app/services/admin_home.py` with `counts(db)`
   ([research R10](./research.md#r10-admin-home-counts-fr-021)), and add `GET /admin/home` to
   `api/app/api/admin.py` with `require_roles("super_admin", "admin")`. T052 **green**.
-- [ ] T054 [P] [US5] Write `web/src/__tests__/adminHome.test.tsx`: the rows «اليوم» and «هذا الشهر»
+- [x] T054 [P] [US5] Write `web/src/__tests__/adminHome.test.tsx`: the rows «اليوم» and «هذا الشهر»
   each show مرفوعة، مقبولة، بالانتظار، تم الربط، مرفوضة. Run: **red**.
-- [ ] T055 [US5] Create `web/src/pages/admin/Home.tsx` (stat tiles, RTL, stacked on a phone), add
+- [x] T055 [US5] Create `web/src/pages/admin/Home.tsx` (stat tiles, RTL, stacked on a phone), add
   `getHome()` to `web/src/lib/adminRequests.ts`, and replace `AdminHome` in `placeholders.tsx` and
   `router.tsx`. T054 **green**.
 
@@ -536,11 +536,11 @@ commission question on a return.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T056 [P] Extend `api/tests/integration/test_match_sources.py`: a request rejected through
+- [x] T056 [P] Extend `api/tests/integration/test_match_sources.py`: a request rejected through
   `POST …/reject` no longer matches its phone, national ID or family number.
-- [ ] T057 [P] Extend `api/tests/integration/test_require_permission.py`: every new route is refused without `review`, except
+- [x] T057 [P] Extend `api/tests/integration/test_require_permission.py`: every new route is refused without `review`, except
   `/admin/home` (SC-006).
-- [ ] T058 Write `e2e/tests/admin-review.spec.ts`. Flow:
+- [x] T058 Write `e2e/tests/admin-review.spec.ts`. Flow:
   1. the marketer submits a family request and an edited-numbers request with the fake reader;
   2. the `review` admin accepts the family request, and the marketer sees «تمت الموافقة» and the
      username;
@@ -550,18 +550,18 @@ commission question on a return.
   5. the `settings` admin has no «طلبات بالانتظار» in the menu.
 
   The flow also runs at phone width.
-- [ ] T059 Run the full suites: `pytest`, `npm test`, `npm run lint`, `npm run typecheck` and
+- [x] T059 Run the full suites: `pytest`, `npm test`, `npm run lint`, `npm run typecheck` and
   Playwright. Fix anything red. Then take a light measurement (plan › Performance Goals, SC-001):
   with 300 synthetic pending requests from `request_factory`, the pending list and one request file
   each answer in under 1 s, and accept, reject and pin each in under 2 s, on the dev stack. Write
   the numbers in the batch report. It is a measurement, not a test that fails the suite.
-- [ ] T060 Run `docker compose up` and walk through [quickstart.md](./quickstart.md) › Manual
+- [x] T060 Run `docker compose up` and walk through [quickstart.md](./quickstart.md) › Manual
   scenarios 1–12.
-- [ ] T061 Write `specs/010-admin-request-review/manual-test-ar.md` in Arabic, on the pattern of 009:
+- [x] T061 Write `specs/010-admin-request-review/manual-test-ar.md` in Arabic, on the pattern of 009:
   the setup (migration `0013 (head)`, the fake OTP, the users), then the steps and expected results
   for the list, the file, accept, return commission, reject reasons, pin and warning, concurrency,
   permissions, home counts and the audit.
-- [ ] T062 Final commit. `README.md` and `docs/system.md` §16 do not mark finished features, and
+- [x] T062 Final commit. `README.md` and `docs/system.md` §16 do not mark finished features, and
   this feature does not either.
 
 ---

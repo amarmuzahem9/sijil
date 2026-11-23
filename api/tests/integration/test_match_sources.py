@@ -65,6 +65,33 @@ def test_rejected_requests_never_match(db, marketer) -> None:
     assert not m.any
 
 
+def test_a_request_rejected_in_review_no_longer_matches(client, db, marketer, make_user) -> None:
+    """specs/010 T056 (§6.4): the numbers of a request rejected through «رفض» are free again."""
+    from tests.helpers.review import headers_for
+
+    req = request_factory(
+        db,
+        marketer,
+        status="pending_review",
+        phone=PHONE,
+        national_id=NID,
+        national_id_input=NID,
+        family_number=FAM,
+    )
+    assert _find(db, PHONE, NID, FAM).any
+
+    res = client.post(
+        f"/api/admin/requests/{req.id}/reject",
+        json={"reason": "card_unclear"},
+        headers=headers_for(client, make_user("super_admin")),
+    )
+    assert res.status_code == 200, res.json()
+
+    db.expire_all()
+    m = _find(db, PHONE, NID, FAM)
+    assert (m.phone, m.national_id, m.family) == ([], [], [])
+
+
 def test_drafts_never_match(db, marketer, make_user) -> None:
     other = make_user("marketer")
     db.add(
