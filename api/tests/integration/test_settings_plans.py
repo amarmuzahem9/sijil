@@ -121,3 +121,22 @@ def test_permission(client, make_user, db) -> None:
         assert r.status_code == 403
     main = auth_header(login(client, make_user("super_admin").phone))
     assert client.get(BASE, headers=main).status_code == 200
+
+
+def test_plan_used_by_a_request_cannot_be_deleted(client, db, h, make_user) -> None:
+    """Feature 008 (research R9): any request, even a rejected one, uses its plan."""
+    from app.models import Plan
+    from tests.helpers.requests import _catalog, request_factory
+
+    plan = _plan(client, h, name="USEDPLAN")
+    area, tower, _ = _catalog(db)
+    request_factory(
+        db,
+        make_user("marketer"),
+        status="rejected",
+        area=area,
+        tower=tower,
+        plan=db.get(Plan, plan["id"]),
+    )
+    r = client.delete(f"{BASE}/{plan['id']}", headers=h)
+    assert (r.status_code, r.json()["code"]) == (409, "item_in_use")

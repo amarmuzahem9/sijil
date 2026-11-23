@@ -93,6 +93,15 @@ class MissingOut(BaseModel):
     code: str
 
 
+class DraftChecksOut(BaseModel):
+    """Early check results (specs/008 research R5). Booleans only: never who matched."""
+
+    phone_used: bool = False
+    national_id_exists: bool = False
+    family_exists: bool = False
+    additional_confirmed: bool = False
+
+
 class NoticeOut(BaseModel):
     field: str
     code: Literal["choice_unavailable", "price_changed"]
@@ -197,6 +206,7 @@ class DraftOut(BaseModel):
     missing: list[MissingOut]
     notices: list[NoticeOut] = Field(default_factory=list)
     otp: OtpStatusOut = Field(default_factory=OtpStatusOut)
+    checks: DraftChecksOut = Field(default_factory=DraftChecksOut)
 
 
 class DraftListItem(BaseModel):

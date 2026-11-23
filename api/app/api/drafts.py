@@ -82,7 +82,7 @@ def put_draft(
         db, ctx.user, cid, draft_id, body.changes
     )
     response.status_code = 201 if created else 200
-    return draft_service.to_out(draft, notices)
+    return draft_service.to_out(db, draft, notices)
 
 
 @router.get("/drafts/{draft_id}", response_model=DraftOut)
@@ -93,7 +93,7 @@ def get_draft(
 ) -> DraftOut:
     """Read-only: notices say what the next save would change (research.md R4)."""
     draft = draft_service.get_owned(db, ctx.user, draft_id)
-    return draft_service.to_out(draft, draft_service.compute_notices(db, draft))
+    return draft_service.to_out(db, draft, draft_service.compute_notices(db, draft))
 
 
 @router.get("/drafts/{draft_id}/version", response_model=VersionOut)
@@ -121,7 +121,7 @@ def patch_draft(
     db: Session = Depends(get_db),
 ) -> DraftOut:
     draft, notices = draft_service.patch(db, ctx.user, cid, draft_id, body.version, body.changes)
-    return draft_service.to_out(draft, notices)
+    return draft_service.to_out(db, draft, notices)
 
 
 # --- phone OTP (specs/007 contracts/api.md) ---------------------------------------------------
@@ -136,7 +136,7 @@ def send_otp(
 ) -> DraftOut:
     """«تحقّق»: send a code to the phone stored on the draft. The response never holds it."""
     draft = otp_service.send(db, ctx.user, draft_id)
-    return draft_service.to_out(draft)
+    return draft_service.to_out(db, draft)
 
 
 @router.post("/drafts/{draft_id}/otp/verify", response_model=DraftOut)
@@ -148,7 +148,7 @@ def verify_otp(
     db: Session = Depends(get_db),
 ) -> DraftOut:
     draft = otp_service.verify(db, ctx.user, cid, draft_id, body.code)
-    return draft_service.to_out(draft)
+    return draft_service.to_out(db, draft)
 
 
 # --- list and delete (US4) -------------------------------------------------------------------
@@ -207,7 +207,7 @@ def upload_image(
     # Both sides present → read the card after the response (specs/006 research R5).
     if card_reading_service.ready_to_read(draft):
         background.add_task(card_reading_service.submit, draft.id)
-    return draft_service.to_out(draft)
+    return draft_service.to_out(db, draft)
 
 
 @router.post(

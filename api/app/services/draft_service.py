@@ -27,7 +27,9 @@ from app.core.arabic_name import (
     join_full_name,
 )
 from app.core.card_reading import AUTHORITY_MAX, BIRTH_PLACE_MAX
+from app.core.family_key import family_key
 from app.core.iraq_bounds import in_iraq
+from app.core.national_id import normalize_national_id
 from app.core.phone import normalize_phone, to_latin_digits
 from app.core.timeutil import utc_now
 from app.errors import AppError
@@ -35,6 +37,7 @@ from app.models import Area, Draft, DraftImage, ImageAccessLog, Plan, Tower, Use
 from app.models.draft import CARD_FIELDS, FULL_NAME_FIELDS, NAME_FIELDS, TEXT_LIMITS
 from app.schemas.drafts import (
     DraftChanges,
+    DraftChecksOut,
     DraftImages,
     DraftListItem,
     DraftOut,
@@ -48,6 +51,7 @@ from app.services import (
     card_reading_service,
     draft_validation,
     image_store,
+    match_service,
     otp_service,
 )
 
@@ -182,8 +186,62 @@ def image_sides(images: Iterable[DraftImage]) -> list[str]:
     return [image.side for image in images]
 
 
-def to_out(draft: Draft, notices: list[NoticeOut] | None = None) -> DraftOut:
+# --- early checks (specs/008 research R5, R12) ------------------------------------------------
+
+
+def draft_checks(db: Session, draft: Draft) -> DraftChecksOut:
+    """Does the draft's phone, national ID or family number already belong to a subscriber?
+    Booleans only; the page never learns who (FR-007, SC-006)."""
+    key = family_key(draft.family_number)
+    found = match_service.find_matches(
+        db,
+        phone=draft.phone_normalized,
+        national_id=normalize_national_id(draft.national_id),
+        family_key=key,
+    )
+    family = bool(found.family)
+    return DraftChecksOut(
+        phone_used=bool(found.phone),
+        national_id_exists=bool(found.national_id),
+        family_exists=family,
+        additional_confirmed=family and key is not None and draft.additional_confirmed_key == key,
+    )
+
+
+# The 005/006 page order with the three 008 items, which need the database (research R5).
+_AFTER = {
+    "national_id_unconfirmed": "national_id_exists",
+    "family_number": "family_exists_unconfirmed",
+    "phone": "phone_used",
+}
+MISSING_ORDER: tuple[str, ...] = tuple(
+    f
+    for base in draft_validation.MISSING_ORDER
+    for f in ((base, _AFTER[base]) if base in _AFTER else (base,))
+)
+_ORDER = {f: i for i, f in enumerate(MISSING_ORDER)}
+
+
+def missing_items(
+    draft: Draft, checks: DraftChecksOut | None = None
+) -> list[draft_validation.MissingItem]:
+    """The 005/006 list plus the three 008 items, in page order (MISSING_ORDER)."""
+    items = draft_validation.missing(draft, image_sides(draft.images))
+    if checks is None:
+        return items
+    extra = []
+    if checks.national_id_exists:
+        extra.append({"field": "national_id_exists", "code": "national_id_exists"})
+    if checks.family_exists and not checks.additional_confirmed:
+        extra.append({"field": "family_exists_unconfirmed", "code": "family_exists_unconfirmed"})
+    if checks.phone_used:
+        extra.append({"field": "phone_used", "code": "phone_used"})
+    return sorted([*items, *extra], key=lambda item: _ORDER[item["field"]])
+
+
+def to_out(db: Session, draft: Draft, notices: list[NoticeOut] | None = None) -> DraftOut:
     by_side = {image.side: image for image in draft.images}
+    checks = draft_checks(db, draft)
 
     def image_out(side: str) -> ImageOut | None:
         image = by_side.get(side)
@@ -239,12 +297,10 @@ def to_out(draft: Draft, notices: list[NoticeOut] | None = None) -> DraftOut:
         card_fields=card_reading_service.card_fields_out(draft),
         national_id_check=card_reading_service.national_id_check_out(draft),
         card_reading=card_reading_service.reading_out(draft),
-        missing=[
-            MissingOut(**item)
-            for item in draft_validation.missing(draft, image_sides(draft.images))
-        ],
+        missing=[MissingOut(**item) for item in missing_items(draft, checks)],
         notices=notices or [],
         otp=otp_service.status(draft),
+        checks=checks,
     )
 
 
@@ -523,7 +579,7 @@ def list_own(db: Session, user: User, q: str | None = None) -> list[DraftListIte
             tower_code=d.tower_code,
             phone_normalized=d.phone_normalized,
             updated_at=d.updated_at,
-            missing_count=len(draft_validation.missing(d, image_sides(d.images))),
+            missing_count=len(missing_items(d, draft_checks(db, d))),
             has_images=bool(d.images),
         )
         for d in drafts

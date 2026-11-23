@@ -1,0 +1,17 @@
+[
+  {"note": "canonical", "input": "1234A5678901234567", "expected": "1234A5678901234567"},
+  {"note": "lower case", "input": "1234a5678901234567", "expected": "1234A5678901234567"},
+  {"note": "spaces", "input": "1234 A 567890 1234567", "expected": "1234A5678901234567"},
+  {"note": "dashes and slashes", "input": "1234-A/5678901234567", "expected": "1234A5678901234567"},
+  {"note": "Arabic-Indic digits", "input": "١٢٣٤A٥٦٧٨٩٠١٢٣٤٥٦٧", "expected": "1234A5678901234567"},
+  {"note": "Persian digits", "input": "۱۲۳۴A۵۶۷۸۹۰۱۲۳۴۵۶۷", "expected": "1234A5678901234567"},
+  {"note": "O in a digit place", "input": "1O34A56789O1234567", "expected": "1034A5678901234567"},
+  {"note": "lower-case o", "input": "1o34A5678901234567", "expected": "1034A5678901234567"},
+  {"note": "O at the series letter", "input": "1234O5678901234567", "expected": "123405678901234567"},
+  {"note": "odd length kept (legacy)", "input": "12345", "expected": "12345"},
+  {"note": "long legacy value kept", "input": "1234A56789012345678901", "expected": "1234A56789012345678901"},
+  {"note": "direction marks", "input": "‪1234A5678901234567‬", "expected": "1234A5678901234567"},
+  {"note": "empty", "input": "", "expected": null},
+  {"note": "symbols only", "input": " - / . ", "expected": null},
+  {"note": "Arabic letters only", "input": "ابت", "expected": null}
+]

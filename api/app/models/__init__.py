@@ -3,6 +3,7 @@ from app.models.base import Base
 from app.models.catalog import AppSetting, Area, Plan, RewardTier, Tower
 from app.models.draft import CardReading, Draft, DraftImage, ImageAccessLog
 from app.models.otp import OtpChallenge
+from app.models.request import Request, RequestImage, RequestReason
 from app.models.session import UserSession
 from app.models.user import ADMIN_PERMISSIONS, ROLES, User
 
@@ -19,6 +20,9 @@ __all__ = [
     "ImageAccessLog",
     "OtpChallenge",
     "Plan",
+    "Request",
+    "RequestImage",
+    "RequestReason",
     "RewardTier",
     "Tower",
     "User",

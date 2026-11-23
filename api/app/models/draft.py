@@ -171,6 +171,9 @@ class Draft(Base):
     # changes the phone, tower, category or prices (research R5). 008 rechecks the hash.
     otp_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     otp_context_hash: Mapped[str | None] = mapped_column(Text)
+    # Feature 008 (data-model.md): the family key confirmed with «طلب اشتراك إضافي». Valid only
+    # while it equals family_key(family_number) and a family match exists (research R12).
+    additional_confirmed_key: Mapped[str | None] = mapped_column(Text)
 
     version: Mapped[int] = mapped_column(
         Integer, nullable=False, default=1, server_default=text("1")

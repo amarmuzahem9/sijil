@@ -230,3 +230,29 @@ def test_unused_tower_deleted(client, db, h) -> None:
 def test_unknown_collection_and_id(client, h) -> None:
     assert client.post(f"{BASE}/nothing/1/deactivate", headers=h).status_code == 404
     assert client.delete(f"{BASE}/towers/999999999", headers=h).status_code == 404
+
+
+# --- feature 008: a submitted request uses its area and tower (research R9) -----------------
+
+
+def test_tower_and_area_used_by_a_request_cannot_be_deleted(client, db, h, make_user) -> None:
+    from app.models import Area, Plan, Tower
+    from tests.helpers.requests import request_factory
+
+    area = _area(client, h, name="منطقة طلب")
+    tower = _tower(client, h, area["id"], code="REQ01", name="برج طلب")
+    plan = Plan(name="REQPLAN", trial_price=1, second_price=2)
+    db.add(plan)
+    db.flush()
+    request_factory(
+        db,
+        make_user("marketer"),
+        status="rejected",
+        area=db.get(Area, area["id"]),
+        tower=db.get(Tower, tower["id"]),
+        plan=plan,
+    )
+    r = client.delete(f"{BASE}/towers/{tower['id']}", headers=h)
+    assert (r.status_code, r.json()["code"]) == (409, "item_in_use")
+    listed = {t["id"]: t for t in client.get(f"{BASE}/towers", headers=h).json()["items"]}
+    assert listed[tower["id"]]["in_use"] is True

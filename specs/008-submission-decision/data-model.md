@@ -54,6 +54,7 @@ Indexes:
 The match lookups add `status IN ('pending_review','approved','linked')`.
 
 Checks:
+- `no_surname` or `surname IS NOT NULL` (the surname is required unless «لا يوجد لقب على البطاقة»);
 - `status = 'approved'` implies `approved_at IS NOT NULL`;
 - `status = 'pending_review'` implies `approved_at IS NULL`.
 
@@ -73,7 +74,7 @@ One row per §6.1 reason that applies (FR-003, FR-014).
 | `details` | jsonb | no, default `{}` | `numbers_edited`: `{"fields": ["national_id" \| "family_number", …]}` |
 | `created_at` | timestamptz | no | |
 
-UNIQUE `(request_id, reason, matched_source, matched_ref)`. With several family matches there is one
+UNIQUE NULLS NOT DISTINCT `(request_id, reason, matched_source, matched_ref)`, so a `numbers_edited` row (no match) cannot repeat. With several family matches there is one
 row per match.
 
 ## New table `request_images`
@@ -111,7 +112,7 @@ New missing items:
 - `family_exists_unconfirmed`;
 - `phone_used`.
 
-They are inserted after `national_id`, `family_number` and `phone` in `MISSING_ORDER` (research R5).
+They are inserted after `national_id_unconfirmed`, `family_number` and `phone` in `MISSING_ORDER` (research R5).
 
 ## Request lifecycle (008 part of §7.2)
 
