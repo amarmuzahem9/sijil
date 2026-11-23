@@ -1,11 +1,12 @@
 /**
  * The review file of one request (docs/system.md §6.4, specs/010 US1: FR-003, FR-004, FR-012):
- * البطاقة، الموقع، الاشتراك، الهاتف، الأسباب، and the decision area (US2). RTL; stacks on a phone.
+ * البطاقة، الموقع، الاشتراك، الهاتف، الأسباب، and the decision area (US2). Every value sits in a
+ * read-only box like the form's inputs; two columns on a computer, one on a phone.
  */
 import ArrowForward from '@mui/icons-material/ArrowForward';
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
-import Grid from '@mui/material/Grid';
 import Link from '@mui/material/Link';
 import Paper from '@mui/material/Paper';
 import Skeleton from '@mui/material/Skeleton';
@@ -15,6 +16,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useId, type ReactNode } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 
+import { ReadOnlyField, ReadOnlyFields } from '../../../components/ReadOnlyField';
 import { getRequestFile, type RequestFile } from '../../../lib/adminRequests';
 import { REASON_LABELS, REASON_STATE_LABELS, REQUEST_TYPE_LABELS } from '../../../lib/labels';
 import { formatMoney } from '../../../lib/money';
@@ -39,7 +41,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   const id = useId();
   return (
     <Paper component="section" aria-labelledby={id} variant="outlined" sx={{ p: 2 }}>
-      <Typography id={id} variant="subtitle1" component="h2" sx={{ fontWeight: 700, mb: 1.5 }}>
+      <Typography id={id} variant="subtitle1" component="h2" sx={{ fontWeight: 700, mb: 2 }}>
         {title}
       </Typography>
       {children}
@@ -47,88 +49,55 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <Stack spacing={0.25}>
-      <Typography variant="caption" color="text.secondary">
-        {label}
-      </Typography>
-      <Typography component="div" dir="auto" sx={{ overflowWrap: 'anywhere' }}>
-        {children}
-      </Typography>
-    </Stack>
-  );
-}
-
-function NameField({ file, name }: { file: RequestFile; name: string }) {
+/** «لم تقرأه البطاقة» or «القراءة: …» when the stored name differs from the card reading. */
+function nameNote(file: RequestFile, name: string): string | undefined {
   const value = file.names[name];
-  if (!value) return null;
   const read = file.names_reading[name];
-  const note = !read ? 'لم تقرأه البطاقة' : read !== value ? `القراءة: ${read}` : null;
-  return (
-    <Field label={NAME_LABELS[name] ?? name}>
-      {value}
-      {note && (
-        <Typography component="span" variant="caption" color="warning.main" sx={{ mx: 1 }}>
-          ({note})
-        </Typography>
-      )}
-    </Field>
-  );
+  if (!read) return 'لم تقرأه البطاقة';
+  if (read !== value) return `القراءة: ${read}`;
+  return undefined;
 }
 
 function CardSection({ file }: { file: RequestFile }) {
   return (
     <Section title="البطاقة">
-      <Stack spacing={2}>
-        <Field label="الاسم الكامل">{file.full_name}</Field>
-        <Grid container spacing={1.5}>
+      <Stack spacing={2.5}>
+        <ReadOnlyFields>
+          <ReadOnlyField label="الاسم الكامل" value={file.full_name} wide />
           {Object.keys(NAME_LABELS).map((name) =>
             file.names[name] ? (
-              <Grid key={name} size={{ xs: 6, sm: 4 }}>
-                <NameField file={file} name={name} />
-              </Grid>
+              <ReadOnlyField
+                key={name}
+                label={NAME_LABELS[name]}
+                value={file.names[name]}
+                note={nameNote(file, name)}
+              />
             ) : null,
           )}
-        </Grid>
-        <Grid container spacing={1.5}>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Field label="الرقم الوطني">
-              <span dir="ltr">{file.national_id}</span>
-            </Field>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Field label="الرقم العائلي">
-              <span dir="ltr">{file.family_number}</span>
-            </Field>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 4 }}>
-            <Field label="تاريخ الولادة">{file.birth_date}</Field>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 4 }}>
-            <Field label="محل الولادة">{file.birth_place}</Field>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 4 }}>
-            <Field label="تاريخ الإصدار">{file.issue_date}</Field>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 4 }}>
-            <Field label="تاريخ النفاذ">{file.expiry_date}</Field>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 8 }}>
-            <Field label="جهة الإصدار">{file.issuing_authority}</Field>
-          </Grid>
-        </Grid>
-        <Grid container spacing={1.5}>
+          <ReadOnlyField label="الرقم الوطني" value={file.national_id} ltr />
+          <ReadOnlyField label="الرقم العائلي" value={file.family_number} ltr />
+          <ReadOnlyField label="تاريخ الولادة" value={file.birth_date} ltr />
+          <ReadOnlyField label="محل الولادة" value={file.birth_place} />
+          <ReadOnlyField label="تاريخ الإصدار" value={file.issue_date} ltr />
+          <ReadOnlyField label="تاريخ النفاذ" value={file.expiry_date} ltr />
+          <ReadOnlyField label="جهة الإصدار" value={file.issuing_authority} wide />
+        </ReadOnlyFields>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+            gap: 2,
+          }}
+        >
           {file.images.map((image) => (
-            <Grid key={image.id} size={{ xs: 12, sm: 6 }}>
-              <RequestImage
-                imageId={image.id}
-                alt={image.side === 'front' ? 'وجه البطاقة' : 'ظهر البطاقة'}
-                height={240}
-              />
-            </Grid>
+            <RequestImage
+              key={image.id}
+              imageId={image.id}
+              alt={image.side === 'front' ? 'وجه البطاقة' : 'ظهر البطاقة'}
+              height={240}
+            />
           ))}
-        </Grid>
+        </Box>
       </Stack>
     </Section>
   );
@@ -138,18 +107,25 @@ function LocationSection({ file }: { file: RequestFile }) {
   const { lat, lng } = file.location;
   return (
     <Section title="الموقع">
-      <Stack spacing={1.5}>
-        <Field label="العنوان">{file.address}</Field>
-        <Field label="أقرب نقطة دالّة">{file.landmark}</Field>
-        <Field label="الإحداثيات">
-          <span dir="ltr">
-            {lat}, {lng}
-          </span>{' '}
-          <Link href={`https://maps.google.com/?q=${lat},${lng}`} target="_blank" rel="noopener">
-            فتح على الخريطة
-          </Link>
-        </Field>
-      </Stack>
+      <ReadOnlyFields>
+        <ReadOnlyField label="العنوان" value={file.address} />
+        <ReadOnlyField label="أقرب نقطة دالّة" value={file.landmark} />
+        <ReadOnlyField
+          label="الإحداثيات"
+          value={`${lat}, ${lng}`}
+          ltr
+          note={
+            <Link
+              href={`https://maps.google.com/?q=${lat},${lng}`}
+              target="_blank"
+              rel="noopener"
+              color="primary"
+            >
+              فتح على الخريطة
+            </Link>
+          }
+        />
+      </ReadOnlyFields>
     </Section>
   );
 }
@@ -157,27 +133,17 @@ function LocationSection({ file }: { file: RequestFile }) {
 function SubscriptionSection({ file }: { file: RequestFile }) {
   return (
     <Section title="الاشتراك">
-      <Grid container spacing={1.5}>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Field label="المنطقة والبرج">
-            {file.area_name} · {file.tower_name} ({file.tower_code})
-          </Field>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Field label="الفئة">
-            {file.plan_name} | التجريبي {formatMoney(file.trial_price)} | الثاني{' '}
-            {formatMoney(file.second_price)}
-          </Field>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Field label="اليوزر">
-            <span dir="ltr">{file.username}</span>
-          </Field>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Field label="المسوّق">{file.marketer_name}</Field>
-        </Grid>
-      </Grid>
+      <ReadOnlyFields>
+        <ReadOnlyField label="المنطقة" value={file.area_name} />
+        <ReadOnlyField label="البرج" value={`${file.tower_name} (${file.tower_code})`} />
+        <ReadOnlyField
+          label="الفئة"
+          value={`${file.plan_name} | التجريبي ${formatMoney(file.trial_price)} | الثاني ${formatMoney(file.second_price)}`}
+          wide
+        />
+        <ReadOnlyField label="اليوزر" value={file.username} ltr />
+        <ReadOnlyField label="المسوّق" value={file.marketer_name} />
+      </ReadOnlyFields>
     </Section>
   );
 }
@@ -185,16 +151,10 @@ function SubscriptionSection({ file }: { file: RequestFile }) {
 function PhoneSection({ file }: { file: RequestFile }) {
   return (
     <Section title="الهاتف">
-      <Grid container spacing={1.5}>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Field label="هاتف الاشتراك">
-            <span dir="ltr">{file.phone}</span>
-          </Field>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Field label="وقت التحقق">{formatBaghdad(file.otp_verified_at)}</Field>
-        </Grid>
-      </Grid>
+      <ReadOnlyFields>
+        <ReadOnlyField label="هاتف الاشتراك" value={file.phone} ltr />
+        <ReadOnlyField label="وقت التحقق" value={formatBaghdad(file.otp_verified_at)} />
+      </ReadOnlyFields>
     </Section>
   );
 }

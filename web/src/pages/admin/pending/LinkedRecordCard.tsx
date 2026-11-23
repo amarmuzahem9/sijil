@@ -8,23 +8,12 @@ import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
+import { ReadOnlyField, ReadOnlyFields } from '../../../components/ReadOnlyField';
 import type { ReviewReason } from '../../../lib/adminRequests';
 import { REASON_STATE_LABELS, SOURCE_LABELS, linkBasisLabel } from '../../../lib/labels';
 import { STATUS_COLORS, STATUS_LABELS, type RequestStatus } from '../../../lib/requestStatus';
 import { formatBaghdad } from '../../../lib/time';
 import { RequestImage } from './RequestImage';
-
-function Line({ label, value }: { label: string; value: string | null }) {
-  if (!value) return null;
-  return (
-    <Typography variant="body2">
-      <Typography component="span" variant="body2" color="text.secondary">
-        {label}:{' '}
-      </Typography>
-      <span dir="auto">{value}</span>
-    </Typography>
-  );
-}
 
 export function LinkedRecordCard({ reason }: { reason: ReviewReason }) {
   const record = reason.record;
@@ -33,7 +22,7 @@ export function LinkedRecordCard({ reason }: { reason: ReviewReason }) {
   const status = record.status as RequestStatus | null;
   return (
     <Card variant="outlined" sx={{ p: 1.5, opacity: reason.state === 'not_applicable' ? 0.7 : 1 }}>
-      <Stack spacing={1}>
+      <Stack spacing={2}>
         <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
           <Typography sx={{ fontWeight: 700 }}>
             {linkBasisLabel(reason.reason, reason.basis)}
@@ -59,21 +48,23 @@ export function LinkedRecordCard({ reason }: { reason: ReviewReason }) {
           </Typography>
         ) : (
           <>
-            {record.full_name && <Typography>{record.full_name}</Typography>}
-            <Line label="اليوزر" value={record.username} />
-            <Line label="الهاتف" value={record.phone} />
-            <Line
-              label="البرج"
-              value={
-                record.tower_name
-                  ? `${record.tower_name} (${record.tower_code})`
-                  : record.tower_code
-              }
-            />
-            <Line
-              label="تاريخ التسجيل"
-              value={record.registered_at ? formatBaghdad(record.registered_at) : null}
-            />
+            <ReadOnlyFields>
+              <ReadOnlyField label="الاسم" value={record.full_name} />
+              <ReadOnlyField label="اليوزر" value={record.username} ltr />
+              <ReadOnlyField label="الهاتف" value={record.phone} ltr />
+              <ReadOnlyField
+                label="البرج"
+                value={
+                  record.tower_name
+                    ? `${record.tower_name} (${record.tower_code})`
+                    : record.tower_code
+                }
+              />
+              <ReadOnlyField
+                label="تاريخ التسجيل"
+                value={record.registered_at ? formatBaghdad(record.registered_at) : null}
+              />
+            </ReadOnlyFields>
             {record.image_ids.length > 0 && (
               <Grid container spacing={1}>
                 {record.image_ids.map((id, i) => (

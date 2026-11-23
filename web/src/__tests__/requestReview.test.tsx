@@ -1,6 +1,7 @@
 /**
  * The review file (specs/010 US1: FR-003, FR-004): every section, the linked records with their
- * basis, an unavailable record, and an image that fails. Synthetic values only.
+ * basis, an unavailable record, and an image that fails. Every value sits in a read-only box like
+ * the form's inputs, with notes under the box (owner's request). Synthetic values only.
  */
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -29,8 +30,15 @@ function show(file = requestFile()) {
   );
 }
 
-function section(title: string): HTMLElement {
-  return screen.getByRole('region', { name: title });
+function section(title: string) {
+  return within(screen.getByRole('region', { name: title }));
+}
+
+/** The read-only box labelled `label` inside `scope`, with its value. */
+function box(scope: ReturnType<typeof within>, label: string) {
+  const el = scope.getByLabelText(label) as HTMLInputElement | HTMLTextAreaElement;
+  expect(el.readOnly).toBe(true);
+  return el;
 }
 
 describe('RequestReviewView', () => {
@@ -41,23 +49,26 @@ describe('RequestReviewView', () => {
     expect(screen.getByText('بانتظار المراجعة')).toBeTruthy();
   });
 
-  it('shows the card section with names, numbers, dates and both images', async () => {
+  it('shows the card values in read-only boxes, in the grid, and both images', async () => {
     show();
-    const card = within(section('البطاقة'));
-    expect(card.getByText('تجربة اختبار نموذج مثال التجريبي')).toBeTruthy();
-    expect(card.getByText('199000000001')).toBeTruthy();
-    expect(card.getByText('1234A5678901234567')).toBeTruthy();
-    expect(card.getByText('بغداد')).toBeTruthy();
+    const card = section('البطاقة');
+    expect(box(card, 'الاسم الكامل').value).toBe('تجربة اختبار نموذج مثال التجريبي');
+    expect(box(card, 'الرقم الوطني').value).toBe('199000000001');
+    expect(box(card, 'الرقم العائلي').value).toBe('1234A5678901234567');
+    expect(box(card, 'محل الولادة').value).toBe('بغداد');
+    expect(box(card, 'تاريخ الولادة').value).toBe('1990-01-01');
+    expect(card.getAllByTestId('readonly-fields').length).toBeGreaterThan(0);
     expect(await card.findByRole('img', { name: 'وجه البطاقة' })).toBeTruthy();
     expect(card.getByRole('img', { name: 'ظهر البطاقة' })).toBeTruthy();
     expect(requestImageUrl).toHaveBeenCalledWith('img-front');
   });
 
-  it('marks a name the marketer changed from the reading', () => {
+  it('puts «لم تقرأه البطاقة» under the box of a name the card did not read', () => {
     show();
-    const card = within(section('البطاقة'));
-    // great_grandfather_name was not read from the card.
-    expect(card.getByText(/لم تقرأه البطاقة/)).toBeTruthy();
+    const card = section('البطاقة');
+    const field = box(card, 'اسم أب الجد');
+    const note = card.getByText('لم تقرأه البطاقة');
+    expect(field.getAttribute('aria-describedby')).toBe(note.id);
   });
 
   it('shows «الصورة غير متوفرة» when an image cannot be fetched', async () => {
@@ -66,30 +77,30 @@ describe('RequestReviewView', () => {
     expect((await screen.findAllByText('الصورة غير متوفرة')).length).toBeGreaterThan(0);
   });
 
-  it('shows location, subscription and phone', () => {
+  it('shows location, subscription and phone in read-only boxes', () => {
     show();
-    const location = within(section('الموقع'));
-    expect(location.getByText('حي تجريبي')).toBeTruthy();
-    expect(location.getByText('قرب نقطة تجريبية')).toBeTruthy();
+    const location = section('الموقع');
+    expect(box(location, 'العنوان').value).toBe('حي تجريبي');
+    expect(box(location, 'أقرب نقطة دالّة').value).toBe('قرب نقطة تجريبية');
+    expect(box(location, 'الإحداثيات').value).toBe('34.7, 43.68');
     const link = location.getByRole('link', { name: 'فتح على الخريطة' });
     expect(link.getAttribute('href')).toBe('https://maps.google.com/?q=34.7,43.68');
 
-    const plan = within(section('الاشتراك'));
-    expect(plan.getByText(/برج العلم 3/)).toBeTruthy();
-    expect(plan.getByText(/20,000/)).toBeTruthy();
-    expect(plan.getByText(/35,000/)).toBeTruthy();
-    expect(plan.getByText('ALM03-07801234567')).toBeTruthy();
+    const plan = section('الاشتراك');
+    expect(box(plan, 'البرج').value).toBe('برج العلم 3 (ALM03)');
+    expect(box(plan, 'الفئة').value).toMatch(/20,000.*35,000/);
+    expect(box(plan, 'اليوزر').value).toBe('ALM03-07801234567');
 
-    const phone = within(section('الهاتف'));
-    expect(phone.getByText('07801234567')).toBeTruthy();
+    const phone = section('الهاتف');
+    expect(box(phone, 'هاتف الاشتراك').value).toBe('07801234567');
   });
 
-  it('lists the reasons with each linked record and its basis', () => {
+  it('lists the reasons with each linked record in read-only boxes and its basis', () => {
     show();
-    const reasons = within(section('الأسباب'));
+    const reasons = section('الأسباب');
     expect(reasons.getByText('عائلة موجودة')).toBeTruthy();
-    expect(reasons.getByText('مشترك سابق تجريبي')).toBeTruthy();
-    expect(reasons.getByText('ALM01-07709990001')).toBeTruthy();
+    expect(box(reasons, 'الاسم').value).toBe('مشترك سابق تجريبي');
+    expect(box(reasons, 'اليوزر').value).toBe('ALM01-07709990001');
     expect(reasons.getByText('سِجلّ')).toBeTruthy();
     expect(reasons.getByText('تم الربط')).toBeTruthy();
     expect(reasons.getByText('تعديل الأرقام')).toBeTruthy();
@@ -97,7 +108,7 @@ describe('RequestReviewView', () => {
 
   it('shows an unavailable record and the state of a reason that no longer applies', () => {
     show();
-    const reasons = within(section('الأسباب'));
+    const reasons = section('الأسباب');
     expect(reasons.getByText('سجل غير متوفر')).toBeTruthy();
     expect(reasons.getByText('قديم')).toBeTruthy();
     expect(reasons.getByText('لم يعد ينطبق')).toBeTruthy();
