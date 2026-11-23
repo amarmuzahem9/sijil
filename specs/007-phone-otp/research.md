@@ -31,9 +31,20 @@ Decisions for the plan. The owner set the table, the draft columns, the adapter 
 - Matching 400 bodies is by substring on `error`/`message`, case-insensitive. An unknown 400 is
   `rejected`. The log line holds the reason and HTTP status only, never the body (it echoes the
   phone).
-- The success body differs between the OpenAPI spec (`smsId`, `cost`, `remainingCredit`) and the
-  homepage example (`messageId`, `status`). The adapter reads `smsId` or `messageId`, and treats
-  `cost` as optional. **First staging call confirms which one is real** (quickstart step 4).
+- **Confirmed by a real call on 2026-11-23** (dev key, from the local `api` container). The
+  OpenAPI shape is the real one; the homepage example (`messageId`, `status`) is not:
+
+  ```json
+  {"message":"SMS task created successfully","smsId":"sms-6f025977e33f56577f947133",
+   "remainingCredit":9975,"remainingProjectCredit":9975,"cost":25,"canCover":true,
+   "paymentType":"prepaid"}
+  ```
+
+  - The adapter reads `smsId` and `cost`. `cost` is 25 IQD, matching the owner's price.
+  - `GET /sms/track/{smsId}` right after the send answered `status: "pending"`, with
+    `channelFlow: [{"channel":"whatsapp","tried":false}]` and the dev phone as `phoneNumber`.
+    This confirms that the dev key reroutes the message.
+  - `GET /info` answered `{"projectName":"sijil","credit":9975,"projectCredit":9975}`.
 
 ## R3. Code generation and hashing
 

@@ -63,7 +63,7 @@ the last send is still running.
 
 ## Validation rules (from spec FRs)
 
-- **Phone**: §8.1 normalization on the server. An invalid phone gives `phone_invalid` (FR-002).
+- **Phone**: §8.1 normalization on the server. An invalid phone gives `invalid_phone` (FR-002).
 - **Code entry**: Arabic-Indic digits are converted, spaces are removed, and the result must be
   exactly 6 digits. Otherwise `otp_code_format`, which does not use up an attempt.
 - **Limits**: 60 s resend wait per draft, 5 sends per phone in any 60 minutes, 3 wrong attempts,

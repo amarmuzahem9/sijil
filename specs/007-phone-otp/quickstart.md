@@ -44,7 +44,7 @@ The owner's required tests (all with the fake sender and the `utc_now` override)
 3. Tap «تحقّق». The counter «إعادة الإرسال بعد 60 ثانية» starts.
 4. A WhatsApp message with a 6-digit code arrives on the test phone. On the server, check
    `docker compose logs api | grep "otp send"`: one line with `result=ok`, a masked phone, a
-   `provider_id`, and `cost=25`. This also confirms the success response format (research R2).
+   `provider_id`, and `cost=25`. (The response format was already confirmed locally, research R2.)
 5. Type the code. ✓ «تم التحقق» appears.
 6. Change the category. «يحتاج تحقق جديد» appears.
 7. Leak check: `docker compose logs api | grep <the code>` finds nothing, and the code is not in the

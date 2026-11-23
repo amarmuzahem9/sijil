@@ -50,6 +50,14 @@ class Settings(BaseSettings):
     ocr_url: str = "http://ocr:8080"
     ocr_source_url: str = ""
 
+    # Phone OTP (specs/007 research.md R1, R8). `otpiq` = the OTPIQ WhatsApp API; `fake` = an
+    # in-memory sender for tests and e2e. `otp_fake_code` fixes the code (fake mode only), so e2e
+    # knows it without any endpoint or log revealing a code. Both are refused in staging/production.
+    otp_mode: Literal["otpiq", "fake"] = "otpiq"
+    otpiq_api_key: str = ""
+    otpiq_base_url: str = "https://api.otpiq.com/api"
+    otp_fake_code: str = ""
+
     @property
     def map_center(self) -> tuple[float, float]:
         """`map_default_center` as (lat, lng); validated at startup by `_check_map_center`."""
@@ -71,6 +79,15 @@ class Settings(BaseSettings):
             ) from None
         if self.max_image_bytes <= 0:
             raise ValueError("MAX_IMAGE_BYTES must be a positive number of bytes")
+        if self.otp_fake_code:
+            if self.otp_mode != "fake":
+                raise ValueError("OTP_FAKE_CODE is allowed only with OTP_MODE=fake")
+            if not (
+                len(self.otp_fake_code) == 6
+                and self.otp_fake_code.isascii()
+                and self.otp_fake_code.isdigit()
+            ):
+                raise ValueError("OTP_FAKE_CODE must be exactly 6 digits")
         return self
 
     @property
@@ -90,6 +107,10 @@ class Settings(BaseSettings):
                 problems.append(f"{name.upper()} must not be the placeholder value")
         if not self.cookie_secure:
             problems.append("COOKIE_SECURE must be true")
+        if self.otp_mode == "fake":
+            problems.append("OTP_MODE must be otpiq")
+        if self.otp_fake_code:
+            problems.append("OTP_FAKE_CODE must be empty")
         if problems:
             # Names only — never the values.
             raise ValueError(f"Refusing to start in {self.app_env}: " + "; ".join(problems))

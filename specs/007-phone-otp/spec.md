@@ -240,7 +240,7 @@ not count toward the hourly limit or start the 60-second wait.
 - **FR-010**: A wrong entry MUST reduce the remaining attempts and show how many remain. The third wrong
   entry MUST cancel the code.
 - **FR-011**: A correct entry of an active, unexpired code MUST mark the draft's phone verified and record
-  the verification time and the values it was given for: normalized phone, tower, category, trial price
+  the verification time and a fingerprint of the values it was given for: normalized phone, tower, category, trial price
   and second-month price.
 - **FR-012**: The server MUST decide whether a code is right; the screen never knows the code.
 

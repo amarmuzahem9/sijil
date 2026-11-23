@@ -54,5 +54,6 @@ class OtpSender(Protocol):
 - `OTP_FAKE_CODE` (6 digits, optional) replaces the random code. It is only allowed with
   `OTP_MODE=fake`.
 - Both are refused at startup when `APP_ENV` is `staging` or `production` (R8).
-- Tests override the sender through a FastAPI dependency (`get_otp_sender`), the way 006 overrides
-  the card reader.
+- `get_otp_sender()` builds the sender from the settings, like `get_card_reader()` in 006.
+  `otp_service.send` takes an optional `sender` argument, and tests pass a `FakeOtpSender` or
+  monkeypatch the factory.

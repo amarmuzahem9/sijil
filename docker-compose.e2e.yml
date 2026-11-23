@@ -10,6 +10,11 @@ services:
       GOOGLE_MAPS_MAP_ID: ""
       # The synthetic card reader (specs/006 research.md R10): no models, no real cards.
       OCR_MODE: fake
+      # The in-memory OTP sender with a fixed code (specs/007 research.md R8): no WhatsApp
+      # message is sent and no code ever appears in a response or log.
+      OTP_MODE: fake
+      OTP_FAKE_CODE: "246810"
+      OTPIQ_API_KEY: ""
 
   # The real reader is not built or started in e2e (4 GB image; the fake reader is used).
   ocr:

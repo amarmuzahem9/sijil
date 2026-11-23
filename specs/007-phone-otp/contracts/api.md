@@ -28,7 +28,7 @@ Server steps:
 
 | Status | `code` | Extra | Arabic message |
 |---|---|---|---|
-| 422 | `phone_invalid` | — | رقم غير صالح |
+| 422 | `invalid_phone` | — | رقم غير صالح |
 | 409 | `otp_already_verified` | — | الرقم متحقق منه |
 | 429 | `otp_resend_wait` | `retry_after_s` | انتظر قبل إعادة الإرسال |
 | 429 | `otp_hourly_limit` | `retry_after_min` | وصلت الحد الأقصى (5 رموز في الساعة) لهذا الرقم، حاول بعد X دقيقة |

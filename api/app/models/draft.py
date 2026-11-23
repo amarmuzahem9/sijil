@@ -98,6 +98,9 @@ class Draft(Base):
         CheckConstraint(
             "(location_lat IS NULL) = (location_lng IS NULL)", name="drafts_location_pair"
         ),
+        CheckConstraint(
+            "(otp_verified_at IS NULL) = (otp_context_hash IS NULL)", name="drafts_otp_pair"
+        ),
         Index("drafts_marketer_updated_idx", "marketer_id", text("updated_at DESC")),
     )
 
@@ -164,6 +167,10 @@ class Draft(Base):
 
     phone_input: Mapped[str | None] = mapped_column(Text)
     phone_normalized: Mapped[str | None] = mapped_column(Text)
+    # Feature 007 (data-model.md): set by a successful OTP verify; both cleared by any save that
+    # changes the phone, tower, category or prices (research R5). 008 rechecks the hash.
+    otp_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    otp_context_hash: Mapped[str | None] = mapped_column(Text)
 
     version: Mapped[int] = mapped_column(
         Integer, nullable=False, default=1, server_default=text("1")

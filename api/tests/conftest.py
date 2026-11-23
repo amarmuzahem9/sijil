@@ -18,6 +18,10 @@ os.environ["JWT_SECRET"] = "test-secret-" + "x" * 32
 os.environ["COOKIE_SECURE"] = "true"
 # Tests never call the real card reader (specs/006 research.md R10).
 os.environ["OCR_MODE"] = "fake"
+# Tests never call OTPIQ (specs/007 research.md R8); the key below is a marker for log checks.
+os.environ["OTP_MODE"] = "fake"
+os.environ["OTP_FAKE_CODE"] = ""
+os.environ["OTPIQ_API_KEY"] = "sk_dev_test-marker-not-a-real-key"
 
 from alembic import command  # noqa: E402
 from alembic.config import Config  # noqa: E402
