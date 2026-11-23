@@ -10,16 +10,25 @@ import logging
 import uuid
 from pathlib import Path
 
-from sqlalchemy import exists, select
+from sqlalchemy import exists, select, text
 from sqlalchemy.orm import Session
 
 from app.core import rejection_reasons
 from app.core.access import has_any_permission
+from app.core.family_key import family_key
 from app.core.matches import Matches, MatchRef
+from app.core.national_id import normalize_national_id
 from app.core.review_check import ReviewCheck, review
 from app.core.timeutil import utc_now
 from app.errors import AppError
-from app.models import ImageAccessLog, Request, RequestImage, RequestReason, User
+from app.models import (
+    ImageAccessLog,
+    Request,
+    RequestImage,
+    RequestNumberPin,
+    RequestReason,
+    User,
+)
 from app.models.draft import NAME_FIELDS
 from app.schemas.admin_requests import (
     AcceptIn,
@@ -31,6 +40,7 @@ from app.schemas.admin_requests import (
     NumbersOut,
     PendingItem,
     PendingList,
+    PinIn,
     PinOut,
     ReasonOut,
     RejectIn,
@@ -109,10 +119,12 @@ def live_check(db: Session, request: Request) -> ReviewCheck:
     return_rows = [r for r in request.reasons if r.reason == "return"]
     return_refs = [ref for r in return_rows if (ref := _row_ref(r)) is not None]
     basis = next((r.details.get("basis") for r in return_rows if r.details.get("basis")), None)
+    # Conflicts recorded at submission do not warn; one a pin brought in keeps warning on every
+    # later read and at accept (system.md v1.14 §6.4).
     prior = {
         ref
         for r in request.reasons
-        if r.reason == "numbers_conflict" and r.state == "open" and (ref := _row_ref(r))
+        if r.reason == "numbers_conflict" and r.added_by is None and (ref := _row_ref(r))
     }
     return review(request.type, return_refs, basis, matches, prior)
 
@@ -352,6 +364,155 @@ def reject(db: Session, user: User, request_id: int, body: RejectIn) -> Request:
     )
     db.commit()
     log.info("review reject number=%s reason=%s", request.number, body.reason)
+    return request
+
+
+# --- pinning the numbers (R3, R4) -----------------------------------------------------------------
+
+
+def _source_value(request: Request, body: PinIn) -> str | None:
+    """The raw value of the chosen source. Only `typed` takes the value from the page (R4)."""
+    if body.source == "typed":
+        return body.value
+    if body.source == "mrz":
+        return (request.national_id_check or {}).get("mrz")
+    if body.source == "reading":
+        return _reading(request, body.field)
+    if body.field == "national_id":
+        return request.submitted_national_id
+    return request.submitted_family_number
+
+
+def _pin_value(request: Request, body: PinIn) -> str:
+    raw = _source_value(request, body)
+    if raw is None or not raw.strip():
+        raise AppError("pin_source_empty", 422)
+    if body.field == "national_id":
+        value = normalize_national_id(raw)
+        if value is None:
+            raise AppError("invalid_national_id", 422)
+        return value
+    value = raw.strip()
+    if family_key(value) is None:
+        raise AppError("invalid_family_number", 422)
+    return value
+
+
+def _lock_keys(db: Session, nid: set[str | None], family: set[str | None]) -> None:
+    """The 008 match locks in the submission order: every nid key, then every family key, each
+    set de-duplicated and sorted, so two pins or a pin and a submission cannot deadlock (R4)."""
+    keys = [f"match:nid:{k}" for k in sorted(k for k in nid if k)]
+    keys += [f"match:family:{k}" for k in sorted(k for k in family if k)]
+    for key in keys:
+        db.execute(text("SELECT pg_advisory_xact_lock(hashtext(:key))"), {"key": key})
+
+
+def _apply_check(db: Session, user: User, request: Request) -> dict[str, list[str] | bool]:
+    """Mark the reason rows after a pin (R3) and maybe turn `new` into `additional` (FR-015).
+    Rows are never deleted; `return` rows are never touched."""
+    check = live_check(db, request)
+    now = utc_now()
+    wanted = set(check.open_rows)
+    added: list[str] = []
+    gone: list[str] = []
+
+    def mark(row: RequestReason, state: str) -> None:
+        row.state = state
+        row.state_changed_at = now
+        row.state_changed_by = user.id
+
+    seen: set[tuple[str, MatchRef]] = set()
+    for row in request.reasons:
+        if row.reason not in ("family_exists", "numbers_conflict"):
+            continue
+        ref = _row_ref(row)
+        if ref is None:
+            continue
+        seen.add((row.reason, ref))
+        if (row.reason, ref) in wanted:
+            if row.state == "not_applicable":
+                mark(row, "open")
+        elif row.state == "open":
+            mark(row, "not_applicable")
+            gone.append(row.reason)
+    for reason, ref in check.open_rows:
+        if (reason, ref) in seen:
+            continue
+        request.reasons.append(
+            RequestReason(
+                reason=reason,
+                matched_source=ref.source,
+                matched_ref=ref.ref_id,
+                details={},
+                added_by=user.id,
+            )
+        )
+        added.append(reason)
+
+    pinned = {p.field for p in request.pins}
+    resolved = False
+    for row in request.reasons:
+        if row.reason == "numbers_edited" and row.state == "open":
+            if set(row.details.get("fields", [])) <= pinned:
+                mark(row, "resolved")
+                resolved = True
+    request.type = check.new_type
+    return {
+        "reasons_added": added,
+        "reasons_not_applicable": gone,
+        "numbers_edited_resolved": resolved,
+    }
+
+
+def pin(db: Session, user: User, request_id: int, body: PinIn) -> Request:
+    """«تثبيت» one number from a source (R4), then the re-check (R3, R5), in one transaction."""
+    request = _lock_pending(db, user, request_id)
+    value = _pin_value(request, body)
+    previous = request.national_id if body.field == "national_id" else request.family_number
+    new_key = family_key(value) if body.field == "family_number" else request.family_key
+    _lock_keys(
+        db,
+        {request.national_id, value if body.field == "national_id" else None},
+        {request.family_key, new_key},
+    )
+    type_before = request.type
+
+    row = RequestNumberPin(
+        field=body.field,
+        previous_value=previous,
+        value=value,
+        source=body.source,
+        pinned_by=user.id,
+        pinned_at=utc_now(),
+    )
+    request.pins.append(row)
+    if body.field == "national_id":
+        request.national_id = value
+    else:
+        request.family_number = value
+        request.family_key = new_key
+    request.updated_at = utc_now()
+    db.flush()
+
+    changes = _apply_check(db, user, request)
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="request.numbers_pinned",
+        entity_type="request",
+        entity_id=str(request.number),
+        # The values themselves stay in the pin row (constitution III v1.2.1, Principle II).
+        before={"type": type_before, "field_changed": previous != value},
+        after={
+            "pin_id": row.id,
+            "field": body.field,
+            "source": body.source,
+            "type": request.type,
+            **changes,
+        },
+    )
+    db.commit()
+    log.info("review pin number=%s field=%s source=%s", request.number, body.field, body.source)
     return request
 
 

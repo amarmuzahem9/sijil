@@ -8,7 +8,7 @@ import uuid
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, StrictBool
+from pydantic import BaseModel, ConfigDict, StrictBool, model_validator
 
 from app.schemas.requests import ReasonCode, RequestStatus, RequestType
 
@@ -166,9 +166,20 @@ class RejectIn(_Body):
 
 
 class PinIn(_Body):
+    """`value` only with `typed` (the server reads the other sources itself); `mrz` only for the
+    national ID (research R4)."""
+
     field: PinField
     source: PinSource
     value: str | None = None
+
+    @model_validator(mode="after")
+    def _source_rules(self) -> "PinIn":
+        if (self.source == "typed") != (self.value is not None):
+            raise ValueError("value goes with source typed only")
+        if self.source == "mrz" and self.field != "national_id":
+            raise ValueError("mrz is for the national ID only")
+        return self
 
 
 # --- admin home ---

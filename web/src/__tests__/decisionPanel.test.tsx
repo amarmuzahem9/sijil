@@ -3,7 +3,7 @@
  * confirmation, the commission question on a return, «تم البت في هذا الطلب مسبقاً», and a decided
  * request shown read-only. Synthetic values only.
  */
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiError } from '../lib/api';
@@ -132,5 +132,57 @@ describe('DecisionPanel', () => {
     );
     expect(screen.getByText('تم القبول')).toBeTruthy();
     expect((screen.getByLabelText('احتساب العمولة') as HTMLInputElement).value).toBe('لا');
+  });
+  it('names each warning in a red alert', () => {
+    show(requestFile({ warnings: ['same_person', 'id_conflict', 'return_target_lost'] }));
+    const alert = screen.getByRole('alert');
+    expect(alert.className).toContain('Error');
+    for (const text of [
+      'تحذير: الأرقام المثبّتة تطابق مشتركاً موجوداً (نفس الشخص)',
+      'تحذير: الرقم الوطني يطابق مشتركاً آخر برقم عائلي مختلف',
+      'تحذير: أرقام طلب العودة لم تعد تطابق المشترك المرتبط',
+    ])
+      expect(alert.textContent).toContain(text);
+  });
+
+  it('accepts despite the warning after «القبول رغم التحذير؟»', async () => {
+    accept.mockResolvedValue(requestFile({ status: 'approved' }));
+    show(requestFile({ warnings: ['same_person'] }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'قبول' }));
+    const dialog = await screen.findByRole('dialog', { name: /القبول رغم التحذير؟/ });
+    expect(dialog.textContent).toContain('نفس الشخص');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'القبول رغم التحذير' }));
+
+    await vi.waitFor(() =>
+      expect(accept).toHaveBeenCalledWith(11, { confirm_warnings: ['same_person'] }),
+    );
+  });
+
+  it('asks again with the new kinds after a 409 warnings_unconfirmed', async () => {
+    accept
+      .mockRejectedValueOnce(
+        new ApiError('warnings_unconfirmed', 'يوجد تحذير على الطلب، أكّد القبول رغم التحذير', 409, {
+          warnings: ['same_person', 'id_conflict'],
+        }),
+      )
+      .mockResolvedValueOnce(requestFile({ status: 'approved' }));
+    show(requestFile({ warnings: ['same_person'] }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'قبول' }));
+    let dialog = await screen.findByRole('dialog', { name: /القبول رغم التحذير؟/ });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'القبول رغم التحذير' }));
+
+    await vi.waitFor(() => expect(onRefresh).toHaveBeenCalled());
+    dialog = await screen.findByRole('dialog', { name: /القبول رغم التحذير؟/ });
+    await vi.waitFor(() =>
+      expect(dialog.textContent).toContain('الرقم الوطني يطابق مشتركاً آخر برقم عائلي مختلف'),
+    );
+    fireEvent.click(within(dialog).getByRole('button', { name: 'القبول رغم التحذير' }));
+    await vi.waitFor(() =>
+      expect(accept).toHaveBeenLastCalledWith(11, {
+        confirm_warnings: ['same_person', 'id_conflict'],
+      }),
+    );
   });
 });

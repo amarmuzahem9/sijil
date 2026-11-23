@@ -392,7 +392,7 @@ accept.
 
 ### Tests for User Story 3
 
-- [ ] T039 [P] [US3] Write `api/tests/integration/test_admin_pin.py`. Check:
+- [x] T039 [P] [US3] Write `api/tests/integration/test_admin_pin.py`. Check:
   - **Sources**: the reading's family number, the MRZ national ID, the marketer's value, and a
     typed national ID in Arabic digits (normalized). `value` with a non-typed source → 422. `mrz` on
     `family_number` → 422. A source with no value → 422 `pin_source_empty`.
@@ -411,7 +411,7 @@ accept.
   - **Other**: pinning a decided request → 409 `already_decided`; non-review → 404.
 
   Run: **red**.
-- [ ] T040 [P] [US3] Write `api/tests/integration/test_admin_pin_concurrency.py`. A pin to family F and
+- [x] T040 [P] [US3] Write `api/tests/integration/test_admin_pin_concurrency.py`. A pin to family F and
   a marketer submission with family F run at once: whichever runs second sees the other (the
   submission becomes a family match, or the pin finds the new request), so neither misses it. Also
   run two pins with swapped values (request X from national ID A to B, request Y from B to A) at
@@ -419,7 +419,7 @@ accept.
 
 ### Implementation for User Story 3
 
-- [ ] T041 [US3] Add `pin(db, user, request_id, body)` to `api/app/services/review_service.py`
+- [x] T041 [US3] Add `pin(db, user, request_id, body)` to `api/app/services/review_service.py`
   ([research R4](./research.md#r4-pinning-numbers)). It:
   1. locks the row and checks that it is pending;
   2. resolves the value from the source (data-model.md › request_number_pins.source,
@@ -433,7 +433,7 @@ accept.
      request_number_pins.request_id, request_number_pins.previous_value,
      request_number_pins.pinned_by, request_number_pins.pinned_at), then updates the request
      columns.
-- [ ] T042 [US3] In the same `pin`, run `_live_check`, then apply the result
+- [x] T042 [US3] In the same `pin`, run `_live_check`, then apply the result
   ([research R3](./research.md#r3-reason-state)):
   - add the missing open rows with `added_by` (data-model.md › request_reasons.added_by);
   - mark the gone match rows `not_applicable` and reopen the returned ones, with
@@ -447,9 +447,9 @@ accept.
 
   Pass the request's open `numbers_conflict` refs as `prior_conflict_refs`, so only a new conflict
   warns.
-- [ ] T043 [US3] Add `POST /admin/requests/{id}/pin` to `api/app/api/admin_requests.py`, returning the
+- [x] T043 [US3] Add `POST /admin/requests/{id}/pin` to `api/app/api/admin_requests.py`, returning the
   file. T039 and T040 **green**.
-- [ ] T044 [P] [US3] Write `web/src/__tests__/numbersPinPanel.test.tsx`. Check:
+- [x] T044 [P] [US3] Write `web/src/__tests__/numbersPinPanel.test.tsx`. Check:
   - for each edited field, the reading, the MRZ (national ID only), the marketer's value and the
     current value are shown side by side, and differences are highlighted;
   - «لم تقرأه البطاقة» shows when there is no reading;
@@ -459,10 +459,10 @@ accept.
   - a 422 shows its Arabic message.
 
   Run: **red**.
-- [ ] T045 [US3] Add `pin(id, body)` to `web/src/lib/adminRequests.ts`, then create
+- [x] T045 [US3] Add `pin(id, body)` to `web/src/lib/adminRequests.ts`, then create
   `web/src/pages/admin/pending/NumbersPinPanel.tsx` and mount it in `RequestReview.tsx` when there is
   a `numbers_edited` reason. T044 **green**.
-- [ ] T046 [P] [US3] Extend `web/src/__tests__/decisionPanel.test.tsx`. Check:
+- [x] T046 [P] [US3] Extend `web/src/__tests__/decisionPanel.test.tsx`. Check:
   - with `warnings` not empty, a red alert names each kind (labels in `labels.ts`):
     - «تحذير: الأرقام المثبّتة تطابق مشتركاً موجوداً (نفس الشخص)»;
     - «تحذير: الرقم الوطني يطابق مشتركاً آخر برقم عائلي مختلف»;
@@ -471,15 +471,15 @@ accept.
   - a 409 `warnings_unconfirmed` reloads and asks again with the new kinds.
 
   Run: **red**.
-- [ ] T047 [US3] Implement the warning alert and the second confirmation in
+- [x] T047 [US3] Implement the warning alert and the second confirmation in
   `web/src/pages/admin/pending/DecisionPanel.tsx`, and add the warning labels to
   `web/src/lib/labels.ts`. T046 **green**.
-- [ ] T048 [US3] Add the label for `request.numbers_pinned` to `web/src/lib/auditFormat.ts`. Extend
+- [x] T048 [US3] Add the label for `request.numbers_pinned` to `web/src/lib/auditFormat.ts`. Extend
   `api/tests/integration/test_log_safety.py` and `test_audit_completeness.py`: a pin entry exists,
   it holds `pin_id`, and that pin row's `previous_value` and `value` give the before and after
   (constitution III v1.2.1). Neither the entry nor the log line contains the pinned value, the old
   value, the phone or names. Run red, then green.
-- [ ] T049 [US3] Extend `api/tests/integration/test_marketer_privacy.py`: after a pin that changes the
+- [x] T049 [US3] Extend `api/tests/integration/test_marketer_privacy.py`: after a pin that changes the
   type and adds a reason, the marketer's request shows no pin, warning or linked-record data. The
   `type` may change (it is already shown to the marketer). Run red, then green.
 

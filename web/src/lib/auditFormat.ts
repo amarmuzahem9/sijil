@@ -7,7 +7,11 @@ import type { AuditEntry } from './audit';
 import {
   AUDIT_ACTION_LABELS,
   PERMISSION_LABELS,
+  PIN_FIELD_LABELS,
+  PIN_SOURCE_LABELS,
+  REASON_LABELS,
   REJECTION_REASON_LABELS,
+  REQUEST_TYPE_LABELS,
   WARNING_LABELS,
 } from './labels';
 import type { Permission } from './labels';
@@ -45,6 +49,17 @@ export function formatAuditValue(field: string, value: unknown): string {
     return value
       .map((w) => WARNING_LABELS[w as keyof typeof WARNING_LABELS] ?? String(w))
       .join('، ');
+  }
+  // specs/010: a pin names the field, its source and the reasons it marked; never a value.
+  if (field === 'field' && typeof value === 'string' && value in PIN_FIELD_LABELS)
+    return PIN_FIELD_LABELS[value as keyof typeof PIN_FIELD_LABELS];
+  if (field === 'source' && typeof value === 'string' && value in PIN_SOURCE_LABELS)
+    return PIN_SOURCE_LABELS[value as keyof typeof PIN_SOURCE_LABELS];
+  if (field === 'type' && typeof value === 'string' && value in REQUEST_TYPE_LABELS)
+    return REQUEST_TYPE_LABELS[value as keyof typeof REQUEST_TYPE_LABELS];
+  if ((field === 'reasons_added' || field === 'reasons_not_applicable') && Array.isArray(value)) {
+    if (value.length === 0) return '—';
+    return value.map((r) => REASON_LABELS[r as keyof typeof REASON_LABELS] ?? String(r)).join('، ');
   }
   if (field === 'role' && typeof value === 'string' && value in ROLE_LABELS) {
     return ROLE_LABELS[value as keyof typeof ROLE_LABELS];

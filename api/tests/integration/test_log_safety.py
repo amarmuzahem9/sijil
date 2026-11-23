@@ -397,3 +397,44 @@ def test_review_decisions_never_log_card_data(client, db, make_user, caplog, cap
         ):
             assert secret not in everything, secret
     assert "طلب مكرر" not in everything  # the note is for the marketer, not the logs
+
+
+def test_a_pin_never_logs_the_values(client, db, make_user, caplog, capsys) -> None:
+    """Feature 010 (T048): a pin logs the number, the field and the source, never a value."""
+    from tests.helpers.review import pending_request
+
+    marketer = make_user("marketer")
+    h = auth_header(login(client, make_user("super_admin").phone))
+    request = pending_request(
+        db,
+        marketer,
+        [("numbers_edited", None, {"fields": ["national_id", "family_number"]})],
+        full_name="اسم سري لتثبيت اللوغ",
+        card_fields={"family_number": {"original": "5555E0000000000001", "edited": True}},
+    )
+    old = (request.national_id, request.family_number)
+    caplog.set_level(logging.DEBUG)
+
+    client.post(
+        f"/api/admin/requests/{request.id}/pin",
+        json={"field": "family_number", "source": "reading"},
+        headers=h,
+    )
+    client.post(
+        f"/api/admin/requests/{request.id}/pin",
+        json={"field": "national_id", "source": "typed", "value": "199066667777"},
+        headers=h,
+    )
+
+    raw = "\n".join(r.getMessage() for r in caplog.records)
+    printed = capsys.readouterr()
+    everything = raw + _formatted(list(caplog.records)) + printed.out + printed.err
+    assert raw.count("review pin") == 2
+    for secret in (
+        *old,
+        "5555E0000000000001",
+        "199066667777",
+        request.phone,
+        request.full_name,
+    ):
+        assert secret not in everything, secret

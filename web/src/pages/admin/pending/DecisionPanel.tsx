@@ -3,6 +3,10 @@
  * confirmation (and «هل تُحتسب عمولة للمسوّق؟» on a return), «رفض» through RejectDialog. A request
  * decided by someone else gives «تم البت في هذا الطلب مسبقاً» and the file reloads. A decided
  * request is shown read-only.
+ *
+ * Warnings (FR-019a) show as a red alert, and «قبول» then asks «القبول رغم التحذير؟» and sends the
+ * kinds it showed. If the server finds a different set (409 `warnings_unconfirmed`), the file
+ * reloads and the confirmation asks again with the new kinds (research R7).
  */
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
@@ -28,8 +32,10 @@ import {
   type AcceptBody,
   type RejectBody,
   type RequestFile,
+  type ReviewWarning,
 } from '../../../lib/adminRequests';
 import { ApiError } from '../../../lib/api';
+import { WARNING_ALERT_LABELS } from '../../../lib/labels';
 import { formatBaghdad } from '../../../lib/time';
 import { RejectDialog } from './RejectDialog';
 
@@ -69,7 +75,11 @@ export function DecisionPanel({
   const [commission, setCommission] = useState<'yes' | 'no' | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The kinds the server reported on a refused accept; the file's own list otherwise.
+  const [serverWarnings, setServerWarnings] = useState<ReviewWarning[] | null>(null);
   const isReturn = file.type === 'return';
+  const warnings = serverWarnings ?? file.warnings;
+  const warned = warnings.length > 0;
 
   async function run(call: () => Promise<RequestFile>) {
     setBusy(true);
@@ -79,6 +89,12 @@ export function DecisionPanel({
       setDialog(null);
       onDecided(updated);
     } catch (err) {
+      if (err instanceof ApiError && err.code === 'warnings_unconfirmed') {
+        // Keep the dialog open and ask again with what the server found now.
+        setServerWarnings((err.extra.warnings as ReviewWarning[] | undefined) ?? []);
+        onRefresh();
+        return;
+      }
       setDialog(null);
       if (err instanceof ApiError && err.code === 'already_decided') onRefresh();
       setError(err instanceof Error ? err.message : String(err));
@@ -90,6 +106,7 @@ export function DecisionPanel({
   function confirmAccept() {
     const body: AcceptBody = {};
     if (isReturn) body.counts_commission = commission === 'yes';
+    if (warned) body.confirm_warnings = [...warnings];
     void run(() => accept(file.id, body));
   }
 
@@ -107,6 +124,15 @@ export function DecisionPanel({
           {error}
         </Alert>
       )}
+      {file.status === 'pending_review' && warned && (
+        <Alert severity="error" variant="outlined" sx={{ mb: 2 }}>
+          <Stack component="ul" spacing={0.5} sx={{ m: 0, pr: 2, pl: 0 }}>
+            {warnings.map((w) => (
+              <li key={w}>{WARNING_ALERT_LABELS[w]}</li>
+            ))}
+          </Stack>
+        </Alert>
+      )}
       {file.status !== 'pending_review' ? (
         <DecidedView file={file} />
       ) : (
@@ -115,6 +141,7 @@ export function DecisionPanel({
             variant="contained"
             onClick={() => {
               setCommission(null);
+              setServerWarnings(null);
               setDialog('accept');
             }}
             disabled={busy}
@@ -137,10 +164,23 @@ export function DecisionPanel({
         onClose={busy ? undefined : () => setDialog(null)}
         maxWidth="xs"
         fullWidth
+        aria-labelledby={`${titleId}-accept`}
       >
-        <DialogTitle>قبول الطلب {file.number_label}</DialogTitle>
+        <DialogTitle id={`${titleId}-accept`} color={warned ? 'error' : undefined}>
+          {warned ? 'القبول رغم التحذير؟' : `قبول الطلب ${file.number_label}`}
+        </DialogTitle>
         <DialogContent>
           <Stack spacing={2}>
+            {warned && (
+              <Alert severity="error" variant="outlined">
+                <Stack component="ul" spacing={0.5} sx={{ m: 0, pr: 2, pl: 0 }}>
+                  {warnings.map((w) => (
+                    <li key={w}>{WARNING_ALERT_LABELS[w]}</li>
+                  ))}
+                </Stack>
+                القبول رغم التحذير يُسجَّل بسجل العمليات.
+              </Alert>
+            )}
             <DialogContentText>
               سيصير الطلب {file.number_label} مقبولاً (بانتظار الربط).
             </DialogContentText>
@@ -166,10 +206,11 @@ export function DecisionPanel({
           </Button>
           <Button
             variant="contained"
+            color={warned ? 'error' : 'primary'}
             onClick={confirmAccept}
             disabled={busy || (isReturn && commission === null)}
           >
-            تأكيد القبول
+            {warned ? 'القبول رغم التحذير' : 'تأكيد القبول'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -210,3 +210,61 @@ def test_review_decisions_are_audited_once_without_card_data(client, db, make_us
             request.full_name,
         ):
             assert secret not in blob, secret
+
+
+def test_a_pin_is_audited_by_its_pin_row(client, db, make_user) -> None:
+    """Feature 010 (T048, constitution III v1.2.1): one entry per pin, holding `pin_id`; the values
+    before and after are in that pin row, never in the entry."""
+    from app.models import RequestNumberPin
+    from tests.helpers.review import pending_request
+
+    marketer = make_user("marketer")
+    admin = make_user("super_admin")
+    h = auth_header(login(client, admin.phone))
+    request = pending_request(
+        db,
+        marketer,
+        [("numbers_edited", None, {"fields": ["national_id"]})],
+        full_name="اسم سري للتثبيت",
+        card_fields={"national_id": {"original": "199055556666", "edited": True}},
+    )
+    old_value = request.national_id
+
+    res = client.post(
+        f"/api/admin/requests/{request.id}/pin",
+        json={"field": "national_id", "source": "reading"},
+        headers=h,
+    )
+    assert res.status_code == 200, res.json()
+
+    (entry,) = db.scalars(select(AuditLog).where(AuditLog.action == "request.numbers_pinned"))
+    assert (entry.entity_type, entry.entity_id, entry.actor_id) == (
+        "request",
+        str(request.number),
+        admin.id,
+    )
+    assert entry.before == {"type": "new", "field_changed": True}
+    assert entry.after == {
+        "pin_id": entry.after["pin_id"],
+        "field": "national_id",
+        "source": "reading",
+        "type": "new",
+        "reasons_added": [],
+        "reasons_not_applicable": [],
+        "numbers_edited_resolved": True,
+    }
+    row = db.get(RequestNumberPin, entry.after["pin_id"])
+    assert (row.request_id, row.previous_value, row.value) == (
+        request.id,
+        old_value,
+        "199055556666",
+    )
+    blob = json.dumps([entry.before, entry.after], ensure_ascii=False)
+    for secret in (
+        old_value,
+        "199055556666",
+        request.family_number,
+        request.phone,
+        request.full_name,
+    ):
+        assert secret not in blob, secret

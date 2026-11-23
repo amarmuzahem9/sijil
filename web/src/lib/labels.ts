@@ -61,6 +61,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   // specs/010: the admin's decision (no card data in the entry)
   'request.approved': 'قبول طلب',
   'request.rejected': 'رفض طلب',
+  'request.numbers_pinned': 'تثبيت رقم',
 };
 
 export const AUDIT_FIELD_LABELS: Record<string, string> = {
@@ -91,6 +92,13 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   despite_warnings: 'رغم التحذير',
   reason: 'السبب',
   note: 'النص',
+  field: 'الحقل',
+  source: 'المصدر',
+  pin_id: 'رقم التثبيت',
+  field_changed: 'تغيّرت القيمة',
+  reasons_added: 'أسباب أُضيفت',
+  reasons_not_applicable: 'أسباب لم تعد تنطبق',
+  numbers_edited_resolved: 'اكتمل تثبيت الأرقام',
 };
 
 export const STATE_LABELS = { active: 'فعّال', inactive: 'موقوف' } as const;
@@ -146,9 +154,29 @@ export const REJECTION_REASON_LABELS = {
 export const REJECTION_NOTE_MIN = 3;
 export const REJECTION_NOTE_MAX = 300;
 
-/** The review warnings (system.md v1.14 §6.4, specs/010 FR-019a), short form. */
+/** The review warnings (system.md v1.14 §6.4, specs/010 FR-019a), short form (audit, dialogs). */
 export const WARNING_LABELS = {
   same_person: 'نفس الشخص',
   id_conflict: 'تعارض بالأرقام',
   return_target_lost: 'لم تعد الأرقام تطابق المشترك المرتبط',
+} as const;
+
+/** The red alert on the review file, one line per warning (specs/010 FR-019a). */
+export const WARNING_ALERT_LABELS = {
+  same_person: 'تحذير: الأرقام المثبّتة تطابق مشتركاً موجوداً (نفس الشخص)',
+  id_conflict: 'تحذير: الرقم الوطني يطابق مشتركاً آخر برقم عائلي مختلف',
+  return_target_lost: 'تحذير: أرقام طلب العودة لم تعد تطابق المشترك المرتبط',
+} as const;
+
+/** Where a pinned number came from (specs/010 research R4). */
+export const PIN_SOURCE_LABELS = {
+  reading: 'قراءة البطاقة',
+  mrz: 'MRZ',
+  marketer: 'قيمة المسوّق',
+  typed: 'قيمة أخرى',
+} as const;
+
+export const PIN_FIELD_LABELS = {
+  national_id: 'الرقم الوطني',
+  family_number: 'الرقم العائلي',
 } as const;

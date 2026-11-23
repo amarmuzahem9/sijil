@@ -173,3 +173,17 @@ describe('admin review (specs/010 T038)', () => {
     expect(formatAuditValue('counts_commission', false)).toBe('لا');
   });
 });
+
+describe('number pins (specs/010 T048)', () => {
+  it('labels a pin and its fields in Arabic, with no value', () => {
+    expect(actionLabel(entry({ action: 'request.numbers_pinned' }))).toBe('تثبيت رقم');
+    expect(formatAuditValue('field', 'national_id')).toBe('الرقم الوطني');
+    expect(formatAuditValue('field', 'family_number')).toBe('الرقم العائلي');
+    expect(formatAuditValue('source', 'mrz')).toBe('MRZ');
+    expect(formatAuditValue('source', 'typed')).toBe('قيمة أخرى');
+    expect(formatAuditValue('type', 'additional')).toBe('اشتراك إضافي');
+    expect(formatAuditValue('reasons_added', ['family_exists'])).toBe('اشتراك إضافي');
+    expect(formatAuditValue('reasons_not_applicable', [])).toBe('—');
+    expect(formatAuditValue('numbers_edited_resolved', true)).toBe('نعم');
+  });
+});

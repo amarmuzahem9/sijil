@@ -153,3 +153,13 @@ export const accept = (id: number, body: AcceptBody) =>
 
 export const reject = (id: number, body: RejectBody) =>
   apiFetch<RequestFile>(`/api/admin/requests/${id}/reject`, { method: 'POST', body });
+
+export interface PinBody {
+  field: PinField;
+  source: PinSource;
+  /** Only with `typed`; the server reads the other sources itself (research R4). */
+  value?: string;
+}
+
+export const pin = (id: number, body: PinBody) =>
+  apiFetch<RequestFile>(`/api/admin/requests/${id}/pin`, { method: 'POST', body });

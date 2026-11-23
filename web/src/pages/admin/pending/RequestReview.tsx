@@ -1,6 +1,6 @@
 /**
  * The review file of one request (docs/system.md §6.4, specs/010 US1: FR-003, FR-004, FR-012):
- * البطاقة، الموقع، الاشتراك، الهاتف، الأسباب، and the decision area (US2). Every value sits in a
+ * البطاقة، الموقع، الاشتراك، الهاتف، الأسباب، «تثبيت الأرقام» (US3) and the decision area (US2). Every value sits in a
  * read-only box like the form's inputs; two columns on a computer, one on a phone.
  */
 import ArrowForward from '@mui/icons-material/ArrowForward';
@@ -24,6 +24,7 @@ import { STATUS_COLORS, STATUS_LABELS } from '../../../lib/requestStatus';
 import { formatBaghdad } from '../../../lib/time';
 import { DecisionPanel } from './DecisionPanel';
 import { LinkedRecordCard } from './LinkedRecordCard';
+import { NumbersPinPanel } from './NumbersPinPanel';
 import { RequestImage } from './RequestImage';
 
 const NAME_LABELS: Record<string, string> = {
@@ -187,11 +188,15 @@ function ReasonsSection({ file }: { file: RequestFile }) {
 export function RequestReviewView({
   file,
   decision,
+  onPinned = () => undefined,
 }: {
   file: RequestFile;
   /** The decision area (US2); rendered under the file. */
   decision?: ReactNode;
+  /** The file after a pin (US3). */
+  onPinned?: (file: RequestFile) => void;
 }) {
+  const edited = file.reasons.some((r) => r.reason === 'numbers_edited');
   const color = STATUS_COLORS[file.status];
   return (
     <Stack spacing={2}>
@@ -210,6 +215,7 @@ export function RequestReviewView({
         </Typography>
       </Stack>
       <ReasonsSection file={file} />
+      {edited && <NumbersPinPanel file={file} onPinned={onPinned} />}
       <CardSection file={file} />
       <LocationSection file={file} />
       <SubscriptionSection file={file} />
@@ -229,6 +235,8 @@ export default function RequestReview() {
     queryClient.setQueryData(key, file);
     void queryClient.invalidateQueries({ queryKey: ['admin', 'pending'] });
   }
+  // A pin may change the type and the reasons shown in the list.
+  const pinned = decided;
   return (
     <Stack spacing={2}>
       <div>
@@ -241,6 +249,7 @@ export default function RequestReview() {
       {query.data && (
         <RequestReviewView
           file={query.data}
+          onPinned={pinned}
           decision={
             <DecisionPanel
               file={query.data}

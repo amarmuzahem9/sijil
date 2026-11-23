@@ -232,3 +232,37 @@ def test_decision_shows_nothing_of_the_linked_record(client, db, h, catalog, mak
     assert {"rejection_reason", "rejection_label", "rejected_at"} <= set(mine)
     assert not {"warnings", "decision", "approval_warnings", "approved_by"} & set(mine)
     seen.assert_hides(old, OTHER_PHONE, OTHER_NID, ADMIN_NAME, '"despite_warnings"', '"record"')
+
+
+def test_a_pin_shows_nothing_new_to_the_marketer(client, db, make_user):
+    """specs/010 T049 (FR-011): after a pin that turns the request into «اشتراك إضافي» and adds a
+    linked record, the marketer sees the new type and nothing of the pin, the warnings or the
+    record."""
+    from tests.helpers.review import pending_request
+
+    old = _record(db, make_user, family_number=OTHER_FAMILY, national_id=OTHER_NID)
+    owner = make_user("marketer")
+    seen = Seen(client, marketer_headers(client, owner))
+    request = pending_request(
+        db,
+        owner,
+        [("numbers_edited", None, {"fields": ["family_number"]})],
+        card_fields={"family_number": {"original": OTHER_FAMILY, "edited": True}},
+    )
+    admin = make_user("super_admin", name=ADMIN_NAME)
+    res = client.post(
+        f"/api/admin/requests/{request.id}/pin",
+        json={"field": "family_number", "source": "reading"},
+        headers=auth_header(login(client, admin.phone)),
+    )
+    assert res.status_code == 200, res.json()
+    assert res.json()["type"] == "additional"
+
+    mine = seen.get(f"/api/requests/{request.id}").json()
+    seen.get("/api/requests")
+    assert mine["type"] == "additional"
+    # The reason codes are part of the marketer's view since 008; their details are not.
+    assert not {"pins", "numbers", "warnings", "decision"} & set(mine)
+    seen.assert_hides(
+        old, OTHER_NID, ADMIN_NAME, '"pins"', '"previous_value"', '"warnings"', '"record"'
+    )

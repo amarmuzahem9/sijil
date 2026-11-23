@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import AuthContext, current_user, require_permission
 from app.db import get_db
-from app.schemas.admin_requests import AcceptIn, PendingList, RejectIn, RequestFileOut
+from app.schemas.admin_requests import AcceptIn, PendingList, PinIn, RejectIn, RequestFileOut
 from app.services import review_service
 
 router = APIRouter(prefix="/admin", tags=["admin-review"])
@@ -66,6 +66,18 @@ def reject_request(
 ) -> RequestFileOut:
     """«رفض» with a fixed reason, or «سبب آخر» with the admin's note (R6)."""
     request = review_service.reject(db, ctx.user, request_id, body)
+    return review_service.to_file(db, request)
+
+
+@router.post("/requests/{request_id}/pin", response_model=RequestFileOut)
+def pin_number(
+    request_id: int,
+    body: PinIn,
+    ctx: AuthContext = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> RequestFileOut:
+    """«تثبيت» a national ID or family number from a source; the file after the re-check (R4)."""
+    request = review_service.pin(db, ctx.user, request_id, body)
     return review_service.to_file(db, request)
 
 

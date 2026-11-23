@@ -113,4 +113,12 @@ describe('RequestReviewView', () => {
     expect(reasons.getByText('قديم')).toBeTruthy();
     expect(reasons.getByText('لم يعد ينطبق')).toBeTruthy();
   });
+  it('shows «تثبيت الأرقام» only when the marketer edited a number', () => {
+    show();
+    expect(section('تثبيت الأرقام').getByRole('group', { name: 'الرقم العائلي' })).toBeTruthy();
+    cleanup();
+    const file = requestFile();
+    show({ ...file, reasons: file.reasons.filter((r) => r.reason !== 'numbers_edited') });
+    expect(screen.queryByRole('region', { name: 'تثبيت الأرقام' })).toBeNull();
+  });
 });
