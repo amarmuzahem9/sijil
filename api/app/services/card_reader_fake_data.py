@@ -99,7 +99,7 @@ def _back(
     box=(20, 20, 980, 620),
     bands: dict | None = None,
 ):
-    fields = {"city": {"text": "مدينة-تجريبية", "confidence": 0.93}}
+    fields = {"city": {"text": "حي تجريبي-بغداد", "confidence": 0.93}}
     if family is not None:
         fields["nu_f"] = {"text": family, "confidence": 0.99}
     return {

@@ -348,6 +348,8 @@ prices, change the region, and see the tower choice cleared.
 - **FR-012a**: The server MUST compute `full_name` from the first five name fields (first to
   surname, one space between, empty parts skipped) on every save; the client never sends it.
   On a phone the name fields are laid out in pairs (first + second, third + fourth), the
+  (Changed 2026-11-23 by the owner after the staging test of 006: every field takes the full
+  width, one per row; the «اسم الأم» group stays.)
   surname on its own row, and the mother's names grouped under «اسم الأم».
 - **FR-013**: The page MUST show a «النواقص» summary listing every missing or invalid item, each
   linking to its field. The server MUST compute the same list for a draft.

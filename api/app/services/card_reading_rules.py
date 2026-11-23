@@ -34,6 +34,7 @@ from app.core.card_reading import (
     birth_century,
     fix_place_separators,
     issue_for_expiry,
+    looks_like_place,
     mrz_date,
     mrz_national_id,
     mrz_verified,
@@ -238,7 +239,7 @@ def resolve_back_fields(
         cleaned = clean_place_text(fix_place_separators(text))
     except InvalidArabicName:
         cleaned = None
-    if cleaned and len(cleaned) > BIRTH_PLACE_MAX:
+    if cleaned and (len(cleaned) > BIRTH_PLACE_MAX or not looks_like_place(cleaned)):
         cleaned = None
     if text:
         out["birth_place"] = _proposal(cleaned, cleaned or text, "back", place.get("confidence"))

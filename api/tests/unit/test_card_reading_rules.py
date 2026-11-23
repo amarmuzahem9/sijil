@@ -273,7 +273,7 @@ def raw_back(**overrides):
     base = {
         "mrz_birth": "990101",
         "mrz_expiry": "300101",
-        "birth_place": {"text": "مدينة-تجريبية", "confidence": 0.93},
+        "birth_place": {"text": "حي تجريبي-بغداد", "confidence": 0.93},
         "issue": ["2020/01/02", "2020/0l/02"],
         "expiry": ["2030/01/01"],
         "birth": ["1999/01/01"],
@@ -292,7 +292,7 @@ def test_clear_back_fields_are_accepted() -> None:
         "birth_date": date(1999, 1, 1),
         "expiry_date": date(2030, 1, 1),
         "issue_date": date(2020, 1, 2),
-        "birth_place": "مدينة-تجريبية",
+        "birth_place": "حي تجريبي-بغداد",
         "issuing_authority": "مديرية الجنسية والمعلومات المدنية",
     }
     assert out["birth_date"]["from"] == "mrz" and out["expiry_date"]["from"] == "mrz"
@@ -380,3 +380,20 @@ def test_place_separators_are_restored(read, expected) -> None:
     from app.core.card_reading import fix_place_separators
 
     assert clean_place_text(fix_place_separators(read)) == expected
+
+
+@pytest.mark.parametrize(
+    "read,filled",
+    [
+        ("يدع ي", False),  # staging: a few stray letters
+        ("مدينة تجريبية", False),  # no known governorate or city
+        ("حي تجريبي-بغداد", True),
+        ("العلم تكريت صلاح الدين", True),
+        ("كرمه-فلوجه-الأنبار", True),  # hamza spelling folds to the known «الانبار»
+        ("بغداد", False),  # too short to be a full place of birth
+    ],
+)
+def test_place_of_birth_needs_length_and_a_known_place(read, filled) -> None:
+    out = resolve_back_fields(raw_back(birth_place={"text": read, "confidence": 0.9}), NID, TODAY)
+    assert (out["birth_place"]["value"] is not None) is filled
+    assert out["birth_place"]["original"]  # the raw reading is always kept

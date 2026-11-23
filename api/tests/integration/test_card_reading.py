@@ -259,7 +259,7 @@ def test_reshoot_never_blocks_typing(client, owner) -> None:
 
 BACK_EXPECTED = {
     "birth_date": "1999-01-01",
-    "birth_place": "مدينة-تجريبية",
+    "birth_place": "حي تجريبي-بغداد",
     "issue_date": "2020-01-02",
     "expiry_date": "2030-01-01",
     "issuing_authority": "مديرية الجنسية والمعلومات المدنية",

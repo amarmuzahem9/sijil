@@ -98,6 +98,19 @@ multi-device change notice, name-field rules, private image storage).
   them, the form warns «سنة الميلاد لا تطابق الرقم الوطني، تأكد منهما» but does not block
   saving or sending (FR-032). Tests include a female card and births after 2000.
 
+### Session 2026-11-23 (owner notes after the staging test)
+
+- Every field takes the full width of the screen, one per row.
+- The «من البطاقة» / «عُدِّل يدوياً» mark sits with the label on the field's frame, never inside
+  the box over the value.
+- Dates are shown and typed as day-month-year (e.g. 10-01-1999); the server still stores dates.
+- An empty field never carries a mark.
+- The place of birth is filled only when the reading has at least six letters and contains a known
+  governorate or main city (spelling-insensitive); a short or unknown reading such as «يدع ي»
+  stays empty, with its raw reading kept.
+- An empty issue date is expected when no printed reading equals expiry − 10 years + 1 day
+  (1 of 15 sample cards); it is typed by the marketer.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A clear card fills the form by itself (Priority: P1)

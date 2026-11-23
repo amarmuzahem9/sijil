@@ -193,3 +193,30 @@ def fix_place_separators(text: str | None) -> str | None:
                 end += 1
             start = end
     return fixed
+
+
+PLACE_MIN_LETTERS = 6
+
+
+def _fold(text: str) -> str:
+    """Spelling-insensitive form for matching place names: أ إ آ → ا, ى → ي, ة → ه."""
+    return (
+        text.replace("أ", "ا")
+        .replace("إ", "ا")
+        .replace("آ", "ا")
+        .replace("ى", "ي")
+        .replace("ة", "ه")
+    )
+
+
+def looks_like_place(text: str | None) -> bool:
+    """A place of birth worth filling (owner request after the staging test): at least six letters
+    and at least one known governorate or main city in it. A short or unknown reading (e.g. a
+    few stray letters) is left empty for the marketer."""
+    if not text:
+        return False
+    letters = sum(1 for c in text if _ARABIC_LETTER.match(c))
+    if letters < PLACE_MIN_LETTERS:
+        return False
+    folded = _fold(text)
+    return any(_fold(place) in folded for place in KNOWN_PLACES)

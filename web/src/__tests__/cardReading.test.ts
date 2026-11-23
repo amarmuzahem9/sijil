@@ -18,6 +18,11 @@ import {
 } from '../lib/cardReading';
 import { DraftFormController } from '../lib/draftFormController';
 import { CARD_FIELDS, type CardReading, type Draft } from '../lib/drafts';
+import {
+  displayToIso,
+  formatTyping,
+  isoToDisplay,
+} from '../pages/marketer/subscriber/DateTextField';
 import { fieldMarkText } from '../pages/marketer/subscriber/FieldSourceMark';
 
 function draft(overrides: Partial<Draft> = {}): Draft {
@@ -143,6 +148,11 @@ describe('field marks', () => {
     expect(fieldMarkText({ ...card, source: 'edited' }, false)).toBe(MARK_EDITED);
   });
 
+  it('shows no mark on an empty field (owner request after the staging test)', () => {
+    expect(fieldMarkText(card, false, true)).toBeNull();
+    expect(fieldMarkText({ ...card, source: 'edited' }, true, true)).toBeNull();
+  });
+
   it('shows nothing for a field that was never read', () => {
     expect(fieldMarkText(undefined, false)).toBeNull();
     expect(
@@ -220,5 +230,28 @@ describe('back of the card (owner change)', () => {
     ctl.saveNow({ expiry_date: '' });
     expect(spy).toHaveBeenCalledWith({ expiry_date: null });
     vi.useRealTimers();
+  });
+});
+
+describe('dates as day-month-year (owner request after the staging test)', () => {
+  it('shows ISO dates as DD-MM-YYYY', () => {
+    expect(isoToDisplay('1999-01-10')).toBe('10-01-1999');
+    expect(isoToDisplay('')).toBe('');
+  });
+
+  it('adds the dashes while typing digits, Arabic-Indic too', () => {
+    expect(formatTyping('10011999')).toBe('10-01-1999');
+    expect(formatTyping('1001')).toBe('10-01');
+    expect(formatTyping('١٠٠١١٩٩٩')).toBe('10-01-1999');
+    expect(formatTyping('10/01/1999xx')).toBe('10-01-1999');
+  });
+
+  it('accepts only real dates', () => {
+    expect(displayToIso('10-01-1999')).toBe('1999-01-10');
+    expect(displayToIso('29-02-2024')).toBe('2024-02-29');
+    expect(displayToIso('29-02-2023')).toBeNull();
+    expect(displayToIso('31-04-2020')).toBeNull();
+    expect(displayToIso('10-01')).toBeNull();
+    expect(displayToIso('01-01-1800')).toBeNull();
   });
 });

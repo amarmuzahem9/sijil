@@ -14,7 +14,6 @@ import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 
 import Alert from '@mui/material/Alert';
-import MuiTextField from '@mui/material/TextField';
 
 import {
   BIRTH_YEAR_MISMATCH,
@@ -29,7 +28,8 @@ import type { CardField } from '../../../lib/drafts';
 import { NAME_LABELS, OPTIONAL_NAME_FIELDS, type NameField } from '../../../lib/nameFields';
 import type { DraftAutosave, TextField } from '../../../lib/useDraftAutosave';
 import { DraftTextField } from './DraftTextField';
-import { FieldSourceMark } from './FieldSourceMark';
+import { DateTextField } from './DateTextField';
+import { FieldSourceMark, MarkedLabel, notchText } from './FieldSourceMark';
 import { NationalIdCheck } from './NationalIdCheck';
 
 export const FOURTH_NAME_HINT = 'غير موجود على البطاقة، اسأل المشترك';
@@ -50,10 +50,10 @@ const CARD_NAME_FIELDS = [
   'mother_second_name',
 ] as const;
 
+// One field per row, full width (owner request after the staging test, 2026-11-23); the
+// grouping is kept so related fields stay together.
 function Pair({ children }: { children: ReactNode }) {
-  return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 1 }}>{children}</Box>
-  );
+  return <Stack spacing={1}>{children}</Stack>;
 }
 
 export function CardDataSection({
@@ -76,6 +76,7 @@ export function CardDataSection({
       field={field}
       mark={serverDraft?.card_fields?.[field]}
       changedHere={values[field] !== (serverDraft?.[field] ?? '')}
+      empty={!String(values[field] ?? '').trim()}
     />
   );
 
@@ -93,7 +94,7 @@ export function CardDataSection({
       error={errors[field]}
       helperText={helperText}
       autoComplete="off"
-      adornment={
+      labelMark={
         (CARD_NAME_FIELDS as readonly string[]).includes(field)
           ? mark(field as CardField)
           : undefined
@@ -102,21 +103,14 @@ export function CardDataSection({
     />
   );
 
-  // Dates: the phone's date picker; saved as soon as a date is picked.
+  // Dates: typed and shown as day-month-year; saved as soon as a real date is complete.
   const date = (field: DateField, label: string) => (
-    <MuiTextField
-      id={`field-${field}`}
-      type="date"
-      label={label}
+    <DateTextField
+      field={field}
+      label={<MarkedLabel text={label} mark={mark(field)} />}
+      notch={notchText(label, true)}
       value={values[field]}
-      onChange={(e) => saveNow({ [field]: e.target.value })}
-      fullWidth
-      helperText=" "
-      slotProps={{
-        inputLabel: { shrink: true },
-        input: { endAdornment: mark(field) },
-        htmlInput: { 'data-testid': `field-${field}`, dir: 'ltr' },
-      }}
+      onSave={(iso) => saveNow({ [field]: iso })}
     />
   );
 
@@ -184,7 +178,7 @@ export function CardDataSection({
         helperText="12 رقماً"
         ltr
         inputMode="numeric"
-        adornment={mark('national_id')}
+        labelMark={mark('national_id')}
       />
       <NationalIdCheck
         check={serverDraft?.national_id_check}
@@ -205,7 +199,7 @@ export function CardDataSection({
         error={errors.family_number}
         helperText="كما هو مكتوب على البطاقة"
         ltr
-        adornment={mark('family_number')}
+        labelMark={mark('family_number')}
       />
 
       {/* Back of the card (specs/006 owner change, system.md v1.8): all required. */}
@@ -218,7 +212,7 @@ export function CardDataSection({
           onText={setText}
           onCommit={commitField}
           error={errors.birth_place}
-          adornment={mark('birth_place')}
+          labelMark={mark('birth_place')}
         />
       </Pair>
       {birthYearMismatch(values.birth_date, values.national_id) && (
@@ -242,7 +236,7 @@ export function CardDataSection({
         onText={setText}
         onCommit={commitField}
         error={errors.issuing_authority}
-        adornment={mark('issuing_authority')}
+        labelMark={mark('issuing_authority')}
       />
     </Stack>
   );
