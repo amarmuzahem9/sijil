@@ -26,6 +26,9 @@ function request(partial: Partial<SubmittedRequest> = {}): SubmittedRequest {
     trial_price: 20000,
     second_price: 35000,
     phone: '07801234567',
+    address: 'حي تجريبي',
+    landmark: 'قرب نقطة تجريبية',
+    marketer_name: 'مسوّق تجريبي',
     username: 'ALM03-07801234567',
     submitted_at: '2026-11-23T10:00:00Z',
     approved_at: '2026-11-23T10:00:00Z',
@@ -41,6 +44,61 @@ function show(r: SubmittedRequest) {
     </MemoryRouter>,
   );
 }
+
+const DETAILS = [
+  'رقم الطلب: #T3C-1001',
+  'اسم المشترك: تجربة اختبار نموذج مثال التجريبي',
+  'البرج: ALM03 (العلم)',
+  'العنوان: حي تجريبي، قرب نقطة تجريبية',
+  'اسم المستخدم: ALM03-07801234567',
+  'الباقة: PLUS | التجريبي 20,000 د.ع | الثاني 35,000 د.ع',
+  'المسوّق: مسوّق تجريبي',
+].join('\n');
+
+describe('«نسخ التفاصيل» (system.md v1.11 §5.5)', () => {
+  it('copies the ordered Arabic text, one line each', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    show(request());
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'نسخ التفاصيل' }));
+    });
+    expect(writeText).toHaveBeenCalledWith(DETAILS);
+    expect(screen.getByText('تم النسخ')).toBeTruthy();
+  });
+
+  it('pending without a username: «بانتظار الموافقة», and no «نسخ اليوزر»', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    show(
+      request({
+        status: 'pending_review',
+        result: 'pending_approval',
+        type: 'return',
+        reasons: ['return'],
+        username: null,
+        approved_at: null,
+      }),
+    );
+    expect(screen.queryByRole('button', { name: 'نسخ اليوزر' })).toBeNull();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'نسخ التفاصيل' }));
+    });
+    expect(writeText).toHaveBeenCalledWith(
+      DETAILS.replace('اسم المستخدم: ALM03-07801234567', 'اسم المستخدم: بانتظار الموافقة'),
+    );
+  });
+
+  it('never copies the phone, a national ID or a family number', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    show(request({ username: null, status: 'pending_review', result: 'pending_review' }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'نسخ التفاصيل' }));
+    });
+    expect(writeText.mock.calls[0][0]).not.toContain('07801234567');
+  });
+});
 
 describe('RequestResultView', () => {
   it('approved: «تمت الموافقة», the number and the username with a copy button', async () => {

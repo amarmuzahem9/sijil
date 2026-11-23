@@ -76,3 +76,12 @@ def test_username_hidden_until_approved(client, db, h, me) -> None:
 def test_admins_cannot_use_the_marketer_routes(client, make_user) -> None:
     admin = auth_header(login(client, make_user("super_admin").phone))
     assert client.get("/api/requests", headers=admin).status_code == 403
+
+
+def test_request_carries_the_copy_details_fields(client, db, h, me, catalog) -> None:
+    """«نسخ التفاصيل» (system.md v1.11 §5.5): address, landmark and the marketer's name."""
+    created = submit(client, h, complete_draft(client, h, catalog)).json()
+    assert (created["address"], created["landmark"]) == ("حي تجريبي", "قرب نقطة تجريبية")
+    assert created["marketer_name"] == me.name
+    body = client.get(f"/api/requests/{created['id']}", headers=h).json()
+    assert body["marketer_name"] == me.name

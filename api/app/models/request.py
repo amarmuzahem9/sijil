@@ -137,6 +137,8 @@ class Request(Base):
         back_populates="request", lazy="selectin", order_by="RequestReason.id"
     )
     images: Mapped[list["RequestImage"]] = relationship(back_populates="request", lazy="selectin")
+    # «المسوّق» in «نسخ التفاصيل» (system.md v1.11 §5.5). `approved_by` also points at users.
+    marketer: Mapped["User"] = relationship(foreign_keys=[marketer_id], lazy="joined")  # noqa: F821
 
     @property
     def number_label(self) -> str:

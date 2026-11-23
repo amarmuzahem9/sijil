@@ -3,6 +3,7 @@
  * Errors arrive as ApiError with the server's Arabic message; the page shows it as is.
  */
 import { apiFetch } from './api';
+import { formatMoney } from './money';
 import { clientId } from './drafts';
 import type { RequestStatus } from './requestStatus';
 
@@ -25,6 +26,10 @@ export interface SubmittedRequest {
   trial_price: number;
   second_price: number;
   phone: string;
+  /** «نسخ التفاصيل» (system.md v1.11 §5.5). */
+  address: string;
+  landmark: string;
+  marketer_name: string;
   /** Null unless approved or linked. */
   username: string | null;
   submitted_at: string;
@@ -39,6 +44,19 @@ export interface RequestListItem {
   status: SubmittedStatus;
   type: RequestType;
   submitted_at: string;
+}
+
+/** «نسخ التفاصيل» (system.md v1.11 §5.5): one line each, no phone, card numbers or images. */
+export function requestDetailsText(r: SubmittedRequest): string {
+  return [
+    `رقم الطلب: #${r.number_label}`,
+    `اسم المشترك: ${r.full_name}`,
+    `البرج: ${r.tower_code} (${r.area_name})`,
+    `العنوان: ${r.address}، ${r.landmark}`,
+    `اسم المستخدم: ${r.username ?? 'بانتظار الموافقة'}`,
+    `الباقة: ${r.plan_name} | التجريبي ${formatMoney(r.trial_price)} | الثاني ${formatMoney(r.second_price)}`,
+    `المسوّق: ${r.marketer_name}`,
+  ].join('\n');
 }
 
 /** The screen after «إرسال» (FR-018). */

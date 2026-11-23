@@ -38,6 +38,10 @@ class RequestOut(BaseModel):
     trial_price: int
     second_price: int
     phone: str
+    # «نسخ التفاصيل» (system.md v1.11 §5.5).
+    address: str
+    landmark: str
+    marketer_name: str
     username: str | None
     submitted_at: datetime
     approved_at: datetime | None

@@ -1,7 +1,8 @@
 /**
  * /requests/:id — the screen after «إرسال», and a submitted request reopened from «الطلبات»
  * (specs/008 FR-018, FR-019, research R11). Approved: «تمت الموافقة», the number and the
- * username with «نسخ اليوزر». Pending: «بانتظار موافقة المسؤول» (family) or «طلبك بانتظار التدقيق».
+ * username with a small «نسخ اليوزر». Pending: «بانتظار موافقة المسؤول» or «طلبك بانتظار التدقيق».
+ * «نسخ التفاصيل» copies the ordered text of system.md v1.11 §5.5 in both cases.
  * The link message and its share button come with feature 011.
  */
 import CheckCircleOutlined from '@mui/icons-material/CheckCircleOutlined';
@@ -19,7 +20,12 @@ import { useState } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 
 import { formatMoney } from '../../lib/money';
-import { getRequest, RESULT_TEXT, type SubmittedRequest } from '../../lib/requests';
+import {
+  getRequest,
+  requestDetailsText,
+  RESULT_TEXT,
+  type SubmittedRequest,
+} from '../../lib/requests';
 import { STATUS_COLORS, STATUS_LABELS } from '../../lib/requestStatus';
 import { formatBaghdad } from '../../lib/time';
 
@@ -33,17 +39,18 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 export function RequestResultView({ request }: { request: SubmittedRequest }) {
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<'details' | 'username' | null>(null);
   const approved = request.result === 'approved' || request.result === 'linked';
   const colors = STATUS_COLORS[request.status];
 
-  const copy = async () => {
-    if (!request.username) return;
+  const copy = async (what: 'details' | 'username') => {
+    const text = what === 'details' ? requestDetailsText(request) : request.username;
+    if (!text) return;
     try {
-      await navigator.clipboard.writeText(request.username);
-      setCopied(true);
+      await navigator.clipboard.writeText(text);
+      setCopied(what);
     } catch {
-      setCopied(false);
+      setCopied(null);
     }
   };
 
@@ -77,35 +84,51 @@ export function RequestResultView({ request }: { request: SubmittedRequest }) {
           />
           <Row label="الهاتف" value={request.phone} />
           <Row label="تاريخ الإرسال" value={formatBaghdad(request.submitted_at)} />
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ justifyContent: 'space-between', alignItems: 'center' }}
+          >
+            <Typography color="text.secondary">اسم المستخدم</Typography>
+            {request.username ? (
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                <Typography
+                  data-testid="request-username"
+                  dir="ltr"
+                  sx={{ fontFamily: 'monospace', fontWeight: 700 }}
+                >
+                  {request.username}
+                </Typography>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<ContentCopyOutlined fontSize="small" />}
+                  onClick={() => void copy('username')}
+                >
+                  نسخ اليوزر
+                </Button>
+              </Stack>
+            ) : (
+              <Typography sx={{ fontWeight: 600 }}>بانتظار الموافقة</Typography>
+            )}
+          </Stack>
         </Stack>
       </Paper>
 
-      {approved && request.username && (
-        <Paper variant="outlined" sx={{ p: 2 }}>
-          <Stack spacing={1}>
-            <Typography color="text.secondary">اليوزر</Typography>
-            <Typography
-              data-testid="request-username"
-              dir="ltr"
-              sx={{ fontFamily: 'monospace', fontSize: '1.1rem', fontWeight: 700 }}
-            >
-              {request.username}
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<ContentCopyOutlined />}
-              onClick={() => void copy()}
-            >
-              نسخ اليوزر
-            </Button>
-            {copied && (
-              <Typography variant="caption" color="success.main">
-                تم النسخ
-              </Typography>
-            )}
-          </Stack>
-        </Paper>
-      )}
+      <Stack spacing={0.5}>
+        <Button
+          variant="contained"
+          startIcon={<ContentCopyOutlined />}
+          onClick={() => void copy('details')}
+        >
+          نسخ التفاصيل
+        </Button>
+        {copied && (
+          <Typography variant="caption" color="success.main" sx={{ textAlign: 'center' }}>
+            تم النسخ
+          </Typography>
+        )}
+      </Stack>
 
       <Stack direction="row" spacing={1}>
         <Button component={RouterLink} to="/drafts/new" variant="outlined" fullWidth>
