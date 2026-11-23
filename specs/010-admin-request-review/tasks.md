@@ -166,7 +166,7 @@ file with its linked records and images, with each image opening logged.
 
 ### Tests for User Story 1
 
-- [ ] T012 [P] [US1] Write `api/tests/integration/test_admin_pending_list.py`. Submit five requests
+- [x] T012 [P] [US1] Write `api/tests/integration/test_admin_pending_list.py`. Submit five requests
   end to end (family, edited numbers, conflict, return by identity, return by phone) plus one
   approved and one rejected. Check:
   - `GET /api/admin/requests/pending` returns exactly the five, oldest first, with `total=5`, type,
@@ -178,7 +178,7 @@ file with its linked records and images, with each image opening logged.
   - the main admin gets 200.
 
   Run: **red**.
-- [ ] T013 [P] [US1] Write `api/tests/integration/test_admin_request_file.py`. Check:
+- [x] T013 [P] [US1] Write `api/tests/integration/test_admin_request_file.py`. Check:
   - the file has every field of contracts/api.md › GET /admin/requests/{id};
   - `numbers.*.reading` comes from `card_fields[field].original`, `numbers.national_id.mrz` from
     `national_id_check.mrz`, and `numbers.*.marketer` from `submitted_*`;
@@ -192,7 +192,7 @@ file with its linked records and images, with each image opening logged.
   - a missing id, the `settings` admin and the marketer all get 404.
 
   Run: **red**.
-- [ ] T014 [P] [US1] Write `api/tests/integration/test_admin_request_images.py`. Check:
+- [x] T014 [P] [US1] Write `api/tests/integration/test_admin_request_images.py`. Check:
   - the `review` admin gets the JPEG of a request image and of a linked sijil record's image;
   - each open adds an `image_access_log` row with `request_id`, `draft_id = requests.draft_id`,
     the side and `purpose='view'`;
@@ -203,13 +203,13 @@ file with its linked records and images, with each image opening logged.
 
 ### Implementation for User Story 1
 
-- [ ] T015 [US1] Create `api/app/services/review_service.py` with `list_pending(db, reason)`
+- [x] T015 [US1] Create `api/app/services/review_service.py` with `list_pending(db, reason)`
   ([research R13](./research.md#r13-pending-list-fr-002)):
   - oldest `submitted_at` first, with `total`;
   - the reason filter uses `EXISTS` on `request_reasons` with
     `state <> 'not_applicable'` (data-model.md › request_reasons.state);
   - each item's codes come from rows that are not `not_applicable`.
-- [ ] T016 [US1] Add `get_file(db, request_id) -> RequestFileOut` to
+- [x] T016 [US1] Add `get_file(db, request_id) -> RequestFileOut` to
   `api/app/services/review_service.py`:
   - `numbers` from `card_fields`, `national_id_check`, `submitted_*`, the current values and `pins`;
     `edited` is true when the field is listed in a `numbers_edited` row;
@@ -219,13 +219,13 @@ file with its linked records and images, with each image opening logged.
     the phone and current numbers, drops the request's own `(sijil, id)`, and calls
     `review_check.review`;
   - `decision` for decided requests.
-- [ ] T017 [US1] Add `open_request_image(db, user, image_id)` to
+- [x] T017 [US1] Add `open_request_image(db, user, image_id)` to
   `api/app/services/review_service.py`
   ([research R9](./research.md#r9-image-access-for-review-fr-005)). It finds `RequestImage`, checks
   `has_any_permission(..., ["review"])` (404 otherwise), checks that the file exists, and writes
   `ImageAccessLog(request_id=…, draft_id=request.draft_id, side=…, purpose='view')`
   (data-model.md › image_access_log.request_id).
-- [ ] T018 [US1] Add these routes to `api/app/api/admin_requests.py`:
+- [x] T018 [US1] Add these routes to `api/app/api/admin_requests.py`:
   - `GET /admin/requests/pending` (403 for non-review);
   - `GET /admin/requests/{id}` (404 for non-review, checked inside the route so existence does not
     leak);
@@ -233,7 +233,7 @@ file with its linked records and images, with each image opening logged.
     for draft images).
 
   T012, T013 and T014 **green**.
-- [ ] T019 [P] [US1] Create `web/src/lib/adminRequests.ts`: the types of contracts/api.md and the calls
+- [x] T019 [P] [US1] Create `web/src/lib/adminRequests.ts`: the types of contracts/api.md and the calls
   `listPending(reason?)`, `getRequestFile(id)` and `requestImageUrl(id)` (an authenticated blob fetch,
   as `drafts.ts` does for draft images). Add to `web/src/lib/labels.ts`:
   - the reason labels (اشتراك إضافي، إعادة للخدمة، تعديل الأرقام، تعارض بالأرقام);
@@ -241,28 +241,28 @@ file with its linked records and images, with each image opening logged.
   - the basis labels (إعادة للخدمة بالرقم الوطني والعائلي، إعادة للخدمة بالهاتف، تعارض بالأرقام، عائلة موجودة);
   - the source labels (سِجلّ، قديم، SAS);
   - the type labels (جديد، اشتراك إضافي، إعادة للخدمة).
-- [ ] T020 [P] [US1] Write `web/src/__tests__/adminPendingList.test.tsx`. Check:
+- [x] T020 [P] [US1] Write `web/src/__tests__/adminPendingList.test.tsx`. Check:
   - the rows render with labels and Baghdad time;
   - the reason filter chips call `listPending` with the code;
   - the count shows;
   - an empty list shows «لا توجد طلبات بالانتظار».
 
   Run: **red**.
-- [ ] T021 [US1] Create `web/src/pages/admin/pending/PendingList.tsx`:
+- [x] T021 [US1] Create `web/src/pages/admin/pending/PendingList.tsx`:
   - filter chips by reason, the count, and rows (cards on a phone) that link to
     `/admin/pending/:id`;
   - replace `AdminPending` in `web/src/pages/admin/placeholders.tsx` and `web/src/router.tsx`;
   - add the child route `pending/:id` under the same `page('pending', …)` guard.
 
   T020 **green**.
-- [ ] T022 [P] [US1] Create `web/src/pages/admin/pending/LinkedRecordCard.tsx`. It shows the source,
+- [x] T022 [P] [US1] Create `web/src/pages/admin/pending/LinkedRecordCard.tsx`. It shows the source,
   basis, name, username, phone, tower, registration date, the status chip with the §7.2 colors from
   `requestStatus.ts`, the image thumbnails, «سجل غير متوفر» when `available=false`, and the state
   label when the reason is not open.
-- [ ] T023 [P] [US1] Write `web/src/__tests__/requestReview.test.tsx`: every section renders from a
+- [x] T023 [P] [US1] Write `web/src/__tests__/requestReview.test.tsx`: every section renders from a
   fixture file, the linked-record card shows its basis label, and an unavailable record shows
   «سجل غير متوفر». Run: **red**.
-- [ ] T024 [US1] Create `web/src/pages/admin/pending/RequestReview.tsx` (`/admin/pending/:id`). It has
+- [x] T024 [US1] Create `web/src/pages/admin/pending/RequestReview.tsx` (`/admin/pending/:id`). It has
   these sections:
   - البطاقة: names, the two numbers, dates, place, and both images with «الصورة غير متوفرة» on
     error;

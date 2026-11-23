@@ -85,4 +85,41 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
 
 export const STATE_LABELS = { active: 'فعّال', inactive: 'موقوف' } as const;
 
+// --- admin review (specs/010) ---
+
+export const REQUEST_TYPE_LABELS = {
+  new: 'جديد',
+  additional: 'اشتراك إضافي',
+  return: 'إعادة للخدمة',
+} as const;
+
+/** Pending reasons as the admin sees them (system.md §10 item 2). */
+export const REASON_LABELS = {
+  family_exists: 'اشتراك إضافي',
+  return: 'إعادة للخدمة',
+  numbers_edited: 'تعديل الأرقام',
+  numbers_conflict: 'تعارض بالأرقام',
+} as const;
+
+/** «لم يعد ينطبق» / «تم التثبيت»; an open reason has no label. */
+export const REASON_STATE_LABELS = {
+  open: null,
+  resolved: 'تم التثبيت',
+  not_applicable: 'لم يعد ينطبق',
+} as const;
+
+/** Why a record is linked (system.md §6.4). */
+export function linkBasisLabel(reason: string, basis: string | null): string {
+  if (reason === 'return')
+    return basis === 'phone' ? 'إعادة للخدمة بالهاتف' : 'إعادة للخدمة بالرقم الوطني والعائلي';
+  if (reason === 'numbers_conflict') return 'تعارض بالأرقام';
+  return 'عائلة موجودة';
+}
+
+export const SOURCE_LABELS: Record<string, string> = {
+  sijil: 'سِجلّ',
+  legacy: 'قديم',
+  sas: 'SAS',
+};
+
 export type { Role };

@@ -19,11 +19,12 @@ import {
   AdminBackup,
   AdminHome,
   AdminImport,
-  AdminPending,
   AdminReports,
   AdminSubscribers,
 } from './pages/admin/placeholders';
 import Admins from './pages/admin/Admins';
+import PendingList from './pages/admin/pending/PendingList';
+import RequestReview from './pages/admin/pending/RequestReview';
 import Archive from './pages/admin/Archive';
 import Audit from './pages/admin/Audit';
 import Settings from './pages/admin/settings/Settings';
@@ -85,7 +86,8 @@ export const routes: RouteObject[] = [
                     element: <AdminLayout />,
                     children: [
                       page('home', { index: true, element: <AdminHome /> }),
-                      page('pending', { path: 'pending', element: <AdminPending /> }),
+                      page('pending', { path: 'pending', element: <PendingList /> }),
+                      page('pending', { path: 'pending/:requestId', element: <RequestReview /> }),
                       page('awaiting_link', {
                         path: 'awaiting-link',
                         element: <AdminAwaitingLink />,
