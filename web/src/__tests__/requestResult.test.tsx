@@ -74,6 +74,21 @@ describe('RequestResultView', () => {
     expect(screen.getByText('#T3C-1001')).toBeTruthy();
   });
 
+  it('return or numbers conflict: «بانتظار موافقة المسؤول», no username', () => {
+    show(
+      request({
+        type: 'return',
+        status: 'pending_review',
+        reasons: ['return'],
+        result: 'pending_approval',
+        username: null,
+        approved_at: null,
+      }),
+    );
+    expect(screen.getByText('بانتظار موافقة المسؤول')).toBeTruthy();
+    expect(screen.queryByTestId('request-username')).toBeNull();
+  });
+
   it('edited numbers: «طلبك بانتظار التدقيق»', () => {
     show(
       request({

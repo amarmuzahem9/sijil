@@ -9,7 +9,7 @@ import type { RequestStatus } from './requestStatus';
 export type SubmittedStatus = Exclude<RequestStatus, 'draft'>;
 export type RequestType = 'new' | 'additional' | 'return';
 export type RequestResultCode =
-  'approved' | 'pending_family' | 'pending_review' | 'rejected' | 'linked';
+  'approved' | 'pending_family' | 'pending_review' | 'pending_approval' | 'rejected' | 'linked';
 
 export interface SubmittedRequest {
   id: number;
@@ -17,7 +17,7 @@ export interface SubmittedRequest {
   number_label: string;
   type: RequestType;
   status: SubmittedStatus;
-  reasons: ('family_exists' | 'numbers_edited' | 'return')[];
+  reasons: ('family_exists' | 'numbers_edited' | 'return' | 'numbers_conflict')[];
   full_name: string;
   tower_code: string;
   area_name: string;
@@ -46,6 +46,8 @@ export const RESULT_TEXT: Record<RequestResultCode, string> = {
   approved: 'تمت الموافقة',
   pending_family: 'بانتظار موافقة المسؤول',
   pending_review: 'طلبك بانتظار التدقيق',
+  // Return to service or a numbers conflict (specs/009).
+  pending_approval: 'بانتظار موافقة المسؤول',
   rejected: 'تم رفض الطلب',
   linked: 'تم الربط',
 };

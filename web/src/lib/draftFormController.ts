@@ -135,6 +135,7 @@ export interface FormListener {
 export type SaveNowChanges = Partial<FormValues> & {
   national_id_confirmed?: boolean;
   additional_confirmed?: boolean;
+  return_chosen?: boolean;
 };
 
 export class DraftFormController {
@@ -259,13 +260,15 @@ export class DraftFormController {
 
   /** Selects, the pin and buttons: save immediately. */
   saveNow(changes: SaveNowChanges): void {
-    const { national_id_confirmed, additional_confirmed, ...values } = changes;
+    const { national_id_confirmed, additional_confirmed, return_chosen, ...values } = changes;
     this.update(values);
     const out = toChanges(values);
     // «اعتماد هذا الرقم» (specs/006 FR-012): sent with the value it confirms.
     if (national_id_confirmed) out.national_id_confirmed = true;
     // «طلب اشتراك إضافي» / «تراجع» (specs/008 research R12).
     if (additional_confirmed !== undefined) out.additional_confirmed = additional_confirmed;
+    // «طلب العودة للخدمة» / «إلغاء» (specs/009 research R3).
+    if (return_chosen !== undefined) out.return_chosen = return_chosen;
     void this.queue.enqueue(out);
   }
 

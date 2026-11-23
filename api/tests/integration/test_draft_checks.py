@@ -92,8 +92,13 @@ def test_no_match_means_no_warning(client, h, existing):
     assert put["checks"] == {
         "phone_used": False,
         "national_id_exists": False,
+        "id_conflict": False,
         "family_exists": False,
         "additional_confirmed": False,
+        "return_available": False,
+        "return_basis": None,
+        "return_chosen": False,
+        "return_pending": False,
     }
 
 

@@ -113,13 +113,25 @@ export interface OtpStatus {
   verified_at: string | null;
 }
 
-/** The duplicate check (specs/008 research R5). Booleans only: never who matched. */
+/** Who a return would bring back (specs/009 research R2). */
+export type ReturnBasis = 'identity' | 'phone';
+
+/** The duplicate check (specs/008 research R5, specs/009 R5). Booleans only: never who matched. */
 export interface DraftChecks {
   phone_used: boolean;
+  /** The same person: national ID and family number on one record (v1.10 row 2). */
   national_id_exists: boolean;
+  /** National ID only (row 2b): a notice, sending stays allowed. */
+  id_conflict: boolean;
   family_exists: boolean;
   /** «طلب اشتراك إضافي» chosen for the current family number. */
   additional_confirmed: boolean;
+  return_available: boolean;
+  return_basis: ReturnBasis | null;
+  /** «طلب العودة للخدمة» chosen and still valid. */
+  return_chosen: boolean;
+  /** Chosen, but the same person already has a pending request. */
+  return_pending: boolean;
 }
 
 export interface Draft extends NullableNames {
@@ -183,6 +195,8 @@ export interface DraftChanges extends Partial<NullableNames> {
   national_id_confirmed?: boolean;
   /** «طلب اشتراك إضافي» for the current family number (specs/008 research R12). */
   additional_confirmed?: boolean;
+  /** «طلب العودة للخدمة» (specs/009 research R3). */
+  return_chosen?: boolean;
   birth_date?: string | null;
   birth_place?: string | null;
   issue_date?: string | null;

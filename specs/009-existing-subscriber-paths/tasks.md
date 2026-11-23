@@ -113,7 +113,7 @@ shares the identity check.
 
 ### Tests for User Story 1
 
-- [ ] T013 [P] [US1] Write `api/tests/integration/test_return_path.py` (identity basis). Cover:
+- [x] T013 [P] [US1] Write `api/tests/integration/test_return_path.py` (identity basis). Cover:
   - checks show `return_available`, `return_basis=identity`;
   - `PATCH return_chosen=true` stores `return_key` (data-model.md › drafts.return_key) and audits
     `draft.return_chosen`;
@@ -130,7 +130,7 @@ shares the identity check.
   - a return draft without the card images is refused with `draft_incomplete` (FR-008).
 
   Run: **red**.
-- [ ] T014 [P] [US1] Write `api/tests/integration/test_numbers_conflict.py`. Cover:
+- [x] T014 [P] [US1] Write `api/tests/integration/test_numbers_conflict.py`. Cover:
   - same national ID, different family → checks `id_conflict=true`, no missing item;
   - after OTP, submit → pending_review, reason `numbers_conflict` linked to the record, type new;
   - with a confirmed family match on another record as well → type additional, both reasons;
@@ -139,14 +139,14 @@ shares the identity check.
     test).
 
   Run: **red**.
-- [ ] T015 [P] [US1] Extend `api/tests/integration/test_submit_concurrency.py`: two return drafts for
+- [x] T015 [P] [US1] Extend `api/tests/integration/test_submit_concurrency.py`: two return drafts for
   the same person submitted at once → one request, the other gets `return_pending`. Run: **red**.
 
 ### Implementation for User Story 1
 
-- [ ] T016 [US1] Add `return_chosen: bool | None` to the PATCH changes and the new fields to
+- [x] T016 [US1] Add `return_chosen: bool | None` to the PATCH changes and the new fields to
   `DraftChecksOut` (data-model.md › DraftChecksOut) in `api/app/schemas/drafts.py`.
-- [ ] T017 [US1] In `api/app/services/draft_service.py`:
+- [x] T017 [US1] In `api/app/services/draft_service.py`:
   - `return_key_for(draft, matches)`, `return_valid(draft, matches)`, `apply_return_choice()` with
     the mutual exclusion against `additional_confirmed_key`, plus audit;
   - clearing a stale key on save;
@@ -154,16 +154,16 @@ shares the identity check.
   - `missing_items` changes (data-model.md › Missing items): `national_id_exists` and `phone_used`
     drop with a valid return, add `return_pending`, and no family confirmation is needed on a return;
   - wire into the PATCH handler in `api/app/api/drafts.py`.
-- [ ] T018 [US1] In `api/app/services/submit_service.py`:
+- [x] T018 [US1] In `api/app/services/submit_service.py`:
   - compute `return_valid` under the locks and pass it to `decide()`;
   - handle the `return_pending` refusal like the other refusals;
   - write the `return` and `numbers_conflict` reason rows per record, with `details.basis`;
   - set the return username (R7);
   - `_result()` returns `pending_approval` for return / numbers_conflict;
   - `request.submitted` audit reasons.
-- [ ] T019 [US1] Add `pending_approval` to `result` in `api/app/schemas/requests.py`.
-- [ ] T020 [US1] Run T013–T015 → **green**, then the full api suite.
-- [ ] T021 [P] [US1] Write `web/src/__tests__/returnNotice.test.tsx`. Cover:
+- [x] T019 [US1] Add `pending_approval` to `result` in `api/app/schemas/requests.py`.
+- [x] T020 [US1] Run T013–T015 → **green**, then the full api suite.
+- [x] T021 [P] [US1] Write `web/src/__tests__/returnNotice.test.tsx`. Cover:
   - `national_id_exists` shows «المشترك لديه اشتراك سابق» and «طلب العودة للخدمة»;
   - pressing it saves `return_chosen: true`;
   - chosen state shows «تم اختيار طلب العودة للخدمة» and «إلغاء»;
@@ -171,7 +171,7 @@ shares the identity check.
   - `id_conflict` notice text with no button.
 
   Run: **red**.
-- [ ] T022 [US1] Build the web side:
+- [x] T022 [US1] Build the web side:
   - `web/src/pages/marketer/subscriber/ReturnNotice.tsx`;
   - show it and the conflict notice in `CardDataSection.tsx`;
   - add the check fields and `return_chosen` to `web/src/lib/drafts.ts` and
@@ -181,9 +181,9 @@ shares the identity check.
     `web/src/lib/labels.ts` and `web/src/pages/marketer/RequestResult.tsx`.
 
   T021 **green**, and `requestResult.test.tsx` gets a `pending_approval` case (red → green).
-- [ ] T023 [US1] Run `npm test` and the full api suite. Do a quick manual run of quickstart
+- [x] T023 [US1] Run `npm test` and the full api suite. Do a quick manual run of quickstart
   scenarios 1, 4, 5 with `docker compose up`.
-- [ ] T024 [US1] Commit batch 2.
+- [x] T024 [US1] Commit batch 2.
 
 **Checkpoint**: return by identity and the conflict case work end to end.
 

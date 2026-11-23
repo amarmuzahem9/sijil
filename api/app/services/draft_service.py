@@ -29,6 +29,7 @@ from app.core.arabic_name import (
 from app.core.card_reading import AUTHORITY_MAX, BIRTH_PLACE_MAX
 from app.core.family_key import family_key
 from app.core.iraq_bounds import in_iraq
+from app.core.matches import Matches, MatchRecord, ReturnBasis
 from app.core.national_id import normalize_national_id
 from app.core.phone import normalize_phone, to_latin_digits
 from app.core.timeutil import utc_now
@@ -189,31 +190,70 @@ def image_sides(images: Iterable[DraftImage]) -> list[str]:
 # --- early checks (specs/008 research R5, R12) ------------------------------------------------
 
 
-def draft_checks(db: Session, draft: Draft) -> DraftChecksOut:
-    """Does the draft's phone, national ID or family number already belong to a subscriber?
-    Booleans only; the page never learns who (FR-007, SC-006)."""
-    key = family_key(draft.family_number)
-    found = match_service.find_matches(
+def draft_matches(db: Session, draft: Draft) -> Matches:
+    """Every record holding the draft's phone, national ID or family number (research R1)."""
+    return match_service.find_matches(
         db,
         phone=draft.phone_normalized,
         national_id=normalize_national_id(draft.national_id),
-        family_key=key,
+        family_key=family_key(draft.family_number),
     )
+
+
+def return_key_for(draft: Draft, basis: ReturnBasis | None) -> str | None:
+    """The key a return choice is stored under (research R3); None when the draft lacks it."""
+    if basis == "identity":
+        national_id = normalize_national_id(draft.national_id)
+        key = family_key(draft.family_number)
+        return f"identity:{national_id}:{key}" if national_id and key else None
+    if basis == "phone":
+        return f"phone:{draft.phone_normalized}" if draft.phone_normalized else None
+    return None
+
+
+def return_state(
+    draft: Draft, found: Matches
+) -> tuple[ReturnBasis | None, list[MatchRecord], bool]:
+    """(basis, target, valid): the choice counts only while the draft's values still give the
+    stored key and the target is not empty. A changed number or phone makes it stale."""
+    basis, target = found.return_target()
+    key = return_key_for(draft, basis)
+    valid = bool(target) and key is not None and draft.return_key == key
+    return basis, target, valid
+
+
+def draft_checks(db: Session, draft: Draft) -> DraftChecksOut:
+    """Does the draft's phone, national ID or family number already belong to a subscriber?
+    Booleans and the return basis only; the page never learns who (FR-007, FR-012)."""
+    found = draft_matches(db, draft)
+    basis, target, chosen = return_state(draft, found)
+    in_target = {r.ref for r in target} if chosen else set()
+
+    def outside(records: list[MatchRecord]) -> bool:
+        return any(r.ref not in in_target for r in records)
+
+    key = family_key(draft.family_number)
     # v1.10 (specs/009 research R1): "national ID exists" means the same person (national ID and
     # family number on one record); the family path is for records that are not that person.
-    family = bool(found.family_only)
+    family = outside(found.family_only)
     return DraftChecksOut(
-        phone_used=bool(found.phone_records),
+        phone_used=outside(found.phone_records),
         national_id_exists=bool(found.same_person),
+        id_conflict=outside(found.id_conflict),
         family_exists=family,
         additional_confirmed=family and key is not None and draft.additional_confirmed_key == key,
+        return_available=bool(target),
+        return_basis=basis,
+        return_chosen=chosen,
+        return_pending=chosen and any(r.pending for r in target),
     )
 
 
 def apply_confirmation(db: Session, draft: Draft, changes: DraftChanges) -> None:
-    """«طلب اشتراك إضافي» (research R12): `true` stores the current family key, only while that
+    """«إضافة اشتراك ثاني» (research R12): `true` stores the current family key, only while that
     family matches an existing subscriber; `false` withdraws it. A later change of the family
-    number makes the stored key stale, so the confirmation drops without extra code."""
+    number makes the stored key stale, so the confirmation drops without extra code. It excludes
+    a return choice (specs/009 research R3)."""
     if "additional_confirmed" not in changes.model_fields_set:
         return
     if not changes.additional_confirmed:
@@ -223,6 +263,7 @@ def apply_confirmation(db: Session, draft: Draft, changes: DraftChanges) -> None
     if key is None or not _family_only(db, draft, key):
         raise AppError("no_family_match", 422)
     draft.additional_confirmed_key = key
+    draft.return_key = None
 
 
 def _family_only(db: Session, draft: Draft, key: str) -> bool:
@@ -233,16 +274,46 @@ def _family_only(db: Session, draft: Draft, key: str) -> bool:
     return bool(found.family_only)
 
 
-# The 005/006 page order with the three 008 items, which need the database (research R5).
+def apply_return_choice(db: Session, user: User, draft: Draft, changes: DraftChanges) -> None:
+    """«طلب العودة للخدمة» (specs/009 research R3). `true` stores the key of the current return
+    target (identity preferred over phone) and drops the second-subscription confirmation;
+    `false` withdraws it. Both are audited with the draft id and the basis only (R11). Without
+    the key in `changes`, a stale stored key is cleared quietly."""
+    if "return_chosen" not in changes.model_fields_set:
+        if draft.return_key is not None and not return_state(draft, draft_matches(db, draft))[2]:
+            draft.return_key = None
+        return
+    if changes.return_chosen:
+        basis, target = draft_matches(db, draft).return_target()
+        key = return_key_for(draft, basis)
+        if not target or key is None:
+            raise AppError("no_return_match", 422)
+        draft.return_key = key
+        draft.additional_confirmed_key = None
+        action, after = "draft.return_chosen", {"basis": basis}
+    else:
+        if draft.return_key is None:
+            return
+        draft.return_key = None
+        action, after = "draft.return_withdrawn", {}
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action=action,
+        entity_type="draft",
+        entity_id=str(draft.id),
+        after=after,
+    )
+
+
+# The 005/006 page order with the 008 and 009 items, which need the database (research R5).
 _AFTER = {
-    "national_id_unconfirmed": "national_id_exists",
-    "family_number": "family_exists_unconfirmed",
-    "phone": "phone_used",
+    "national_id_unconfirmed": ("national_id_exists", "return_pending"),
+    "family_number": ("family_exists_unconfirmed",),
+    "phone": ("phone_used",),
 }
 MISSING_ORDER: tuple[str, ...] = tuple(
-    f
-    for base in draft_validation.MISSING_ORDER
-    for f in ((base, _AFTER[base]) if base in _AFTER else (base,))
+    f for base in draft_validation.MISSING_ORDER for f in (base, *_AFTER.get(base, ()))
 )
 _ORDER = {f: i for i, f in enumerate(MISSING_ORDER)}
 
@@ -250,14 +321,17 @@ _ORDER = {f: i for i, f in enumerate(MISSING_ORDER)}
 def missing_items(
     draft: Draft, checks: DraftChecksOut | None = None
 ) -> list[draft_validation.MissingItem]:
-    """The 005/006 list plus the three 008 items, in page order (MISSING_ORDER)."""
+    """The 005/006 list plus the database items, in page order (MISSING_ORDER). A valid return
+    choice replaces the same-person and family items; a pending record blocks it (009 R5)."""
     items = draft_validation.missing(draft, image_sides(draft.images))
     if checks is None:
         return items
     extra = []
-    if checks.national_id_exists:
+    if checks.national_id_exists and not checks.return_chosen:
         extra.append({"field": "national_id_exists", "code": "national_id_exists"})
-    if checks.family_exists and not checks.additional_confirmed:
+    if checks.return_pending:
+        extra.append({"field": "return_pending", "code": "return_pending"})
+    if checks.family_exists and not checks.additional_confirmed and not checks.return_chosen:
         extra.append({"field": "family_exists_unconfirmed", "code": "family_exists_unconfirmed"})
     if checks.phone_used:
         extra.append({"field": "phone_used", "code": "phone_used"})
@@ -366,6 +440,7 @@ def create_if_absent(
     draft = Draft(id=draft_id, marketer_id=user.id, last_client_id=client_id)
     apply_changes(draft, changes)
     apply_confirmation(db, draft, changes)
+    apply_return_choice(db, user, draft, changes)
     apply_subscription(db, draft, changes)
     notices = refresh_copies(db, draft)
     try:
@@ -402,6 +477,7 @@ def patch(
     with db.no_autoflush:
         apply_changes(draft, changes)
         apply_confirmation(db, draft, changes)
+        apply_return_choice(db, user, draft, changes)
         apply_subscription(db, draft, changes)
         notices = refresh_copies(db, draft)
         # A change of phone, tower, category or prices cancels the OTP verification (specs/007 R5).

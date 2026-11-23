@@ -30,7 +30,8 @@ import type { DraftAutosave, TextField } from '../../../lib/useDraftAutosave';
 import { DraftTextField } from './DraftTextField';
 import { DateTextField } from './DateTextField';
 import { FieldSourceMark, MarkedLabel, notchText } from './FieldSourceMark';
-import { FamilyMatchNotice, NationalIdExistsNotice } from './FamilyMatchNotice';
+import { FamilyMatchNotice } from './FamilyMatchNotice';
+import { IdConflictNotice, ReturnNotice } from './ReturnNotice';
 import { NationalIdCheck } from './NationalIdCheck';
 
 export const FOURTH_NAME_HINT = 'غير موجود على البطاقة، اسأل المشترك';
@@ -181,7 +182,14 @@ export function CardDataSection({
         inputMode="numeric"
         labelMark={mark('national_id')}
       />
-      <NationalIdExistsNotice checks={serverDraft?.checks} />
+      {/* v1.10 rows 2 and 2b (specs/009): the same person can return; a conflict is a notice. */}
+      <ReturnNotice
+        basis="identity"
+        checks={serverDraft?.checks}
+        onChoose={() => saveNow({ return_chosen: true })}
+        onWithdraw={() => saveNow({ return_chosen: false })}
+      />
+      <IdConflictNotice checks={serverDraft?.checks} />
       <NationalIdCheck
         check={serverDraft?.national_id_check}
         current={values.national_id}

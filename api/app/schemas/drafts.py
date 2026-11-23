@@ -50,6 +50,8 @@ class DraftChanges(_Body):
     national_id_confirmed: bool | None = None
     # Feature 008 (research R12): «طلب اشتراك إضافي» for the current family number.
     additional_confirmed: bool | None = None
+    # Feature 009 (research R3): «طلب العودة للخدمة» for the current match.
+    return_chosen: bool | None = None
     # Back of the card (owner change, system.md v1.8): ISO dates and text.
     birth_date: date | None = None
     birth_place: str | None = None
@@ -96,12 +98,18 @@ class MissingOut(BaseModel):
 
 
 class DraftChecksOut(BaseModel):
-    """Early check results (specs/008 research R5). Booleans only: never who matched."""
+    """Early check results (specs/008 research R5, specs/009 research R5). Booleans and the return
+    basis only: never who matched, nor how many."""
 
     phone_used: bool = False
     national_id_exists: bool = False
+    id_conflict: bool = False
     family_exists: bool = False
     additional_confirmed: bool = False
+    return_available: bool = False
+    return_basis: Literal["identity", "phone"] | None = None
+    return_chosen: bool = False
+    return_pending: bool = False
 
 
 class NoticeOut(BaseModel):

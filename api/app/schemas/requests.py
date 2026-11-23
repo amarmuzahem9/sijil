@@ -11,9 +11,11 @@ from pydantic import BaseModel, ConfigDict
 
 RequestStatus = Literal["pending_review", "approved", "rejected", "linked"]
 RequestType = Literal["new", "additional", "return"]
-ReasonCode = Literal["family_exists", "numbers_edited", "return"]
+ReasonCode = Literal["family_exists", "numbers_edited", "return", "numbers_conflict"]
 # The page's text: «تمت الموافقة» / «بانتظار موافقة المسؤول» / «طلبك بانتظار التدقيق».
-ResultCode = Literal["approved", "pending_family", "pending_review", "rejected", "linked"]
+ResultCode = Literal[
+    "approved", "pending_family", "pending_review", "pending_approval", "rejected", "linked"
+]
 
 
 class SubmitIn(BaseModel):

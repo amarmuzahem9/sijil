@@ -62,7 +62,9 @@ def world(engine):
         s.commit()
 
 
-def _ready_drafts(engine, world, *, same_phone: bool, same_nid: bool) -> list[tuple]:
+def _ready_drafts(
+    engine, world, *, same_phone: bool, same_nid: bool, return_key: str | None = None
+) -> list[tuple]:
     """N verified, complete drafts of N marketers. Rows only: submission reads no files."""
     area_id, tower_id, plan_id = world["catalog"]
     today = utc_now().date()
@@ -114,6 +116,7 @@ def _ready_drafts(engine, world, *, same_phone: bool, same_nid: bool) -> list[tu
                 phone_input=phone,
                 phone_normalized=phone,
             )
+            draft.return_key = return_key
             draft.otp_verified_at = utc_now()
             draft.otp_context_hash = otp_service.context_hash(draft)
             s.add(draft)
@@ -174,3 +177,39 @@ def test_same_phone_one_winner(engine, world) -> None:
 def test_same_national_id_one_winner(engine, world) -> None:
     results = _race(engine, _ready_drafts(engine, world, same_phone=False, same_nid=True))
     assert sorted(results) == ["created"] + ["national_id_exists"] * (N - 1)
+
+
+def test_same_person_return_one_winner(engine, world) -> None:
+    """Two or more returns for one person at once (specs/009 FR-010): the first creates a pending
+    return, which then blocks the others with `return_pending`."""
+    from app.core.family_key import family_key
+    from tests.helpers.requests import request_factory
+
+    area_id, tower_id, plan_id = world["catalog"]
+    with Session(engine) as s:
+        owner = User(
+            name="مسوّق سابق",
+            phone=f"0774{uuid.uuid4().int % 10**7:07d}",
+            password_hash="x",
+            role="marketer",
+            permissions=[],
+        )
+        s.add(owner)
+        s.flush()
+        world["users"].append(owner.id)
+        request_factory(
+            s,
+            owner,
+            area=s.get(Area, area_id),
+            tower=s.get(Tower, tower_id),
+            plan=s.get(Plan, plan_id),
+            national_id="199933330000",
+            national_id_input="199933330000",
+            family_number="3333C0000000000000",
+            phone="07807779999",
+        )
+        s.commit()
+    key = f"identity:199933330000:{family_key('3333C0000000000000')}"
+    drafts = _ready_drafts(engine, world, same_phone=False, same_nid=True, return_key=key)
+    results = _race(engine, drafts)
+    assert sorted(results) == ["created"] + ["return_pending"] * (N - 1)

@@ -20,8 +20,13 @@ afterEach(cleanup);
 const NONE: DraftChecks = {
   phone_used: false,
   national_id_exists: false,
+  id_conflict: false,
   family_exists: false,
   additional_confirmed: false,
+  return_available: false,
+  return_basis: null,
+  return_chosen: false,
+  return_pending: false,
 };
 
 describe('NationalIdExistsNotice and PhoneUsedNotice', () => {

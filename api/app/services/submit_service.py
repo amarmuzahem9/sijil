@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from app.core import otp
 from app.core.decision import decide
 from app.core.family_key import family_key
+from app.core.matches import MatchRecord
 from app.core.national_id import normalize_national_id
 from app.core.timeutil import utc_now
 from app.errors import AppError
@@ -30,7 +31,7 @@ from app.services.numbers_edited import edited_fields
 log = logging.getLogger("sijil.submit")
 
 # Found at submission they refuse with their own code (409), not as a missing item (R6 step 7).
-_REFUSAL_ITEMS = frozenset({"phone_used", "national_id_exists"})
+_REFUSAL_ITEMS = frozenset({"phone_used", "national_id_exists", "return_pending"})
 
 _COPIED: tuple[str, ...] = (
     *NAME_FIELDS,
@@ -164,8 +165,16 @@ def submit(db: Session, user: User, draft_id: uuid.UUID, version: int) -> tuple[
 
     # 7. Decide (§6.1 in order).
     edited = edited_fields(draft)
-    decision = decide(matches, edited, additional_confirmed=draft.additional_confirmed_key == key)
-    if decision.refusal in ("phone_used", "national_id_exists"):
+    # A return choice counts only if its target still exists under the locks (specs/009 R7);
+    # a stale one falls back to the rules for a new request.
+    _, target, return_valid = draft_service.return_state(draft, matches)
+    decision = decide(
+        matches,
+        edited,
+        additional_confirmed=draft.additional_confirmed_key == key,
+        return_valid=return_valid,
+    )
+    if decision.refusal in _REFUSAL_ITEMS:
         raise _refuse(db, user, draft_id, decision.refusal)
     if decision.refusal is not None:  # an unconfirmed family; step 4 already covers it
         raise AppError("draft_incomplete", 422, extra={"missing": []})
@@ -185,7 +194,7 @@ def submit(db: Session, user: User, draft_id: uuid.UUID, version: int) -> tuple[
         card_fields=dict(draft.card_fields or {}),
         card_readings=_card_readings(draft),
         phone=phone,
-        username=f"{draft.tower_code}-{phone}",
+        username=_username(db, draft, phone, target if decision.type == "return" else []),
         submitted_at=now,
         approved_at=now if decision.status == "approved" else None,
         approved_by=None,
@@ -203,6 +212,7 @@ def submit(db: Session, user: User, draft_id: uuid.UUID, version: int) -> tuple[
                         reason=reason.reason,
                         matched_source=match.source,
                         matched_ref=match.ref_id,
+                        details={"basis": reason.basis} if reason.basis else {},
                     )
                 )
         else:
@@ -254,6 +264,22 @@ def submit(db: Session, user: User, draft_id: uuid.UUID, version: int) -> tuple[
     return request, True
 
 
+def _username(db: Session, draft: Draft, phone: str, target: list[MatchRecord]) -> str:
+    """§8.2, or for a return the historical username of the newest target record that has one
+    (specs/009 FR-015, research R7). Only Sijil records carry a username in 009."""
+    ids = [int(r.ref_id) for r in target if r.source == "sijil"]
+    if ids:
+        historical = db.scalars(
+            select(Request.username)
+            .where(Request.id.in_(ids))
+            .order_by(Request.submitted_at.desc(), Request.id.desc())
+            .limit(1)
+        ).first()
+        if historical:
+            return historical
+    return f"{draft.tower_code}-{phone}"
+
+
 def _keep_refreshed(db: Session, draft: Draft) -> None:
     """A refusal after step 3 keeps what a save would have kept (refreshed prices, a cancelled
     verification). Nothing changed → the commit writes nothing and the version stays."""
@@ -275,8 +301,13 @@ def reason_codes(reasons) -> list[str]:
 def _result(request: Request) -> str:
     if request.status != "pending_review":
         return request.status
-    if any(r.reason == "family_exists" for r in request.reasons):
+    codes = {r.reason for r in request.reasons}
+    if "return" in codes:
+        return "pending_approval"
+    if "family_exists" in codes:
         return "pending_family"
+    if "numbers_conflict" in codes:
+        return "pending_approval"
     return "pending_review"
 
 

@@ -54,6 +54,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'draft.deleted': 'حذف مسودة',
   // specs/008: a submission and its automatic decision, and a refused submission (no card data)
   'request.submitted': 'إرسال طلب',
+  'draft.return_chosen': 'اختيار طلب العودة للخدمة',
+  'draft.return_withdrawn': 'إلغاء طلب العودة للخدمة',
   'request.submit_refused': 'رفض إرسال طلب',
 };
 

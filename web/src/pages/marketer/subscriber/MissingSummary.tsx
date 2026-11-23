@@ -22,7 +22,11 @@ import {
 
 /** Items the server adds from the duplicate check (specs/008 research R5); not in the mirror. */
 export const SERVER_ITEMS = {
-  national_id_exists: { target: 'field-national_id', label: 'المشترك لديه اشتراك سابق' },
+  national_id_exists: {
+    target: 'field-national_id',
+    label: 'المشترك لديه اشتراك سابق — اختر «طلب العودة للخدمة»',
+  },
+  return_pending: { target: 'field-national_id', label: 'يوجد طلب سابق بالانتظار لهذا المشترك' },
   family_exists_unconfirmed: {
     target: 'field-family_number',
     label: 'لهذه العائلة اشتراك سابق — اختر «طلب اشتراك إضافي»',
