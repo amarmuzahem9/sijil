@@ -77,7 +77,7 @@ export function RequestResultView({ request }: { request: SubmittedRequest }) {
             />
           </Stack>
           <Row label="الاسم" value={request.full_name} />
-          <Row label="البرج" value={`${request.tower_code} (${request.area_name})`} />
+          <Row label="البرج" value={`${request.tower_name} (${request.tower_code})`} />
           <Row
             label="الفئة"
             value={`${request.plan_name} | التجريبي ${formatMoney(request.trial_price)} | الثاني ${formatMoney(request.second_price)}`}

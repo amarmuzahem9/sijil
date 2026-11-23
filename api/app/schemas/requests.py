@@ -33,6 +33,7 @@ class RequestOut(BaseModel):
     reasons: list[ReasonCode]
     full_name: str
     tower_code: str
+    tower_name: str
     area_name: str
     plan_name: str
     trial_price: int

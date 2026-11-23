@@ -145,6 +145,7 @@ class Draft(Base):
     # Copies taken from the catalog at every save; final at submission (research.md R4).
     area_name: Mapped[str | None] = mapped_column(Text)
     tower_code: Mapped[str | None] = mapped_column(Text)
+    tower_name: Mapped[str | None] = mapped_column(Text)  # system.md v1.12 §5
     plan_name: Mapped[str | None] = mapped_column(Text)
     trial_price: Mapped[int | None] = mapped_column(Integer)
     second_price: Mapped[int | None] = mapped_column(Integer)

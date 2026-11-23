@@ -119,6 +119,7 @@ class Request(Base):
     )
     area_name: Mapped[str] = mapped_column(Text, nullable=False)
     tower_code: Mapped[str] = mapped_column(Text, nullable=False)
+    tower_name: Mapped[str] = mapped_column(Text, nullable=False)  # system.md v1.12 §5
     plan_name: Mapped[str] = mapped_column(Text, nullable=False)
     trial_price: Mapped[int] = mapped_column(Integer, nullable=False)
     second_price: Mapped[int] = mapped_column(Integer, nullable=False)

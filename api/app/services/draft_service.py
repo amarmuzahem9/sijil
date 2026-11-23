@@ -632,6 +632,7 @@ def refresh_copies(db: Session, draft: Draft) -> list[NoticeOut]:
     draft.area_name = area.name if area else None
     draft.tower_id = tower.id if tower else None
     draft.tower_code = tower.code if tower else None
+    draft.tower_name = tower.name if tower else None
     draft.plan_id = plan.id if plan else None
     draft.plan_name = plan.name if plan else None
     draft.trial_price = plan.trial_price if plan else None

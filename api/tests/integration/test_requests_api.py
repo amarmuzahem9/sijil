@@ -85,3 +85,19 @@ def test_request_carries_the_copy_details_fields(client, db, h, me, catalog) -> 
     assert created["marketer_name"] == me.name
     body = client.get(f"/api/requests/{created['id']}", headers=h).json()
     assert body["marketer_name"] == me.name
+
+
+def test_tower_name_is_fixed_at_submission(client, db, h, catalog, make_user) -> None:
+    """system.md v1.12 §5: the tower name is copied with the request; renaming the tower later
+    does not change it."""
+    created = submit(client, h, complete_draft(client, h, catalog)).json()
+    assert created["tower_name"] == "برج 3"
+    admin = auth_header(login(client, make_user("super_admin").phone))
+    res = client.patch(
+        f"/api/admin/settings/towers/{catalog['alm03']['id']}",
+        json={"name": "برج جديد"},
+        headers=admin,
+    )
+    assert res.status_code == 200, res.json()
+    body = client.get(f"/api/requests/{created['id']}", headers=h).json()
+    assert body["tower_name"] == "برج 3"

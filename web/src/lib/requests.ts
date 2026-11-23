@@ -21,6 +21,8 @@ export interface SubmittedRequest {
   reasons: ('family_exists' | 'numbers_edited' | 'return' | 'numbers_conflict')[];
   full_name: string;
   tower_code: string;
+  /** Fixed at submission (system.md v1.12 §5). */
+  tower_name: string;
   area_name: string;
   plan_name: string;
   trial_price: number;
@@ -51,7 +53,7 @@ export function requestDetailsText(r: SubmittedRequest): string {
   return [
     `رقم الطلب: #${r.number_label}`,
     `اسم المشترك: ${r.full_name}`,
-    `البرج: ${r.tower_code} (${r.area_name})`,
+    `البرج: ${r.tower_name} (${r.tower_code})`,
     `العنوان: ${r.address}، ${r.landmark}`,
     `اسم المستخدم: ${r.username ?? 'بانتظار الموافقة'}`,
     `الباقة: ${r.plan_name} | التجريبي ${formatMoney(r.trial_price)} | الثاني ${formatMoney(r.second_price)}`,

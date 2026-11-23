@@ -21,6 +21,7 @@ function request(partial: Partial<SubmittedRequest> = {}): SubmittedRequest {
     reasons: [],
     full_name: 'تجربة اختبار نموذج مثال التجريبي',
     tower_code: 'ALM03',
+    tower_name: 'برج العلم 3',
     area_name: 'العلم',
     plan_name: 'PLUS',
     trial_price: 20000,
@@ -48,7 +49,7 @@ function show(r: SubmittedRequest) {
 const DETAILS = [
   'رقم الطلب: #T3C-1001',
   'اسم المشترك: تجربة اختبار نموذج مثال التجريبي',
-  'البرج: ALM03 (العلم)',
+  'البرج: برج العلم 3 (ALM03)',
   'العنوان: حي تجريبي، قرب نقطة تجريبية',
   'اسم المستخدم: ALM03-07801234567',
   'الباقة: PLUS | التجريبي 20,000 د.ع | الثاني 35,000 د.ع',

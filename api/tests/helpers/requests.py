@@ -79,6 +79,7 @@ def request_factory(db: Session, marketer: User, **overrides: Any) -> Request:
         "plan_id": plan.id,
         "area_name": area.name,
         "tower_code": tower.code,
+        "tower_name": tower.name,
         "plan_name": plan.name,
         "trial_price": plan.trial_price,
         "second_price": plan.second_price,
