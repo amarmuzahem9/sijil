@@ -12,7 +12,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link as RouterLink, useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -28,6 +28,7 @@ import {
 } from '../../../lib/draftValidation';
 import { cleanArabicName, cleanPlaceText, INVALID_PLACE_MESSAGE } from '../../../lib/arabicName';
 import { getDraft, type Draft } from '../../../lib/drafts';
+import { submitDraft } from '../../../lib/requests';
 import { isNameField, NAME_FIELDS, REQUIRED_NAME_FIELDS } from '../../../lib/nameFields';
 import { useDraftAutosave, type TextField } from '../../../lib/useDraftAutosave';
 import { CardDataSection } from './CardDataSection';
@@ -88,7 +89,29 @@ function DraftEditor({
   const autosave = useDraftAutosave(initial, { onCreated });
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [sessionEnded, setSessionEnded] = useState(false);
+  const { saveAll, applyServerDraft } = autosave;
+
+  // «إرسال» (specs/008 research R11): save what is pending, submit the version the server holds,
+  // then show the result. On a refusal, reload the draft so the warnings and items are current.
+  const onSubmit = useCallback(async () => {
+    const id = await saveAll();
+    const latest = await getDraft(id);
+    try {
+      const request = await submitDraft(id, latest.version);
+      void queryClient.invalidateQueries({ queryKey: ['drafts'] });
+      void queryClient.invalidateQueries({ queryKey: ['requests'] });
+      navigate(`/requests/${request.id}`, { replace: true });
+    } catch (err) {
+      try {
+        applyServerDraft(await getDraft(id));
+      } catch {
+        // the refusal message below is enough
+      }
+      throw err;
+    }
+  }, [applyServerDraft, navigate, queryClient, saveAll]);
 
   // While the form is open, an ended session asks for sign-in here instead of leaving the page
   // (analysis U2): the values typed so far stay on screen.
@@ -217,6 +240,7 @@ function DraftEditor({
       <MissingSummary
         missing={missing}
         phoneVerified={autosave.serverDraft?.otp?.status === 'verified'}
+        onSubmit={onSubmit}
       />
 
       <SignInDialog

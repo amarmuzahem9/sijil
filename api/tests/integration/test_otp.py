@@ -351,3 +351,35 @@ def test_category_change_cancels_a_pending_code(client, h, catalog, fake) -> Non
     code = fake.outbox[-1][1]
     _patch(client, h, draft_id, {"plan_id": catalog["max"]["id"]})
     assert _verify(client, h, draft_id, code).json()["code"] == "otp_no_active"
+
+
+# --- feature 008: «الهاتف مستخدم» before any code (T029, FR-006) ------------------------------
+
+
+def test_used_phone_gets_no_code_and_counts_for_nothing(
+    client, db, h, catalog, fake, make_user
+) -> None:
+    from tests.helpers.requests import request_factory
+
+    request_factory(db, make_user("marketer"), phone=PHONE)
+    draft_id, _ = _draft(client, h, catalog, phone="+964 780 123 4567")
+
+    res = _send(client, h, draft_id)
+
+    assert (res.status_code, res.json()["code"]) == (409, "phone_used")
+    assert res.json()["message"] == "المشترك موجود سابقاً، هل يود العودة للخدمة؟"
+    assert fake.outbox == []
+    assert db.execute(select(OtpChallenge)).scalars().all() == []
+
+    # Changing to a free phone sends at once: the refusal started no 60 s wait.
+    _patch(client, h, draft_id, {"phone_input": "07801234500"})
+    assert _send(client, h, draft_id).status_code == 200
+    assert len(fake.outbox) == 1
+
+
+def test_rejected_request_phone_is_free(client, db, h, catalog, fake, make_user) -> None:
+    from tests.helpers.requests import request_factory
+
+    request_factory(db, make_user("marketer"), phone=PHONE, status="rejected")
+    draft_id, _ = _draft(client, h, catalog)
+    assert _send(client, h, draft_id).status_code == 200

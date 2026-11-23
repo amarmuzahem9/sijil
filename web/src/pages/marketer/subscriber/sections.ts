@@ -9,6 +9,3 @@ export const SECTIONS = [
 ] as const;
 
 export type SectionId = (typeof SECTIONS)[number]['id'];
-
-/** FR-014: «إرسال» stays disabled until OTP (007) and the decision engine (008) exist. */
-export const SEND_DISABLED_NOTE = 'الإرسال يتفعّل بعد إضافة فحص الطلب';

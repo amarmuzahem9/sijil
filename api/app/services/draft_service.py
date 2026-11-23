@@ -617,4 +617,8 @@ def delete(db: Session, user: User, draft_id: uuid.UUID) -> None:
 
 
 def referenced_file_names(db: Session) -> set[str]:
-    return set(db.scalars(select(DraftImage.file_name)).all())
+    """Files still in use: draft images and, from 008, submitted requests' images."""
+    from app.models import RequestImage
+
+    drafts = set(db.scalars(select(DraftImage.file_name)).all())
+    return drafts | set(db.scalars(select(RequestImage.file_name)).all())

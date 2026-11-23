@@ -1,7 +1,8 @@
 /**
  * «النواقص» (specs/005 US5, FR-013, FR-014): every missing or invalid item, each a link to its
- * field, and the «إرسال» button, disabled until the decision engine (feature 008). An unverified
- * phone (feature 007) is listed as «التحقق من الهاتف».
+ * field, and «إرسال» (specs/008 FR-011): enabled only when nothing is missing and the phone is
+ * verified (feature 007, listed as «التحقق من الهاتف» until then). A refusal from the server
+ * shows its Arabic message under the button. The server decides; this only gates the press.
  */
 import CheckCircleOutlined from '@mui/icons-material/CheckCircleOutlined';
 import Alert from '@mui/material/Alert';
@@ -10,6 +11,7 @@ import Button from '@mui/material/Button';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { useState } from 'react';
 
 import {
   CODE_MESSAGES,
@@ -17,7 +19,19 @@ import {
   type MissingField,
   type MissingItem,
 } from '../../../lib/draftValidation';
-import { SEND_DISABLED_NOTE } from './sections';
+
+/** Items the server adds from the duplicate check (specs/008 research R5); not in the mirror. */
+export const SERVER_ITEMS = {
+  national_id_exists: { target: 'field-national_id', label: 'المشترك لديه اشتراك سابق' },
+  family_exists_unconfirmed: {
+    target: 'field-family_number',
+    label: 'لهذه العائلة اشتراك سابق — اختر «طلب اشتراك إضافي»',
+  },
+  phone_used: { target: 'field-phone_input', label: 'المشترك موجود سابقاً، هل يود العودة للخدمة؟' },
+} as const;
+type ServerItem = keyof typeof SERVER_ITEMS;
+const serverItem = (field: string) =>
+  field in SERVER_ITEMS ? SERVER_ITEMS[field as ServerItem] : null;
 
 /** Where each item's link goes: the input itself, or the block for images and the pin. */
 const FIELD_TARGETS: Record<MissingField, string> = {
@@ -49,9 +63,9 @@ const FIELD_TARGETS: Record<MissingField, string> = {
 };
 
 function goTo(field: MissingField) {
+  const id = serverItem(field)?.target ?? FIELD_TARGETS[field];
   const target =
-    document.getElementById(FIELD_TARGETS[field]) ??
-    document.querySelector<HTMLElement>(`[data-testid="${FIELD_TARGETS[field]}"]`);
+    document.getElementById(id) ?? document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
   if (!target) return;
   target.scrollIntoView({ behavior: 'smooth', block: 'center' });
   const focusable = target.matches('input, textarea, [tabindex]')
@@ -62,14 +76,35 @@ function goTo(field: MissingField) {
 
 const PHONE_VERIFICATION_LABEL = 'التحقق من الهاتف';
 
+export const SEND_TEXT = { send: 'إرسال', sending: 'جارٍ الإرسال…' } as const;
+
 export function MissingSummary({
   missing,
   phoneVerified,
+  onSubmit,
 }: {
   missing: MissingItem[];
   phoneVerified: boolean;
+  /** Saves pending changes, submits, and moves to the result; rejects with an ApiError. */
+  onSubmit?: () => Promise<void>;
 }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const count = missing.length + (phoneVerified ? 0 : 1);
+  const canSend = count === 0 && !!onSubmit && !busy;
+
+  const send = async () => {
+    if (!canSend || !onSubmit) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await onSubmit();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع، حاول مرة أخرى');
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
     <Stack spacing={1.5} data-testid="missing-summary">
       {count === 0 ? (
@@ -83,9 +118,11 @@ export function MissingSummary({
             {missing.map((item) => (
               <li key={item.field} data-testid={`missing-${item.field}`}>
                 <Link component="button" type="button" onClick={() => goTo(item.field)}>
-                  {FIELD_LABELS[item.field]}
+                  {serverItem(item.field)?.label ?? FIELD_LABELS[item.field]}
                 </Link>
-                {item.code !== 'required' && ` — ${CODE_MESSAGES[item.code]}`}
+                {item.code !== 'required' &&
+                  !serverItem(item.field) &&
+                  ` — ${CODE_MESSAGES[item.code]}`}
               </li>
             ))}
             {!phoneVerified && (
@@ -99,13 +136,27 @@ export function MissingSummary({
         </Alert>
       )}
 
-      <Stack spacing={0.5}>
-        <Button variant="contained" size="large" disabled sx={{ py: 1.5 }}>
-          إرسال
+      <Stack spacing={1}>
+        <Button
+          variant="contained"
+          size="large"
+          disabled={!canSend}
+          onClick={() => void send()}
+          sx={{ py: 1.5 }}
+          data-testid="submit-button"
+        >
+          {busy ? SEND_TEXT.sending : SEND_TEXT.send}
         </Button>
-        <Typography variant="caption" color="text.secondary" align="center">
-          {SEND_DISABLED_NOTE}
-        </Typography>
+        {error && (
+          <Alert severity="error" data-testid="submit-error">
+            {error}
+          </Alert>
+        )}
+        {count > 0 && (
+          <Typography variant="caption" color="text.secondary" align="center">
+            أكمل النواقص ليتفعّل الإرسال
+          </Typography>
+        )}
       </Stack>
     </Stack>
   );

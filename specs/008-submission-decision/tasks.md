@@ -165,7 +165,7 @@ and confirm it fails.
 
 ### Tests for User Story 1
 
-- [ ] T017 [P] [US1] Create `api/tests/integration/test_submit.py` with the clean path (FR-011 to
+- [x] T017 [P] [US1] Create `api/tests/integration/test_submit.py` with the clean path (FR-011 to
   FR-019, FR-021):
   - The first submit returns 201 with number 1001, `T3C-1001`, type `new`, status `approved`,
     `approved_at = submitted_at`, `approved_by` null, the username `ALM03-07…` and
@@ -175,7 +175,7 @@ and confirm it fails.
   - `card_readings` is copied, and `otp_verified_at` is copied.
   - Changing the plan price afterwards leaves the request's prices unchanged.
   - The second request gets 1002.
-- [ ] T018 [P] [US1] Add the refusal cases to `api/tests/integration/test_submit.py`:
+- [x] T018 [P] [US1] Add the refusal cases to `api/tests/integration/test_submit.py`:
   - a missing item → 422 `draft_incomplete` with `missing`;
   - an expired card (clock override) → 422;
   - an unconfirmed national ID → 422;
@@ -185,16 +185,16 @@ and confirm it fails.
   - another marketer → 404;
   - an admin, or a stopped or archived marketer → 403 `forbidden`;
   - in every refusal, the draft stays unchanged and no request exists.
-- [ ] T019 [P] [US1] Add the idempotent case to `api/tests/integration/test_submit.py` (FR-013):
+- [x] T019 [P] [US1] Add the idempotent case to `api/tests/integration/test_submit.py` (FR-013):
   repeating the submit returns 200 with the same request, and the number is not consumed.
-- [ ] T020 [P] [US1] Create `api/tests/integration/test_requests_api.py`:
+- [x] T020 [P] [US1] Create `api/tests/integration/test_requests_api.py`:
   - `GET /api/requests` returns own requests only, newest first, and filters by `status`;
   - `GET /api/requests/{id}` of another marketer → 404 `request_not_found`;
   - no response contains `card_readings`.
 
 ### Implementation for User Story 1
 
-- [ ] T021 [US1] Implement `submit(db, user, draft_id, version)` in
+- [x] T021 [US1] Implement `submit(db, user, draft_id, version)` in
   `api/app/services/submit_service.py`, following research R6 steps 1–8 and R8:
   - lock the draft `FOR UPDATE`;
   - run `refresh_copies`; on `catalog_changed` commit the cleared choice (which also clears the
@@ -208,18 +208,18 @@ and confirm it fails.
   - delete the draft;
   - audit `request.submitted` (R13);
   - log one safe line.
-- [ ] T022 [US1] Include the `request_images.file_name` values in
+- [x] T022 [US1] Include the `request_images.file_name` values in
   `draft_service.referenced_file_names` (`api/app/services/draft_service.py`), so the orphan sweep
   keeps request files. Extend `api/tests/integration/test_draft_images.py` with a case where the
   sweep keeps a submitted request's file.
-- [ ] T023 [US1] Add `POST /api/drafts/{id}/submit` to `api/app/api/drafts.py` (201 or 200). Create
+- [x] T023 [US1] Add `POST /api/drafts/{id}/submit` to `api/app/api/drafts.py` (201 or 200). Create
   `api/app/api/requests.py` with `GET /api/requests` and `GET /api/requests/{id}`, owner-only, and
   add `requests` to the router tuple in `api/app/main.py`.
-- [ ] T024 [P] [US1] Create `web/src/lib/requests.ts`:
+- [x] T024 [P] [US1] Create `web/src/lib/requests.ts`:
   - `submitDraft(id, version)`, `listRequests(status?)` and `getRequest(id)`;
   - the error-code → Arabic map from contracts/api.md;
   - `numberLabel` and `resultText`.
-- [ ] T025 [US1] Enable «إرسال» in `web/src/pages/marketer/subscriber/MissingSummary.tsx` when
+- [x] T025 [US1] Enable «إرسال» in `web/src/pages/marketer/subscriber/MissingSummary.tsx` when
   `missing` is empty and `otp.status === 'verified'`. On press:
   - flush autosave;
   - submit with the current version;
@@ -227,16 +227,16 @@ and confirm it fails.
   - on an error, show its Arabic text and reload the draft.
 
   Update the header comment.
-- [ ] T026 [P] [US1] Create `web/src/pages/marketer/RequestResult.tsx` and add the route
+- [x] T026 [P] [US1] Create `web/src/pages/marketer/RequestResult.tsx` and add the route
   `/requests/:id`:
   - approved: «تمت الموافقة», the number and the username, with «نسخ اليوزر» (clipboard);
   - `pending_family`: «بانتظار موافقة المسؤول»;
   - `pending_review`: «طلبك بانتظار التدقيق»;
   - the status chip uses `STATUS_COLORS`.
-- [ ] T027 [US1] Fill the «بالانتظار» and «مقبولة» tabs in `web/src/pages/marketer/Requests.tsx` from
+- [x] T027 [US1] Fill the «بالانتظار» and «مقبولة» tabs in `web/src/pages/marketer/Requests.tsx` from
   `listRequests`. Each row shows the number, name, Baghdad date and status color, and opens
   `/requests/:id`. Open «بالانتظار» by default when requests exist (research R11).
-- [ ] T028 [P] [US1] Create `web/src/__tests__/missingSummarySubmit.test.tsx` and
+- [x] T028 [P] [US1] Create `web/src/__tests__/missingSummarySubmit.test.tsx` and
   `web/src/__tests__/requestResult.test.tsx`:
   - the button is enabled only when the draft is complete and verified;
   - the three result texts;
@@ -254,23 +254,23 @@ and confirm it fails.
 
 ### Tests for User Story 2
 
-- [ ] T029 [P] [US2] Extend `api/tests/integration/test_otp.py` with a used phone from a factory
+- [x] T029 [P] [US2] Extend `api/tests/integration/test_otp.py` with a used phone from a factory
   request, written in another form:
   - send → 409 `phone_used`;
   - the fake sender gets no call;
   - no `otp_challenges` row is added;
   - a later send with a free phone is not delayed by the 60 s wait.
-- [ ] T030 [P] [US2] Add submit cases to `api/tests/integration/test_submit.py`:
+- [x] T030 [P] [US2] Add submit cases to `api/tests/integration/test_submit.py`:
   - a phone taken after verification → 409 `phone_used`, the draft is kept, and
     `request.submit_refused` is audited with `{reason}` only;
   - a used phone plus a family match → still `phone_used` (§6.1 note 1).
-- [ ] T031 [P] [US2] Create `api/tests/integration/test_submit_concurrency.py` (SC-004): 20 threads,
+- [x] T031 [P] [US2] Create `api/tests/integration/test_submit_concurrency.py` (SC-004): 20 threads,
   each with its own verified draft and the same phone, submit at once. Exactly one 201 and 19
   `phone_used`. Repeat with the same national ID.
 
 ### Implementation for User Story 2
 
-- [ ] T032 [US2] Implement `precheck_for_otp` in `api/app/services/phone_checks.py` with
+- [x] T032 [US2] Implement `precheck_for_otp` in `api/app/services/phone_checks.py` with
   `find_matches(phone=…)` (research R10), returning `AppError("phone_used", 409)`. Update its
   docstring. Show `phone_used` in `web/src/pages/marketer/subscriber/PhoneSection.tsx` and
   `OtpControl.tsx`, with the message from contracts/api.md, and map it in `web/src/lib/otp.ts`.
@@ -287,14 +287,15 @@ and confirm it fails.
 
 - [ ] T033 [P] [US3] Add to `api/tests/integration/test_submit.py`:
   - the national ID exists (Arabic digits) → the draft response has the missing item
-    `national_id_exists`, and submit → 422 `draft_incomplete`;
-  - a match that appears after the last save → 409 `national_id_exists`, the draft is kept, no
-    number is used, and the refusal is audited;
+    `national_id_exists`;
+  - submit with that match (whether seen on the page or new since the last save) → 409
+    `national_id_exists` (rows 1–2 refuse with their own code, research R6 step 7), the draft is
+    kept, no number is used, and the refusal is audited;
   - a rejected request with the same national ID → approved (Q1).
 - [ ] T034 [US3] Show the `national_id_exists` message under the national ID in
-  `web/src/pages/marketer/subscriber/CardDataSection.tsx`, with no button (FR-009). Add the labels
-  of the three server-only missing items to `web/src/lib/draftValidation.ts`, so `MissingSummary`
-  names them.
+  `web/src/pages/marketer/subscriber/CardDataSection.tsx`, with no button (FR-009). (The labels of
+  the three server-only items were added in batch 2, as `SERVER_ITEMS` in `MissingSummary.tsx`, so
+  the shared 005 order fixture stays unchanged.)
 
 ---
 

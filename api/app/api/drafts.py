@@ -36,7 +36,8 @@ from app.schemas.drafts import (
     PatchBody,
     VersionOut,
 )
-from app.services import card_reading_service, draft_service, otp_service
+from app.schemas.requests import RequestOut, SubmitIn
+from app.services import card_reading_service, draft_service, otp_service, submit_service
 
 router = APIRouter(tags=["drafts"])
 
@@ -149,6 +150,24 @@ def verify_otp(
 ) -> DraftOut:
     draft = otp_service.verify(db, ctx.user, cid, draft_id, body.code)
     return draft_service.to_out(db, draft)
+
+
+# --- submission (specs/008 contracts/api.md) -------------------------------------------------
+
+
+@router.post("/drafts/{draft_id}/submit", response_model=RequestOut)
+def submit_draft(
+    draft_id: uuid.UUID,
+    body: SubmitIn,
+    response: Response,
+    ctx: AuthContext = Depends(marketer_only),
+    _cid: uuid.UUID = Depends(client_id),
+    db: Session = Depends(get_db),
+) -> RequestOut:
+    """«إرسال»: 201 with the new request, 200 when this draft was already submitted."""
+    request, created = submit_service.submit(db, ctx.user, draft_id, body.version)
+    response.status_code = 201 if created else 200
+    return submit_service.to_out(request)
 
 
 # --- list and delete (US4) -------------------------------------------------------------------

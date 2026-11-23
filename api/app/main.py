@@ -17,6 +17,7 @@ from app.api import (
     health,
     marketer,
     marketers,
+    requests,
     settings,
 )
 from app.config import get_settings
@@ -59,6 +60,7 @@ def create_app() -> FastAPI:
         settings,
         catalog,
         drafts,
+        requests,
         client_config,
     ):
         app.include_router(module.router, prefix="/api")

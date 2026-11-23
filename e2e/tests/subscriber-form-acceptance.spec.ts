@@ -285,7 +285,7 @@ test('E, F: field checks, «النواقص» and the disabled «إرسال»', a
 
   const send = page.getByRole('button', { name: 'إرسال', exact: true });
   await expect(send).toBeDisabled();
-  await expect(page.getByText('الإرسال يتفعّل بعد إضافة فحص الطلب')).toBeVisible();
+  await expect(page.getByText('أكمل النواقص ليتفعّل الإرسال')).toBeVisible();
   await expect(page.getByTestId('missing-phone_verification')).toBeVisible();
 });
 
