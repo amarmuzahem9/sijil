@@ -32,7 +32,7 @@ REQUEST_TYPES = ("new", "additional", "return")
 REQUEST_STATUSES = ("pending_review", "approved", "rejected", "linked")
 # Statuses that make a request an "existing subscriber" for the checks (system.md §6.1 v1.9).
 ACTIVE_STATUSES = ("pending_review", "approved", "linked")
-REASONS = ("family_exists", "numbers_edited", "return")
+REASONS = ("family_exists", "numbers_edited", "return", "numbers_conflict")
 
 
 def _ts() -> Mapped[datetime]:
@@ -147,7 +147,8 @@ class RequestReason(Base):
     __tablename__ = "request_reasons"
     __table_args__ = (
         CheckConstraint(
-            "reason IN ('family_exists','numbers_edited','return')", name="request_reasons_reason"
+            "reason IN ('family_exists','numbers_edited','return','numbers_conflict')",
+            name="request_reasons_reason",
         ),
         # Created as UNIQUE NULLS NOT DISTINCT by migration 0010.
         UniqueConstraint(

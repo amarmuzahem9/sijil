@@ -67,7 +67,7 @@ run red before its code.
 - One winner when two returns for the same person are submitted at once (008 locks).
 
 **Scale/Scope**:
-- 1 migration, 1 new route, 3 changed routes, 1 new setting.
+- 1 migration, 1 new route, 5 changed routes, 1 new setting.
 - 2 new web components (ReturnNotice, ContactAdminButton) and 6 changed (CardDataSection,
   PhoneSection, FamilyMatchNotice, RequestResult, Dashboard, GeneralTab).
 

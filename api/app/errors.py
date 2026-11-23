@@ -66,6 +66,9 @@ MESSAGES: dict[str, str] = {
     "phone_used": "المشترك موجود سابقاً، هل يود العودة للخدمة؟",
     "national_id_exists": "المشترك لديه اشتراك سابق",
     "no_family_match": "لا يوجد اشتراك سابق لهذه العائلة",
+    # Existing subscriber paths (specs/009 contracts/api.md)
+    "no_return_match": "لا يوجد اشتراك سابق لطلب العودة للخدمة",
+    "return_pending": "يوجد طلب سابق بالانتظار لهذا المشترك",
     "draft_incomplete": "أكمل النواقص قبل الإرسال",
     "otp_needs_reverify": "يحتاج تحقق جديد",
     "catalog_changed": "تغيّرت الإعدادات، راجع الاشتراك وتحقق من الهاتف من جديد",

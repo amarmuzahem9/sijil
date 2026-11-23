@@ -51,16 +51,28 @@ def _patch(client, h, draft_id, changes):
     return res.json()
 
 
+# The same person (v1.10, specs/009) is the national ID with the family number of the same record,
+# so the national-ID case starts with that family number on the draft.
 CASES = [
-    ("phone_input", "+964 780 111 2233", "phone_used", "phone_used"),
-    ("national_id", "١٩٩٨١١١١٢٢٢٢", "national_id_exists", "national_id_exists"),
-    ("family_number", "7777 a 0000000000001", "family_exists", "family_exists_unconfirmed"),
+    ("phone_input", "+964 780 111 2233", "phone_used", "phone_used", {}),
+    (
+        "national_id",
+        "١٩٩٨١١١١٢٢٢٢",
+        "national_id_exists",
+        "national_id_exists",
+        {"family_number": FAM},
+    ),
+    ("family_number", "7777 a 0000000000001", "family_exists", "family_exists_unconfirmed", {}),
 ]
 
 
-@pytest.mark.parametrize(("field", "value", "flag", "item"), CASES, ids=[c[2] for c in CASES])
-def test_each_key_warns_after_put_patch_and_get(client, h, existing, field, value, flag, item):
-    draft_id, put = _put(client, h, {field: value})
+@pytest.mark.parametrize(
+    ("field", "value", "flag", "item", "base"), CASES, ids=[c[2] for c in CASES]
+)
+def test_each_key_warns_after_put_patch_and_get(
+    client, h, existing, field, value, flag, item, base
+):
+    draft_id, put = _put(client, h, {**base, field: value})
     assert put["checks"][flag] is True
     assert item in [m["field"] for m in put["missing"]]
 

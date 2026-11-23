@@ -1,18 +1,20 @@
 """The check engine: who already has this phone, national ID or family number?
-(docs/system.md §6, §6.2; specs/008 research R2.)
+(docs/system.md §6, §6.2; specs/008 research R2; specs/009 research R1.)
 
-Every registered source is asked. In 008 the only source is `sijil`: submitted requests that are
-pending review, approved or linked. Rejected requests and drafts never count (system.md v1.9).
-Features 013/014 register `legacy` and `sas` here; the rules do not change. Callers pass keys
+Every registered source is asked and returns one `MatchRecord` per matching record, flagging which
+of the keys it holds and whether it is still pending review. In 009 the only source is `sijil`:
+submitted requests that are pending review, approved or linked. Rejected requests and drafts never
+count (system.md v1.9). Features 013/014 register `legacy` and `sas` here with the same contract: a
+record with no national ID or no family number simply never sets that flag. Callers pass keys
 already normalized (phone §8.1, national ID 12 digits, family key §6.2); a None key never matches.
 """
 
 from collections.abc import Callable
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from app.core.matches import Matches, MatchRef
+from app.core.matches import Matches, MatchRecord, MatchRef
 from app.models import Request
 from app.models.request import ACTIVE_STATUSES
 from app.services import settings_service
@@ -47,20 +49,36 @@ def find_matches(
 def _sijil_source(
     db: Session, *, phone: str | None, national_id: str | None, family_key: str | None
 ) -> Matches:
-    def ids(column, value) -> list[MatchRef]:
-        if value is None:
-            return []
-        rows = db.scalars(
-            select(Request.id)
-            .where(column == value, Request.status.in_(ACTIVE_STATUSES))
-            .order_by(Request.id)
+    keys = [
+        (column, value)
+        for column, value in (
+            (Request.phone, phone),
+            (Request.national_id, national_id),
+            (Request.family_key, family_key),
         )
-        return [MatchRef("sijil", str(i)) for i in rows]
-
+        if value is not None
+    ]
+    if not keys:
+        return Matches()
+    rows = db.execute(
+        select(Request.id, Request.phone, Request.national_id, Request.family_key, Request.status)
+        .where(
+            or_(*(column == value for column, value in keys)), Request.status.in_(ACTIVE_STATUSES)
+        )
+        .order_by(Request.id)
+    )
     return Matches(
-        phone=ids(Request.phone, phone),
-        national_id=ids(Request.national_id, national_id),
-        family=ids(Request.family_key, family_key),
+        [
+            MatchRecord(
+                "sijil",
+                str(row.id),
+                phone=phone is not None and row.phone == phone,
+                national_id=national_id is not None and row.national_id == national_id,
+                family=family_key is not None and row.family_key == family_key,
+                pending=row.status == "pending_review",
+            )
+            for row in rows
+        ]
     )
 
 
@@ -81,4 +99,11 @@ settings_service.register_usage_check("area", _usage(Request.area_id))
 settings_service.register_usage_check("tower", _usage(Request.tower_id))
 settings_service.register_usage_check("plan", _usage(Request.plan_id))
 
-__all__ = ["MatchRef", "Matches", "find_matches", "register_source", "unregister_source"]
+__all__ = [
+    "MatchRecord",
+    "MatchRef",
+    "Matches",
+    "find_matches",
+    "register_source",
+    "unregister_source",
+]

@@ -354,7 +354,10 @@ def test_plan_row_is_untouched_by_submission(client, db, h, catalog) -> None:
 
 
 def test_known_national_id_is_a_missing_item_and_refuses(client, db, h, marketer, catalog):
-    request_factory(db, marketer, national_id=NID, national_id_input="١٩٩٩١٢٣٤٥٦٧٨")
+    # v1.10 (specs/009): the same person is the national ID and the family number on one record.
+    request_factory(
+        db, marketer, national_id=NID, national_id_input="١٩٩٩١٢٣٤٥٦٧٨", family_number=FAMILY
+    )
     db.commit()  # another marketer's submission, already committed
     draft_id = complete_draft(client, h, catalog, verified=False)
     draft = get_draft(client, h, draft_id)

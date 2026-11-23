@@ -91,7 +91,8 @@ def _ready_drafts(engine, world, *, same_phone: bool, same_nid: bool) -> list[tu
                 mother_second_name="نموذجية",
                 full_name="تجربة اختبار نموذج مثال التجريبي",
                 national_id="199933330000" if same_nid else f"19993333{i:04d}",
-                family_number=f"3333C{i:013d}",
+                # v1.10 (specs/009): the same person needs the same family number as well.
+                family_number="3333C0000000000000" if same_nid else f"3333C{i:013d}",
                 birth_date=today.replace(year=1999),
                 issue_date=today.replace(year=2021),
                 expiry_date=today.replace(year=2031),

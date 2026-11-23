@@ -199,10 +199,12 @@ def draft_checks(db: Session, draft: Draft) -> DraftChecksOut:
         national_id=normalize_national_id(draft.national_id),
         family_key=key,
     )
-    family = bool(found.family)
+    # v1.10 (specs/009 research R1): "national ID exists" means the same person (national ID and
+    # family number on one record); the family path is for records that are not that person.
+    family = bool(found.family_only)
     return DraftChecksOut(
-        phone_used=bool(found.phone),
-        national_id_exists=bool(found.national_id),
+        phone_used=bool(found.phone_records),
+        national_id_exists=bool(found.same_person),
         family_exists=family,
         additional_confirmed=family and key is not None and draft.additional_confirmed_key == key,
     )
@@ -218,9 +220,17 @@ def apply_confirmation(db: Session, draft: Draft, changes: DraftChanges) -> None
         draft.additional_confirmed_key = None
         return
     key = family_key(draft.family_number)
-    if key is None or not match_service.find_matches(db, family_key=key).family:
+    if key is None or not _family_only(db, draft, key):
         raise AppError("no_family_match", 422)
     draft.additional_confirmed_key = key
+
+
+def _family_only(db: Session, draft: Draft, key: str) -> bool:
+    """A family match that is not the same person (rule 3), judged with the draft's national ID."""
+    found = match_service.find_matches(
+        db, national_id=normalize_national_id(draft.national_id), family_key=key
+    )
+    return bool(found.family_only)
 
 
 # The 005/006 page order with the three 008 items, which need the database (research R5).

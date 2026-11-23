@@ -182,8 +182,8 @@ without first filling a new form.
 - **More than one existing subscriber matches** (e.g. two family records): the request links to all of
   them for the admin; the marketer sees one message.
 - **A rejected request** is not "existing" (008 rule) — it never triggers return or second subscription.
-- **The matched subscriber's own return request is already pending**: it counts as existing; a second
-  return for the same person is refused like a used national ID, with the message «يوجد طلب سابق
+- **The same person already has a pending request** (return or new): it counts as existing; a
+  return for that person is refused like a used national ID, with the message «يوجد طلب سابق
   بالانتظار لهذا المشترك» and no detail.
 - **Match disappears or appears at submission** (another request got there first): the server re-checks;
   a new match the marketer did not choose refuses the submission and keeps the draft, as in 008.
@@ -230,7 +230,8 @@ without first filling a new form.
   reason «إعادة للخدمة», linked to the matched subscriber(s); the result screen shows
   «بانتظار موافقة المسؤول». Edited numbers add their own reason as in 008.
 - **FR-010**: The server MUST re-check at submission; a return is valid only if the chosen match still
-  exists. A pending return for the same subscriber blocks another return.
+  exists. Any pending request of the same person (a record in the return target still pending
+  review, whether new or return) blocks the return.
 - **FR-011**: Match (3) MUST keep the 008 behavior with the label «إضافة اشتراك ثاني».
 - **FR-012**: No marketer-facing message, screen or response MUST include any information about the
   matched subscriber (name, phone, username, tower, numbers, dates, images, request number).

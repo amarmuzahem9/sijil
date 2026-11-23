@@ -106,7 +106,7 @@ def test_registered_sources_are_asked(db) -> None:
 
     def source(db, *, phone, national_id, family_key):
         calls.append((phone, national_id, family_key))
-        return match_service.Matches(phone=[match_service.MatchRef("legacy", "x")])
+        return match_service.Matches([match_service.MatchRecord("legacy", "x", phone=True)])
 
     match_service.register_source("legacy", source)
     try:
@@ -115,3 +115,56 @@ def test_registered_sources_are_asked(db) -> None:
         match_service.unregister_source("legacy")
     assert calls == [(PHONE, None, None)]
     assert m.phone == [match_service.MatchRef("legacy", "x")]
+
+
+# --- one record per matching request, with its flags (specs/009 research R1) ---
+
+
+def test_one_record_per_request_with_its_flags(db, marketer) -> None:
+    same = request_factory(db, marketer, national_id=NID, national_id_input=NID, family_number=FAM)
+    conflict = request_factory(
+        db,
+        marketer,
+        national_id=NID,
+        national_id_input=NID,
+        family_number="5555B0000000000000",
+    )
+    relative = request_factory(db, marketer, family_number=FAM)
+    phone_only = request_factory(db, marketer, phone=PHONE)
+    m = _find(db, PHONE, NID, FAM)
+    by_id = {r.ref_id: r for r in m.records}
+    assert len(m.records) == 4
+    assert (by_id[str(same.id)].national_id, by_id[str(same.id)].family) == (True, True)
+    assert (by_id[str(conflict.id)].national_id, by_id[str(conflict.id)].family) == (True, False)
+    assert (by_id[str(relative.id)].national_id, by_id[str(relative.id)].family) == (False, True)
+    assert by_id[str(phone_only.id)].phone is True
+    assert not by_id[str(phone_only.id)].national_id
+    assert [r.ref_id for r in m.same_person] == [str(same.id)]
+    assert [r.ref_id for r in m.id_conflict] == [str(conflict.id)]
+    assert [r.ref_id for r in m.family_only] == [str(relative.id)]
+
+
+@pytest.mark.parametrize(("status", "pending"), [("pending_review", True), ("approved", False)])
+def test_pending_flag(db, marketer, status, pending) -> None:
+    request_factory(db, marketer, status=status, phone=PHONE)
+    (record,) = _find(db, PHONE).records
+    assert record.pending is pending
+
+
+def test_one_query_per_lookup(db, marketer) -> None:
+    from sqlalchemy import event
+
+    request_factory(db, marketer, phone=PHONE, national_id=NID, national_id_input=NID)
+    statements = []
+
+    def count(conn, cursor, statement, *args):
+        if "FROM requests" in statement:
+            statements.append(statement)
+
+    engine = db.get_bind()
+    event.listen(engine, "before_cursor_execute", count)
+    try:
+        _find(db, PHONE, NID, FAM)
+    finally:
+        event.remove(engine, "before_cursor_execute", count)
+    assert len(statements) == 1

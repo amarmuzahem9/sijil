@@ -174,6 +174,9 @@ class Draft(Base):
     # Feature 008 (data-model.md): the family key confirmed with «طلب اشتراك إضافي». Valid only
     # while it equals family_key(family_number) and a family match exists (research R12).
     additional_confirmed_key: Mapped[str | None] = mapped_column(Text)
+    # Feature 009 (research R3): the key that produced the «طلب العودة للخدمة» choice; a stale key
+    # means no choice.
+    return_key: Mapped[str | None] = mapped_column(Text)
 
     version: Mapped[int] = mapped_column(
         Integer, nullable=False, default=1, server_default=text("1")

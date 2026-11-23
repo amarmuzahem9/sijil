@@ -420,7 +420,10 @@ def test_replacing_the_front_reads_only_the_front(client, db, owner) -> None:
 def test_read_national_id_that_exists_warns(client, db, owner, make_user) -> None:
     from tests.helpers.requests import request_factory
 
-    request_factory(db, make_user("marketer"), national_id=NID, national_id_input=NID)
+    # v1.10 (specs/009): the same person is the national ID and the family number on one record.
+    request_factory(
+        db, make_user("marketer"), national_id=NID, national_id_input=NID, family_number=FAMILY
+    )
     _, headers = owner
     draft_id = read_card(client, headers)
     draft = client.get(f"/api/drafts/{draft_id}", headers=headers).json()
