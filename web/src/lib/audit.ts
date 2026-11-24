@@ -20,6 +20,8 @@ export interface AuditEntry {
   target_label: string | null;
   before: Record<string, unknown> | null;
   after: Record<string, unknown> | null;
+  /** The request this entry is about was deleted later (specs/011 R12); the entry is unchanged. */
+  entity_deleted?: boolean;
 }
 
 export interface AuditPage {

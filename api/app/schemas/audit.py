@@ -24,6 +24,9 @@ class AuditEntryOut(BaseModel):
     target_label: str | None = None
     before: dict[str, Any] | None
     after: dict[str, Any] | None
+    # specs/011 R12: the entry is about a request that was deleted later. The entry itself is
+    # never changed; the page shows «سجل محذوف» for links such as a pin.
+    entity_deleted: bool = False
 
 
 class AuditPage(BaseModel):

@@ -331,30 +331,30 @@ gets a new number.
 
 **Independent Test**: spec US4.
 
-- [ ] T041 [P] [US4] Extend `api/tests/integration/test_linked_records.py` (**red**): pending B with
+- [x] T041 [P] [US4] Extend `api/tests/integration/test_linked_records.py` (**red**): pending B with
   reason `family_exists` pointing to deleted A gets
   `{available: false, deleted: true, number_label}` and nothing else. B's reasons are unchanged.
   Accepting and rejecting B still work.
-- [ ] T042 [US4] Update the `_sijil` resolver in `api/app/services/linked_records.py` and add the
+- [x] T042 [US4] Update the `_sijil` resolver in `api/app/services/linked_records.py` and add the
   `deleted` and `number_label` fields of `LinkedRecord` in `api/app/schemas/admin_requests.py` (R10).
   Run T041: **green**.
-- [ ] T043 [P] [US4] Extend `web/src/__tests__/requestReview.test.tsx` or add
+- [x] T043 [P] [US4] Extend `web/src/__tests__/requestReview.test.tsx` or add
   `linkedRecordCard.test.tsx` (**red**): a deleted linked record shows «سجل محذوف (#T3C-…)» with no
   images or fields.
-- [ ] T044 [US4] Update `web/src/pages/admin/pending/LinkedRecordCard.tsx`. Run T043: **green**.
-- [ ] T045 [P] [US4] Extend `api/tests/integration/test_audit_viewer.py` (**red**):
+- [x] T044 [US4] Update `web/src/pages/admin/pending/LinkedRecordCard.tsx`. Run T043: **green**.
+- [x] T045 [P] [US4] Extend `api/tests/integration/test_audit_viewer.py` (**red**):
   - entries of a deleted request carry `entity_deleted: true`, and other entries carry `false`;
   - the old `request.numbers_pinned` and `request.rejected` entries are byte-for-byte unchanged after
     the deletion.
-- [ ] T046 [US4] Add `entity_deleted` in `api/app/services/audit_service.py` and `api/app/api/audit.py`
-  (R12). Run T045: **green**.
-- [ ] T047 [US4] In `web/src/lib/auditFormat.ts`, show «سجل محذوف» in place of the pin link when
+- [x] T046 [US4] Add `entity_deleted` in `api/app/services/audit_query.py` (the listing; the plan
+  named `audit_service.py`) and `api/app/schemas/audit.py` (R12). Run T045: **green**.
+- [x] T047 [US4] In `web/src/lib/auditFormat.ts`, show «سجل محذوف» in place of the pin link when
   `entity_deleted` is set. Extend `web/src/__tests__/audit-format.test.ts` first and run it **red**,
   then **green**.
-- [ ] T048 [P] [US4] Extend `api/tests/integration/test_admin_home.py` (**red**): deleting a pending
+- [x] T048 [P] [US4] Extend `api/tests/integration/test_admin_home.py` (**red**): deleting a pending
   request lowers `pending` by one. Deleting a pending and a rejected request leaves `submitted` and
   `rejected` for today and the month unchanged.
-- [ ] T049 [US4] Add `deleted_at IS NULL` to the pending count in `api/app/services/admin_home.py`
+- [x] T049 [US4] Add `deleted_at IS NULL` to the pending count in `api/app/services/admin_home.py`
   (R13). Run T048: **green**.
 
 ---
@@ -365,20 +365,20 @@ gets a new number.
 
 **Independent Test**: spec US6.
 
-- [ ] T050 [P] [US6] Write `api/tests/integration/test_by_number.py` (**red**):
+- [x] T050 [P] [US6] Write `api/tests/integration/test_by_number.py` (**red**):
   - `GET /admin/requests/by-number/{text}` returns `{id}` for pending, approved, rejected, linked and
     deleted requests, with each fixture format;
   - an unknown number gives 404 with «لا يوجد طلب بهذا الرقم»;
   - a caller without `review` gets the same 404;
   - unparsable text gives the same 404.
-- [ ] T051 [US6] Add `find_by_number` to `api/app/services/review_service.py` and the route to
+- [x] T051 [US6] Add `find_by_number` to `api/app/services/review_service.py` and the route to
   `api/app/api/admin_requests.py`. Declare it before `/requests/{request_id}` so the paths do not
   clash. Run T050: **green**.
-- [ ] T052 [P] [US6] Write `web/src/__tests__/openByNumber.test.tsx` (**red**):
+- [x] T052 [P] [US6] Write `web/src/__tests__/openByNumber.test.tsx` (**red**):
   - the box navigates to `/admin/pending/:id` on success;
   - it shows «لا يوجد طلب بهذا الرقم» on 404;
   - the button is disabled while the text does not parse.
-- [ ] T053 [US6] Write `web/src/pages/admin/pending/OpenByNumber.tsx` and place it at the top of
+- [x] T053 [US6] Write `web/src/pages/admin/pending/OpenByNumber.tsx` and place it at the top of
   `PendingList.tsx`. Add `findByNumber` to `web/src/lib/adminRequests.ts`. Run T052: **green**. Run
   the suites: **green**.
 

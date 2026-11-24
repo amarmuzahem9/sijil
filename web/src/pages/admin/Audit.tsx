@@ -14,11 +14,19 @@ import { useState } from 'react';
 
 import { auditApi, SYSTEM_ACTOR } from '../../lib/audit';
 import type { AuditEntry, AuditFilters } from '../../lib/audit';
-import { actionLabel, entryTargetLabel, formatAuditValue } from '../../lib/auditFormat';
+import { actionLabel, entryTargetLabel, formatEntryValue } from '../../lib/auditFormat';
 import { AUDIT_FIELD_LABELS } from '../../lib/labels';
 import { formatBaghdad } from '../../lib/time';
 
-function Values({ title, values }: { title: string; values: Record<string, unknown> | null }) {
+function Values({
+  entry,
+  title,
+  values,
+}: {
+  entry: AuditEntry;
+  title: string;
+  values: Record<string, unknown> | null;
+}) {
   if (!values || Object.keys(values).length === 0) return null;
   return (
     <Box sx={{ flex: '1 1 200px', minWidth: 0 }}>
@@ -31,9 +39,9 @@ function Values({ title, values }: { title: string; values: Record<string, unkno
             {AUDIT_FIELD_LABELS[field] ?? field}:{' '}
           </Typography>
           {field === 'phone' ? (
-            <bdi dir="ltr">{formatAuditValue(field, value)}</bdi>
+            <bdi dir="ltr">{formatEntryValue(entry, field, value)}</bdi>
           ) : (
-            formatAuditValue(field, value)
+            formatEntryValue(entry, field, value)
           )}
         </Typography>
       ))}
@@ -54,8 +62,8 @@ function EntryCard({ entry }: { entry: AuditEntry }) {
           {formatBaghdad(entry.created_at)} · {entry.actor ? entry.actor.name : 'النظام'}
         </Typography>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-          <Values title="قبل" values={entry.before} />
-          <Values title="بعد" values={entry.after} />
+          <Values entry={entry} title="قبل" values={entry.before} />
+          <Values entry={entry} title="بعد" values={entry.after} />
         </Box>
       </CardContent>
     </Card>

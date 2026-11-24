@@ -17,6 +17,7 @@ from app.api.deps import AuthContext, current_user, require_permission
 from app.db import get_db
 from app.schemas.admin_requests import (
     AcceptIn,
+    ByNumberOut,
     DeleteIn,
     PendingList,
     PinIn,
@@ -40,6 +41,17 @@ def list_pending(
 ) -> PendingList:
     """Oldest first; `reason` keeps requests holding that reason (not «لم يعد ينطبق»)."""
     return review_service.list_pending(db, reason)
+
+
+@router.get("/requests/by-number/{text}", response_model=ByNumberOut)
+def find_by_number(
+    text: str,
+    ctx: AuthContext = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> ByNumberOut:
+    """«فتح طلب برقمه»: «T3C-1005», «1005» or «١٠٠٥»; any status. 404 «لا يوجد طلب بهذا الرقم»
+    for an unknown number and for a caller without `review` (specs/011 R8)."""
+    return ByNumberOut(id=review_service.find_by_number(db, ctx.user, text))
 
 
 @router.get("/requests/{request_id}", response_model=RequestFileOut)

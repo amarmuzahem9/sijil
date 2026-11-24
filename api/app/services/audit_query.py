@@ -6,7 +6,7 @@ from sqlalchemy import String, and_, cast, select
 from sqlalchemy.orm import Session, aliased
 
 from app.core.timeutil import baghdad_day_bounds
-from app.models import Area, AuditLog, Plan, Tower, User
+from app.models import Area, AuditLog, Plan, Request, Tower, User
 from app.schemas.audit import ActorOut, AuditEntryOut, AuditPage
 
 DEFAULT_LIMIT, MAX_LIMIT = 50, 100
@@ -56,6 +56,7 @@ def list_entries(
     rows = db.execute(query).all()
     page = rows[:limit]
     labels = _settings_labels(db, [entry for entry, _, _ in page])
+    deleted = _deleted_requests(db, [entry for entry, _, _ in page])
     items = [
         AuditEntryOut(
             id=entry.id,
@@ -68,6 +69,7 @@ def list_entries(
             target_label=labels.get((entry.entity_type, entry.entity_id)),
             before=entry.before,
             after=entry.after,
+            entity_deleted=entry.entity_type == "request" and entry.entity_id in deleted,
         )
         for entry, who, whom in page
     ]
@@ -75,6 +77,19 @@ def list_entries(
     return AuditPage(
         items=items, has_more=has_more, next_before_id=items[-1].id if has_more else None
     )
+
+
+def _deleted_requests(db: Session, entries: list[AuditLog]) -> set[str]:
+    """Request numbers (as audited, `entity_id`) in the page whose request is deleted."""
+    numbers = {
+        int(e.entity_id) for e in entries if e.entity_type == "request" and e.entity_id.isdigit()
+    }
+    if not numbers:
+        return set()
+    rows = db.scalars(
+        select(Request.number).where(Request.number.in_(numbers), Request.deleted_at.is_not(None))
+    )
+    return {str(n) for n in rows}
 
 
 # Settings entries store only the changed fields, so the item's name is looked up here.

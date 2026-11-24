@@ -47,6 +47,9 @@ export interface LinkedRecord {
   image_ids: string[];
   /** SAS «حسب آخر استيراد» (014); null until then. */
   expiry: string | null;
+  /** A deleted Sijil request: «سجل محذوف (#T3C-…)» (specs/011 R10). */
+  deleted: boolean;
+  number_label: string | null;
 }
 
 export interface ReviewReason {
@@ -137,6 +140,10 @@ export function listPending(reason?: ReasonCode) {
   const query = reason ? `?reason=${encodeURIComponent(reason)}` : '';
   return apiFetch<PendingList>(`/api/admin/requests/pending${query}`);
 }
+
+/** «فتح طلب برقمه» (specs/011 R8): the id of the request with this number, any status. */
+export const findByNumber = (text: string) =>
+  apiFetch<{ id: number }>(`/api/admin/requests/by-number/${encodeURIComponent(text)}`);
 
 export const getRequestFile = (id: number | string) =>
   apiFetch<RequestFile>(`/api/admin/requests/${encodeURIComponent(String(id))}`);

@@ -110,3 +110,30 @@ def test_any_admin_but_no_marketer(client, db, make_user, marketer) -> None:
     res = client.get("/api/admin/home", headers=headers_for(client, marketer))
     assert res.status_code == 403
     assert client.get("/api/admin/home").status_code == 401
+
+
+def test_deletion_lowers_pending_and_keeps_the_other_counts(
+    client, db, make_user, marketer, frozen_clock
+) -> None:
+    """specs/011 T048, SC-004: deleting a pending request lowers «بالانتظار» by one; deleting a
+    pending and a rejected request leaves «مرفوعة» and «مرفوضة» unchanged."""
+    from tests.helpers.requests import mark_deleted
+
+    frozen_clock.set(NOW)
+    today = datetime(2026, 11, 24, 5, 0, tzinfo=UTC)
+    pending = _submitted(db, marketer, today, "pending_review")
+    _submitted(db, marketer, today, "pending_review")
+    rejected = _submitted(db, marketer, today, "rejected", rejected_at=today)
+    h = headers_for(client, make_user("super_admin"))
+    before = _home(client, h)
+    assert before["today"]["pending"] == 2
+
+    deleter = admin_with(make_user, "review", "delete")
+    mark_deleted(db, pending, deleter)
+    mark_deleted(db, rejected, deleter)
+    after = _home(client, h)
+
+    for row in ("today", "month"):
+        assert after[row]["pending"] == before[row]["pending"] - 1
+        for key in KEYS - {"pending"}:
+            assert after[row][key] == before[row][key], (row, key)

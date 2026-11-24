@@ -93,6 +93,8 @@ export function requestFile(partial: Partial<RequestFile> = {}): RequestFile {
           status: 'linked',
           image_ids: ['old-front'],
           expiry: null,
+          deleted: false,
+          number_label: null,
         },
       },
       {
@@ -122,6 +124,8 @@ export function requestFile(partial: Partial<RequestFile> = {}): RequestFile {
           status: null,
           image_ids: [],
           expiry: null,
+          deleted: false,
+          number_label: null,
         },
       },
     ],

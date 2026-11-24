@@ -207,3 +207,20 @@ describe('subscriber deletion (specs/011 T030)', () => {
     expect(AUDIT_FIELD_LABELS.image_count).toBe('عدد الصور');
   });
 });
+
+describe('entries of a deleted request (specs/011 T047)', () => {
+  it('shows «سجل محذوف» for the pin link once the request is deleted', async () => {
+    const { formatEntryValue } = await import('../lib/auditFormat');
+    const pinned = entry({
+      action: 'request.numbers_pinned',
+      entity_type: 'request',
+      entity_id: '1005',
+      after: { pin_id: 12, field: 'national_id' },
+    });
+    expect(formatEntryValue(pinned, 'pin_id', 12)).toBe('12');
+    const gone = { ...pinned, entity_deleted: true };
+    expect(formatEntryValue(gone, 'pin_id', 12)).toBe('سجل محذوف');
+    // Every other value reads as before.
+    expect(formatEntryValue(gone, 'field', 'national_id')).toBe('الرقم الوطني');
+  });
+});

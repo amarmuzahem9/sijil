@@ -76,3 +76,63 @@ def test_record_never_carries_card_data(db, make_user) -> None:
     ref = MatchRef("sijil", str(record.id))
     fields = {f.name for f in dataclasses.fields(linked_records.resolve(db, [ref])[ref])}
     assert not fields & {"card_readings", "national_id", "family_number", "card_fields"}
+
+
+# --- specs/011 T041: a linked record that is a deleted request -------------------------------
+
+
+def test_deleted_request_resolves_as_deleted_with_its_number_only(db, make_user) -> None:
+    from tests.helpers.requests import mark_deleted
+    from tests.helpers.review import admin_with
+
+    old = request_factory(db, make_user("marketer"), status="pending_review")
+    mark_deleted(db, old, admin_with(make_user, "review", "delete"))
+    ref = MatchRef("sijil", str(old.id))
+
+    record = linked_records.resolve(db, [ref])[ref]
+
+    assert record == linked_records.LinkedRecord(
+        source="sijil",
+        ref=str(old.id),
+        available=False,
+        deleted=True,
+        number_label=old.number_label,
+    )
+
+
+def test_live_record_is_not_deleted(db, make_user) -> None:
+    old = request_factory(db, make_user("marketer"))
+    ref = MatchRef("sijil", str(old.id))
+    record = linked_records.resolve(db, [ref])[ref]
+    assert record.available is True and record.deleted is False
+    assert record.number_label == old.number_label
+
+
+def test_reasons_of_another_request_stay_and_its_decision_works(client, db, make_user) -> None:
+    """B keeps its reason when A is deleted; the file shows «سجل محذوف» data only; B can be
+    accepted (FR-015)."""
+    import json
+
+    from tests.helpers.requests import mark_deleted
+    from tests.helpers.review import admin_with, headers_for, pending_request
+
+    marketer = make_user("marketer")
+    reviewer = admin_with(make_user, "review", "delete")
+    old = request_factory(db, marketer, status="pending_review", full_name="اسم المحذوف السري")
+    phone = old.phone
+    b = pending_request(db, marketer, [("family_exists", old, {})], type="additional")
+    mark_deleted(db, old, reviewer)
+    h = headers_for(client, reviewer)
+
+    body = client.get(f"/api/admin/requests/{b.id}", headers=h).json()
+    [reason] = body["reasons"]
+    assert (reason["reason"], reason["state"]) == ("family_exists", "open")
+    assert reason["record"]["deleted"] is True
+    assert reason["record"]["number_label"] == old.number_label
+    assert reason["record"]["available"] is False
+    blob = json.dumps(body, ensure_ascii=False)
+    assert "اسم المحذوف السري" not in blob and phone not in blob
+
+    res = client.post(f"/api/admin/requests/{b.id}/accept", json={}, headers=h)
+    assert res.status_code == 200, res.json()
+    assert res.json()["type"] == "additional"

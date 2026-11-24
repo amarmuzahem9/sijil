@@ -64,6 +64,9 @@ class LinkedRecordOut(BaseModel):
     status: str | None = None
     image_ids: list[uuid.UUID] = []
     expiry: date | None = None
+    # specs/011 R10: a deleted Sijil request, shown as «سجل محذوف (#T3C-…)».
+    deleted: bool = False
+    number_label: str | None = None
 
 
 class ReasonOut(BaseModel):
@@ -179,6 +182,12 @@ class AcceptIn(_Body):
 class RejectIn(_Body):
     reason: RejectionReason
     note: str | None = None
+
+
+class ByNumberOut(BaseModel):
+    """«فتح طلب برقمه» (specs/011 R8): the id of the file to open."""
+
+    id: int
 
 
 class DeleteIn(_Body):

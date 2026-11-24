@@ -1,6 +1,7 @@
 /**
  * «طلبات بالانتظار» (docs/system.md §10 item 2, specs/010 US1, FR-002): every pending request,
- * oldest first, filterable by reason, each opening its review file.
+ * oldest first, filterable by reason, each opening its review file. «فتح طلب برقمه» on top opens
+ * any request, rejected ones included (specs/011 FR-022).
  */
 import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
@@ -16,6 +17,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { listPending, type PendingItem, type ReasonCode } from '../../../lib/adminRequests';
 import { REASON_LABELS, REQUEST_TYPE_LABELS } from '../../../lib/labels';
 import { formatBaghdad } from '../../../lib/time';
+import { OpenByNumber } from './OpenByNumber';
 
 const FILTERS: (ReasonCode | null)[] = [
   null,
@@ -73,6 +75,7 @@ export default function PendingListPage() {
         </Typography>
         {query.data && <Typography color="text.secondary">العدد: {query.data.total}</Typography>}
       </Stack>
+      <OpenByNumber />
       <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
         {FILTERS.map((code) => (
           <Chip

@@ -2,8 +2,9 @@
 
 Each count goes by the time of its own step, in Baghdad days and months: submitted by
 `submitted_at`, approved by `approved_at` (the automatic approval counts at submission), rejected
-by `rejected_at`. Pending is the current number, the same in both rows. Linked stays 0 until 012
-adds `linked_at`. Counts only: no subscriber data.
+by `rejected_at`. Pending is the current number, the same in both rows. Linked stays 0 until 013
+adds `linked_at`. Deleted requests (specs/011) still count as submitted and rejected; they
+leave pending. Counts only: no subscriber data.
 """
 
 from datetime import datetime
@@ -33,7 +34,10 @@ def _row(db: Session, bounds: tuple[datetime, datetime], pending: int) -> HomeCo
 
 def counts(db: Session) -> HomeOut:
     pending = db.scalar(
-        select(func.count()).select_from(Request).where(Request.status == "pending_review")
+        select(func.count())
+        .select_from(Request)
+        # A deleted pending request is no longer waiting (specs/011 R13).
+        .where(Request.status == "pending_review", Request.deleted_at.is_(None))
     )
     return HomeOut(
         today=_row(db, baghdad_today_bounds(), pending),

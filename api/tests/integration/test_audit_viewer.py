@@ -128,3 +128,64 @@ def test_read_only(client, h) -> None:
         r = getattr(client, method)(BASE, headers=h)
         assert r.status_code in (404, 405)
     assert client.delete(f"{BASE}/1", headers=h).status_code in (404, 405)
+
+
+# --- specs/011 T045: entries of a deleted request ---------------------------------------------
+
+
+def test_entries_of_a_deleted_request_are_marked_and_unchanged(
+    client, db, main, h, make_user, tmp_path, monkeypatch
+) -> None:
+    from app.config import get_settings
+    from tests.helpers.requests import request_factory
+    from tests.helpers.review import admin_with, headers_for
+
+    monkeypatch.setattr(get_settings(), "uploads_dir", str(tmp_path))
+    marketer = make_user("marketer")
+    reviewer = admin_with(make_user, "review", "delete")
+    rh = headers_for(client, reviewer)
+    gone = request_factory(db, marketer, status="pending_review", national_id_input="١٩٩٠٠٠٠٠٠٠٠١")
+    kept = request_factory(db, marketer, status="pending_review")
+    pin = {"field": "national_id", "source": "typed", "value": "199000000077"}
+    assert (
+        client.post(f"/api/admin/requests/{gone.id}/pin", json=pin, headers=rh).status_code == 200
+    )
+    reject = {"reason": "other", "note": "نص المراجع للسجل"}
+    assert (
+        client.post(f"/api/admin/requests/{gone.id}/reject", json=reject, headers=rh).status_code
+        == 200
+    )
+    assert (
+        client.post(f"/api/admin/requests/{kept.id}/reject", json=reject, headers=rh).status_code
+        == 200
+    )
+    before = {
+        e["id"]: (e["action"], e["before"], e["after"])
+        for e in client.get("/api/admin/audit", headers=h).json()["items"]
+    }
+
+    res = client.post(
+        f"/api/admin/requests/{gone.id}/delete",
+        json={"reason": "test", "confirm_number": gone.number_label},
+        headers=rh,
+    )
+    assert res.status_code == 200, res.json()
+
+    items = client.get("/api/admin/audit", headers=h).json()["items"]
+    by_id = {e["id"]: e for e in items}
+    # Old lines are byte-for-byte the same, the reject note included.
+    for entry_id, old in before.items():
+        e = by_id[entry_id]
+        assert (e["action"], e["before"], e["after"]) == old
+    # Every line about the deleted request is marked; the others are not.
+    for e in items:
+        if e["entity_type"] == "request" and e["entity_id"] == str(gone.number):
+            assert e["entity_deleted"] is True, e["action"]
+        else:
+            assert e["entity_deleted"] is False, e["action"]
+    actions = {
+        e["action"]
+        for e in items
+        if e["entity_type"] == "request" and e["entity_id"] == str(gone.number)
+    }
+    assert {"request.numbers_pinned", "request.rejected", "request.deleted"} <= actions

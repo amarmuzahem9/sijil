@@ -1,6 +1,7 @@
 /**
  * One record a pending request is linked to (docs/system.md §6.4, specs/010 FR-004): source, why it
  * is linked, and the record's details. Shown to review admins only; never to the marketer.
+ * A deleted request shows «سجل محذوف (#T3C-…)» and nothing else (specs/011 R10).
  */
 import Card from '@mui/material/Card';
 import Chip from '@mui/material/Chip';
@@ -42,7 +43,11 @@ export function LinkedRecordCard({ reason }: { reason: ReviewReason }) {
           {stateLabel && <Chip size="small" label={stateLabel} />}
           {reason.added_at_review && <Chip size="small" label="أُضيف بعد التثبيت" />}
         </Stack>
-        {!record.available ? (
+        {record.deleted ? (
+          <Typography variant="body2" color="text.secondary">
+            سجل محذوف (#{record.number_label})
+          </Typography>
+        ) : !record.available ? (
           <Typography variant="body2" color="text.secondary">
             سجل غير متوفر
           </Typography>

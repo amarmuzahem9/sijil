@@ -46,7 +46,9 @@ const TWO: PendingList = {
   ],
 };
 
-beforeEach(() => listPending.mockReset());
+beforeEach(() => {
+  listPending.mockReset();
+});
 afterEach(cleanup);
 
 function show() {

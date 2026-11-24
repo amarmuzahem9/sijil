@@ -81,6 +81,12 @@ export function formatAuditValue(field: string, value: unknown): string {
   return String(value);
 }
 
+/** A value in its entry: the pin link of a deleted request reads «سجل محذوف» (specs/011 R12). */
+export function formatEntryValue(entry: AuditEntry, field: string, value: unknown): string {
+  if (field === 'pin_id' && entry.entity_deleted) return 'سجل محذوف';
+  return formatAuditValue(field, value);
+}
+
 /** Arabic action label; account creation also names the role (002 analysis fix I3). */
 export function actionLabel(entry: AuditEntry): string {
   const label = AUDIT_ACTION_LABELS[entry.action] ?? entry.action;

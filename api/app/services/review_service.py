@@ -13,14 +13,14 @@ from pathlib import Path
 from sqlalchemy import exists, select, text
 from sqlalchemy.orm import Session
 
-from app.core import rejection_reasons
+from app.core import rejection_reasons, request_number
 from app.core.access import has_any_permission
 from app.core.family_key import family_key
 from app.core.matches import Matches, MatchRef
 from app.core.national_id import normalize_national_id
 from app.core.review_check import ReviewCheck, review
 from app.core.timeutil import utc_now
-from app.errors import AppError
+from app.errors import NO_REQUEST_WITH_NUMBER, AppError
 from app.models import (
     ImageAccessLog,
     Request,
@@ -147,6 +147,21 @@ def live_check(db: Session, request: Request) -> ReviewCheck:
 
 
 # --- the file (FR-003, FR-004, FR-012) -----------------------------------------------------------
+
+
+def find_by_number(db: Session, user: User, text: str) -> int:
+    """«فتح طلب برقمه» (specs/011 R8): the id of the submitted request with that number, in any
+    status, deleted or not. A caller without `review`, unparsable text and an unknown number all
+    get the same 404."""
+    number = request_number.parse(text)
+    request_id = (
+        db.scalar(select(Request.id).where(Request.number == number))
+        if number is not None and can_review(user)
+        else None
+    )
+    if request_id is None:
+        raise AppError("request_not_found", 404, message=NO_REQUEST_WITH_NUMBER)
+    return request_id
 
 
 def get_for_review(db: Session, user: User, request_id: int) -> Request:
