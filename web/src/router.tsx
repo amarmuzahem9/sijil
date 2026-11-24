@@ -14,13 +14,9 @@ import RouteError from './components/RouteError';
 import AdminLayout from './layouts/AdminLayout';
 import MarketerLayout from './layouts/MarketerLayout';
 import AccountPanel from './pages/AccountPanel';
-import {
-  AdminBackup,
-  AdminImport,
-  AdminReports,
-  AdminSubscribers,
-} from './pages/admin/placeholders';
+import { AdminBackup, AdminReports, AdminSubscribers } from './pages/admin/placeholders';
 import Admins from './pages/admin/Admins';
+import ImportPage from './pages/admin/import/ImportPage';
 import AwaitingLink from './pages/admin/links/AwaitingLink';
 import AdminHome from './pages/admin/Home';
 import PendingList from './pages/admin/pending/PendingList';
@@ -97,7 +93,7 @@ export const routes: RouteObject[] = [
                       page('settings', { path: 'settings', element: <Settings /> }),
                       page('admins', { path: 'admins', element: <Admins /> }),
                       page('reports', { path: 'reports', element: <AdminReports /> }),
-                      page('import', { path: 'import', element: <AdminImport /> }),
+                      page('import', { path: 'import', element: <ImportPage /> }),
                       page('backup', { path: 'backup', element: <AdminBackup /> }),
                       page('audit', { path: 'audit', element: <Audit /> }),
                       page('archive', { path: 'archive', element: <Archive /> }),

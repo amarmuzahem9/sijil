@@ -159,7 +159,7 @@ before confirmation; after confirmation the summary counts match.
 
 ### Tests — choices and confirm (write first, run red)
 
-- [ ] T025 [US1] Integration tests `api/tests/integration/test_legacy_confirm.py`: PUT choices (partial;
+- [x] T025 [US1] Integration tests `api/tests/integration/test_legacy_confirm.py`: PUT choices (partial;
   `choice_not_allowed` for import on `legacy_number_missing` and for two imports on one repeated number;
   `correct` re-checks the new family number and returns its flags; «تخطي للكل» is a PUT of `skip` for a group and
   any of those rows can be changed after); confirm with a row lacking a choice → 409 with its indexes; confirm →
@@ -170,7 +170,7 @@ before confirmation; after confirmation the summary counts match.
   409 `preview_changed` with the row flagged `in_sijil`; a forced DB failure during confirm leaves zero rows in the
   three tables (SC-006); a re-upload of the same file → every row `already_imported`, confirm imports 0 and
   changes no existing row (FR-020); two confirms in parallel → one imports, the other gets `preview_changed`.
-- [ ] T026 [P] [US1] Vitest `web/src/__tests__/legacyImport.test.tsx`: the upload step refuses no file; progress
+- [x] T026 [P] [US1] Vitest `web/src/__tests__/legacyImport.test.tsx`: the upload step refuses no file; progress
   «جارٍ سحب الصور N من M»; the preview shows counts, status values, groups with Arabic flag labels, `allowed`
   choices only, the correction field for `family_length`; «تخطي للكل» sets skip on the group and a row can then be
   switched to «استيراد»; «تأكيد الاستيراد» is disabled while rows wait and opens a confirmation dialog; `preview_changed`
@@ -178,22 +178,24 @@ before confirmation; after confirmation the summary counts match.
 
 ### Implementation — choices and confirm
 
-- [ ] T027 [US1] Service › `set_choices` (allowed choices, correction re-check and re-flag) and `confirm`
+- [x] T027 [US1] Service › `set_choices` (allowed choices, correction re-check and re-flag) and `confirm`
   (advisory lock, re-validate flags against the database, keep unchanged choices, 409 on new flags, insert
   data-model.md `legacy_imports`, `legacy_subscribers`, `legacy_images`, audit via `audit_service.record`, delete
   the preview, commit; on failure roll back, preview kept) in `api/app/services/legacy_import_service.py`.
-- [ ] T028 [US1] Routes `PUT …/{id}/choices` and `POST …/{id}/confirm` in `api/app/api/admin_imports.py`
+- [x] T028 [US1] Routes `PUT …/{id}/choices` and `POST …/{id}/confirm` in `api/app/api/admin_imports.py`
   (T025 green).
-- [ ] T029 [P] [US1] Client `web/src/lib/legacyImport.ts`: API calls, polling (every 2 s while `fetching`), flag
+- [x] T029 [P] [US1] Client `web/src/lib/legacyImport.ts`: API calls, polling (every 2 s while `fetching`), flag
   and outcome labels in Arabic, error code messages.
-- [ ] T030 [US1] Page `web/src/pages/admin/import/ImportPage.tsx` with tabs «المشتركون القدامى» and «مشتركو SAS»
+- [x] T030 [US1] Page `web/src/pages/admin/import/ImportPage.tsx` with tabs «المشتركون القدامى» and «مشتركو SAS»
   (`ComingSoon`); replace `AdminImport` in `web/src/pages/admin/placeholders.tsx` and `web/src/router.tsx`.
-- [ ] T031 [US1] `web/src/pages/admin/import/LegacyImport.tsx`: upload, progress, preview groups with per-row
+- [x] T031 [US1] `web/src/pages/admin/import/LegacyImport.tsx`: upload, progress, preview groups with per-row
   choices and «تخطي للكل», correction field, confirm dialog, summary; phone-width layout (T026 green).
-- [ ] T032 [P] [US1] Audit viewer label «استيراد المشتركين القدامى» and its counts in
+- [x] T032 [P] [US1] Audit viewer label «استيراد المشتركين القدامى» and its counts in
   `web/src/lib/auditFormat.ts` with a case in `web/src/__tests__/audit-format.test.ts` (red first).
-- [ ] T033 [US1] Add `legacy_import` to the audit completeness test `api/tests/integration/test_audit_completeness.py`.
-- [ ] T034 [US1] Run the US1 tests and the whole suites green. **Batch 3 commit.**
+- [x] T033 [US1] Audit completeness for the import (action `legacy.imported`): covered by
+  `test_the_import_is_audited_once_without_personal_data` in `api/tests/integration/test_legacy_confirm.py` (one
+  entry, counts only, no phone, family number or name), so no duplicate in `test_audit_completeness.py`.
+- [x] T034 [US1] Run the US1 tests and the whole suites green. **Batch 3 commit.**
 
 ---
 

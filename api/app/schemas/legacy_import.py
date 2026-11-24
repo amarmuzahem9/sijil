@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 PreviewStatus = Literal["fetching", "ready", "failed"]
 Choice = Literal["import", "skip", "correct"]
@@ -40,6 +40,32 @@ class FlaggedRow(BaseModel):
     allowed: list[Choice]
     choice: Choice | None
     corrected_family_number: str | None
+
+
+class ChoiceIn(BaseModel):
+    index: int
+    choice: Choice
+    # Only with `correct`; checked by the service (an 18-character comparison key).
+    family_number: str | None = Field(default=None, max_length=40)
+
+
+class ChoicesIn(BaseModel):
+    choices: list[ChoiceIn] = Field(min_length=1, max_length=2000)
+
+
+class ImportSummary(BaseModel):
+    """No family numbers or phones (FR-010)."""
+
+    import_id: int
+    rows: int
+    imported: int
+    skipped: int
+    already_imported: int
+    not_counted: int
+    incomplete: int
+    corrected: int
+    skipped_numbers: list[str]
+    incomplete_numbers: list[str]
 
 
 class Preview(BaseModel):

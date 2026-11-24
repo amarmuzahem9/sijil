@@ -16,20 +16,29 @@ import logging
 import uuid
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import delete, or_, select, update
+from fastapi.encoders import jsonable_encoder
+from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from app.core import legacy_row
+from app.core.family_key import family_key
 from app.core.timeutil import utc_now
 from app.db import get_sessionmaker
 from app.errors import AppError
-from app.models import LegacyImportPreview, LegacySubscriber, Request, User
+from app.models import (
+    LegacyImage,
+    LegacyImport,
+    LegacyImportPreview,
+    LegacySubscriber,
+    Request,
+    User,
+)
 from app.models.request import ACTIVE_STATUSES
-from app.services import image_store, legacy_file
+from app.services import audit_service, image_store, legacy_file
 from app.services.drive_fetcher import Fetcher, FetchResult, get_fetcher
 
 log = logging.getLogger("sijil.legacy_import")
@@ -397,3 +406,216 @@ def summary(preview: LegacyImportPreview) -> dict[str, Any]:
         for r in flagged
     ]
     return out
+
+
+# --- choices (research R6; FR-004, FR-005a) ------------------------------------------------------
+
+
+def _ready_preview(db: Session, user: User, preview_id: uuid.UUID) -> LegacyImportPreview:
+    preview = get_preview(db, user, preview_id)
+    if preview.status != "ready":
+        raise AppError("preview_not_ready", 409)
+    return preview
+
+
+def _reflag(db: Session, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Flags again, against what is stored now; choices and corrections are carried over."""
+    return legacy_row.compute_flags(rows, load_existing(db, rows))
+
+
+def _check_repeated_numbers(rows: list[dict[str, Any]]) -> None:
+    """At most one row per legacy number may be imported (FR-004). Repeated numbers are always
+    flagged, so only rows chosen for import can collide."""
+    seen: set[str] = set()
+    for row in rows:
+        if row["choice"] not in ("import", "correct") or not row["allowed"]:
+            continue
+        if row["legacy_number"] in seen:
+            raise AppError("choice_not_allowed", 422)
+        seen.add(row["legacy_number"])
+
+
+def set_choices(
+    db: Session, user: User, preview_id: uuid.UUID, choices: list[dict[str, Any]]
+) -> LegacyImportPreview:
+    """«استيراد» / «تخطي» / a corrected family number per flagged row. «تخطي للكل» is the same
+    call with skip for every row of a group; any row can be changed afterwards."""
+    preview = _ready_preview(db, user, preview_id)
+    rows = copy.deepcopy(preview.rows)
+    by_index = {row["index"]: row for row in rows}
+    for item in choices:
+        row = by_index.get(item["index"])
+        choice = item["choice"]
+        if row is None or not row["flags"] or choice not in row["allowed"]:
+            raise AppError("choice_not_allowed", 422)
+        if choice == "correct":
+            value = (item.get("family_number") or "").strip()
+            key = family_key(value)
+            if len(value) > 40 or key is None or len(key) != legacy_row.FAMILY_KEY_LENGTH:
+                raise AppError("invalid_family_number", 422)
+            row["corrected_family_number"] = value
+            row["family_key"] = key
+        else:
+            row["corrected_family_number"] = None
+            row["family_key"] = family_key(row["family_number_file"])
+        row["choice"] = choice
+    rows = _reflag(db, rows)
+    _check_repeated_numbers(rows)
+    preview.rows = rows
+    db.commit()
+    return preview
+
+
+# --- confirmation (research R10, R11; FR-006, FR-009, FR-010, FR-020) ----------------------------
+
+# One confirmation at a time, across workers (transaction-level advisory lock).
+_CONFIRM_LOCK = 140_014
+_ALREADY = [{"code": "already_imported"}]
+
+
+def _importing(row: dict[str, Any]) -> bool:
+    if row["flags"] == _ALREADY:
+        return False
+    return not row["flags"] or row["choice"] in ("import", "correct")
+
+
+def _number(row: dict[str, Any]) -> str:
+    return row["legacy_number"] or row.get("legacy_number_file") or f"#{row['index']}"
+
+
+def _revalidate(db: Session, preview: LegacyImportPreview) -> list[dict[str, Any]]:
+    """Flags against what is stored now. A row whose flags changed and that needs a choice loses
+    its choice; then the confirmation is refused with the updated preview (research R10)."""
+    old = {row["index"]: row["flags"] for row in preview.rows}
+    rows = _reflag(db, preview.rows)
+    changed = False
+    for row in rows:
+        if row["flags"] != old[row["index"]] and row["allowed"]:
+            row["choice"] = None
+            row["corrected_family_number"] = None
+            row["family_key"] = family_key(row["family_number_file"])
+            changed = True
+    if changed:
+        preview.rows = _reflag(db, rows)
+        db.commit()
+        raise AppError(
+            "preview_changed", 409, extra={"preview": jsonable_encoder(summary(preview))}
+        )
+    waiting = [r["index"] for r in rows if r["allowed"] and r["flags"] and not r["choice"]]
+    if waiting:
+        raise AppError("preview_choices_missing", 409, extra={"indexes": waiting})
+    return rows
+
+
+def _subscriber(import_id: int, row: dict[str, Any], incomplete: bool) -> LegacySubscriber:
+    corrected = row["choice"] == "correct"
+    stamp = row["form_submitted_at"]
+    return LegacySubscriber(
+        import_id=import_id,
+        legacy_number=row["legacy_number"],
+        form_submitted_at=datetime.fromisoformat(stamp) if stamp else None,
+        first_name=row["names"]["first"],
+        second_name=row["names"]["second"],
+        third_name=row["names"]["third"],
+        full_name=row["full_name"],
+        family_number_file=row["family_number_file"],
+        family_number=row["corrected_family_number"] if corrected else row["family_number_file"],
+        family_key=row["family_key"],
+        phone=row["phone"],
+        phone_file=row["phone_file"],
+        status_text=row["status_text"],
+        counts_in_check=row["counts_in_check"],
+        extra=row["extra"],
+        incomplete=incomplete,
+    )
+
+
+def confirm(db: Session, user: User, preview_id: uuid.UUID) -> dict[str, Any]:
+    """Save the chosen rows, their images and one audit entry in one transaction; on any failure
+    nothing is saved and the preview stays (SC-006). Returns the `ImportSummary`."""
+    db.execute(select(func.pg_advisory_xact_lock(_CONFIRM_LOCK)))
+    preview = _ready_preview(db, user, preview_id)
+    rows = _revalidate(db, preview)
+
+    importing = [row for row in rows if _importing(row)]
+    skipped = [row for row in rows if row["flags"] and row["choice"] == "skip"]
+    record = LegacyImport(
+        created_by=user.id,
+        file_name=preview.file_name,
+        rows_total=len(rows),
+        imported=len(importing),
+        skipped=len(skipped),
+        already_imported=sum(1 for row in rows if row["flags"] == _ALREADY),
+        not_counted=0,
+        incomplete=0,
+        corrected=0,
+    )
+    try:
+        db.add(record)
+        db.flush()
+        incomplete: list[str] = []
+        kept: set[str] = set()
+        for row in importing:
+            images = row["images"]
+            missing = any(images[side]["outcome"] != "ok" for side in SIDES)
+            subscriber = _subscriber(record.id, row, missing)
+            db.add(subscriber)
+            db.flush()
+            for side in SIDES:
+                image = images[side]
+                if image["outcome"] != "ok":
+                    continue
+                db.add(
+                    LegacyImage(
+                        legacy_subscriber_id=subscriber.id,
+                        side=side,
+                        file_name=image["staged_file"],
+                        size_bytes=image["size_bytes"],
+                        width=image["width"],
+                        height=image["height"],
+                    )
+                )
+                kept.add(image["staged_file"])
+            record.not_counted += not row["counts_in_check"]
+            record.incomplete += missing
+            record.corrected += row["choice"] == "correct"
+            if missing:
+                incomplete.append(_number(row))
+        counts = {
+            "rows": record.rows_total,
+            "imported": record.imported,
+            "skipped": record.skipped,
+            "already_imported": record.already_imported,
+            "not_counted": record.not_counted,
+            "incomplete": record.incomplete,
+            "corrected": record.corrected,
+        }
+        # Counts only: no phone, family number or name (Principles II, III; research R11).
+        audit_service.record(
+            db,
+            actor_id=user.id,
+            action="legacy.imported",
+            entity_type="legacy_import",
+            entity_id=record.id,
+            after={"file_name": record.file_name, **counts},
+        )
+        dropped = [name for name in _staged(rows) if name not in kept]
+        db.delete(preview)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    for name in dropped:
+        image_store.unlink_quietly(name)
+    log.info(
+        "legacy import confirmed import=%s imported=%d skipped=%d",
+        record.id,
+        record.imported,
+        record.skipped,
+    )
+    return {
+        "import_id": record.id,
+        **counts,
+        "skipped_numbers": [_number(row) for row in skipped],
+        "incomplete_numbers": incomplete,
+    }

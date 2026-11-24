@@ -69,6 +69,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   // specs/013
   'request.linked': 'تم الربط',
   'request.unlinked': 'تراجع عن الربط',
+  // specs/014
+  'legacy.imported': 'استيراد المشتركين القدامى',
 };
 
 export const AUDIT_FIELD_LABELS: Record<string, string> = {
@@ -109,6 +111,15 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   // specs/011
   deleted: 'حُذفت البيانات',
   pin_count: 'عدد التثبيتات',
+  // specs/014 (the legacy import counts; never a phone or family number)
+  file_name: 'الملف',
+  rows: 'عدد الصفوف',
+  imported: 'المستورد',
+  skipped: 'المتخطّى',
+  already_imported: 'مستورد سابقاً',
+  not_counted: 'لا يُحسب في الفحص',
+  incomplete: 'غير مكتمل',
+  corrected: 'أرقام عائلية مصحّحة',
 };
 
 export const STATE_LABELS = { active: 'فعّال', inactive: 'موقوف' } as const;

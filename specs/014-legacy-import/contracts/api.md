@@ -43,8 +43,8 @@ The caller's own preview only (another's or an expired one → 404 `preview_not_
 ### `PUT /api/admin/imports/legacy/previews/{id}/choices`
 
 Body: `{ "choices": [ { "index": 14, "choice": "import|skip|correct", "family_number": "…" } ] }` (partial updates
-allowed). `family_number` required with `correct` (trimmed, 1–40 chars); the new value is re-checked for duplicates
-and length, and its flags are returned.
+allowed). `family_number` required with `correct` (trimmed, at most 40 chars, and its comparison key must be 18
+characters, else `422 invalid_family_number`); the new value is re-checked for duplicates and its flags are returned.
 
 - `200` → `Preview`.
 - `409 preview_not_ready`, `422 choice_not_allowed` (e.g. `import` on `legacy_number_missing`, two `import` on one
@@ -60,7 +60,8 @@ and length, and its flags are returned.
   ```
   No family numbers or phones.
 - `409 preview_choices_missing` `{ "indexes": [14, 27] }`.
-- `409 preview_changed` — re-validation found new flags; body is the updated `Preview`.
+- `409 preview_changed` — re-validation found a row that now needs a choice (its choice is cleared); the error body
+  carries the updated `Preview` in `preview`. Rows whose flags did not change keep their choices.
 - `409 preview_not_ready`, `404 preview_not_found`.
 
 ### `DELETE /api/admin/imports/legacy/previews/{id}`

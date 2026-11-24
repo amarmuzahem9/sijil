@@ -236,3 +236,25 @@ describe('«تم الربط» and its undo (specs/013 T043)', () => {
     expect(formatAuditValue('status', 'linked')).toBe('تم الربط');
   });
 });
+
+describe('legacy import (specs/014 T032)', () => {
+  it('labels the action, its target and its counts in Arabic', async () => {
+    const { AUDIT_FIELD_LABELS } = await import('../lib/labels');
+    const e = entry({
+      action: 'legacy.imported',
+      entity_type: 'legacy_import',
+      entity_id: '3',
+      after: { file_name: 'legacy.csv', imported: 11 },
+    });
+    expect(actionLabel(e)).toBe('استيراد المشتركين القدامى');
+    expect(entryTargetLabel(e)).toBe('legacy.csv');
+    expect(AUDIT_FIELD_LABELS.file_name).toBe('الملف');
+    expect(AUDIT_FIELD_LABELS.rows).toBe('عدد الصفوف');
+    expect(AUDIT_FIELD_LABELS.imported).toBe('المستورد');
+    expect(AUDIT_FIELD_LABELS.skipped).toBe('المتخطّى');
+    expect(AUDIT_FIELD_LABELS.already_imported).toBe('مستورد سابقاً');
+    expect(AUDIT_FIELD_LABELS.not_counted).toBe('لا يُحسب في الفحص');
+    expect(AUDIT_FIELD_LABELS.incomplete).toBe('غير مكتمل');
+    expect(AUDIT_FIELD_LABELS.corrected).toBe('أرقام عائلية مصحّحة');
+  });
+});

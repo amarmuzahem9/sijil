@@ -117,6 +117,10 @@ export function entryTargetLabel(entry: AuditEntry): string | null {
     const tower = entry.before?.tower_code;
     return typeof tower === 'string' && tower ? `مسودة (${tower})` : 'مسودة';
   }
+  if (entry.entity_type === 'legacy_import') {
+    const file = entry.after?.file_name;
+    return typeof file === 'string' ? file : 'استيراد المشتركين القدامى';
+  }
   if (entry.target_label) return entry.target_label; // resolved by the server
   const values = { ...(entry.before ?? {}), ...(entry.after ?? {}) };
   const key = entry.entity_type === 'tower' ? 'code' : 'name';

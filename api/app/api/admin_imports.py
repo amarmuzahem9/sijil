@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import AuthContext, require_permission
 from app.db import get_db
 from app.errors import AppError
-from app.schemas.legacy_import import Preview
+from app.schemas.legacy_import import ChoicesIn, ImportSummary, Preview
 from app.services import legacy_file, legacy_import_service
 
 router = APIRouter(prefix="/admin/imports/legacy", tags=["admin-imports"])
@@ -44,6 +44,28 @@ def get_preview(
     return legacy_import_service.summary(
         legacy_import_service.get_preview(db, ctx.user, preview_id)
     )
+
+
+@router.put("/previews/{preview_id}/choices", response_model=Preview)
+def set_choices(
+    preview_id: uuid.UUID,
+    body: ChoicesIn,
+    ctx: AuthContext = Depends(_reports),
+    db: Session = Depends(get_db),
+) -> dict:
+    preview = legacy_import_service.set_choices(
+        db, ctx.user, preview_id, [item.model_dump() for item in body.choices]
+    )
+    return legacy_import_service.summary(preview)
+
+
+@router.post("/previews/{preview_id}/confirm", response_model=ImportSummary, status_code=201)
+def confirm(
+    preview_id: uuid.UUID,
+    ctx: AuthContext = Depends(_reports),
+    db: Session = Depends(get_db),
+) -> dict:
+    return legacy_import_service.confirm(db, ctx.user, preview_id)
 
 
 @router.delete("/previews/{preview_id}", status_code=204)

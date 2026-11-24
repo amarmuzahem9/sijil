@@ -136,7 +136,7 @@ All Technical Context unknowns are resolved below. Each entry: Decision, Rationa
 
 ## R11. Audit
 
-- **Decision**: One `audit_log` row, action `legacy_import`, entity `legacy_import:<id>`, `after` = file name and
+- **Decision**: One `audit_log` row, action `legacy.imported` (the `<entity>.<event>` pattern of the other actions), entity type `legacy_import` with the import id, `after` = file name and
   counts (rows in file, imported, skipped, already imported, not counted in check, incomplete, family numbers
   corrected). No phones, family numbers or names. A corrected family number is recoverable from the audit entry
   through `legacy_imports.id` → `legacy_subscribers` (`family_number_file`, `family_number`), which are never

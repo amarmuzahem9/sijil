@@ -67,7 +67,8 @@ async function send(path: string, init: RequestInit, withAuth: boolean): Promise
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   const headers = new Headers(init.headers);
-  if (init.body !== undefined) headers.set('Content-Type', 'application/json');
+  // A FormData body sets its own multipart Content-Type (with the boundary).
+  if (typeof init.body === 'string') headers.set('Content-Type', 'application/json');
   if (withAuth && accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
   try {
     return await fetch(path, {
@@ -130,7 +131,7 @@ export async function apiFetch<T>(path: string, options: FetchOptions = {}): Pro
   const { method = 'GET', body, auth = true, headers } = options;
   const init: RequestInit = {
     method,
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body),
     headers,
   };
 
