@@ -26,10 +26,13 @@ import {
   linkRequest,
   listAwaiting,
   listRecent,
+  unlinkRequest,
 } from '../../../lib/links';
+import type { UnlinkReason } from '../../../lib/labels';
 import { isSearchable } from '../../../lib/requestSearch';
 import { formatBaghdad } from '../../../lib/time';
 import { LinkConfirmDialog } from './LinkConfirmDialog';
+import { UnlinkDialog } from './UnlinkDialog';
 
 type ListKind = 'awaiting' | 'recent';
 
@@ -87,6 +90,7 @@ export default function AwaitingLink() {
   const [text, setText] = useState('');
   const [search, setSearch] = useState('');
   const [confirming, setConfirming] = useState<LinkRow | null>(null);
+  const [undoing, setUndoing] = useState<LinkRow | null>(null);
   const [message, setMessage] = useState<{ severity: 'success' | 'error'; text: string } | null>(
     null,
   );
@@ -106,16 +110,29 @@ export default function AwaitingLink() {
   const rows = pages.flatMap((p) => p.items);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['links'] });
+  const failed = (err: Error) =>
+    setMessage({
+      severity: 'error',
+      text: err instanceof ApiError ? err.message : 'حدث خطأ غير متوقع، حاول مرة أخرى',
+    });
   const link = useMutation({
     mutationFn: (row: LinkRow) => linkRequest(row.id),
     onSuccess: (row) => setMessage({ severity: 'success', text: `تم ربط ${row.number_label}` }),
-    onError: (err) =>
-      setMessage({
-        severity: 'error',
-        text: err instanceof ApiError ? err.message : 'حدث خطأ غير متوقع، حاول مرة أخرى',
-      }),
+    onError: failed,
     onSettled: () => {
       setConfirming(null);
+      void refresh();
+    },
+  });
+  // The page sends back the link it showed; a newer link answers `already_unlinked` (R2).
+  const unlink = useMutation({
+    mutationFn: ({ row, reason }: { row: LinkRow; reason: UnlinkReason }) =>
+      unlinkRequest(row.id, { reason, link_id: row.link_id ?? 0 }),
+    onSuccess: (row) =>
+      setMessage({ severity: 'success', text: `تم التراجع عن ربط ${row.number_label}` }),
+    onError: failed,
+    onSettled: () => {
+      setUndoing(null);
       void refresh();
     },
   });
@@ -181,7 +198,11 @@ export default function AwaitingLink() {
                   <Button variant="contained" color="success" onClick={() => setConfirming(row)}>
                     تم الربط
                   </Button>
-                ) : undefined
+                ) : (
+                  <Button variant="outlined" color="warning" onClick={() => setUndoing(row)}>
+                    التراجع عن الربط
+                  </Button>
+                )
               }
             />
           ))}
@@ -198,6 +219,13 @@ export default function AwaitingLink() {
         busy={link.isPending}
         onConfirm={() => confirming && link.mutate(confirming)}
         onClose={() => setConfirming(null)}
+      />
+      <UnlinkDialog
+        key={undoing?.id ?? 'none'}
+        row={undoing}
+        busy={unlink.isPending}
+        onConfirm={(reason) => undoing && unlink.mutate({ row: undoing, reason })}
+        onClose={() => setUndoing(null)}
       />
     </Stack>
   );

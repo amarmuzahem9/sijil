@@ -2,9 +2,9 @@
 
 Each count goes by the time of its own step, in Baghdad days and months: submitted by
 `submitted_at`, approved by `approved_at` (the automatic approval counts at submission), rejected
-by `rejected_at`. Pending is the current number, the same in both rows. Linked stays 0 until 013
-adds `linked_at`. Deleted requests (specs/011) still count as submitted and rejected; they
-leave pending. Counts only: no subscriber data.
+by `rejected_at`, linked by `linked_at` (requests linked now; an undo clears it, specs/013 R6).
+Pending is the current number, the same in both rows. Deleted requests (specs/011) still count
+as submitted and rejected; they leave pending. Counts only: no subscriber data.
 """
 
 from datetime import datetime
@@ -27,7 +27,7 @@ def _row(db: Session, bounds: tuple[datetime, datetime], pending: int) -> HomeCo
         submitted=_count(db, Request.submitted_at, start, end),
         approved=_count(db, Request.approved_at, start, end),
         pending=pending,
-        linked=0,
+        linked=_count(db, Request.linked_at, start, end),
         rejected=_count(db, Request.rejected_at, start, end),
     )
 

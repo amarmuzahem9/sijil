@@ -116,3 +116,99 @@ def test_admins_cannot_read_the_marketer_dashboard(client, make_user) -> None:
     admin = make_user("super_admin")
     res = client.get("/api/marketer/dashboard", headers=headers_for(client, admin))
     assert res.status_code == 403
+
+
+# --- undo and re-link (specs/013 US3: FR-012, FR-013, FR-022; T037) ---
+
+
+def _link_id(db, request) -> int:
+    from sqlalchemy import select
+
+    from app.models import RequestLink
+
+    return db.scalar(
+        select(RequestLink.id)
+        .where(RequestLink.request_id == request.id, RequestLink.kind == "linked")
+        .order_by(RequestLink.id.desc())
+    )
+
+
+def _admin_headers(client, make_user):
+    from tests.helpers.review import admin_with
+
+    return headers_for(client, admin_with(make_user, "link"))
+
+
+def test_an_undo_removes_the_link_from_its_month(
+    client, db, make_user, marketer, frozen_clock
+) -> None:
+    frozen_clock.set(NOW)
+    request = _linked(db, marketer, NOW - timedelta(hours=1))
+    _linked(db, marketer, NOW - timedelta(hours=2))
+    ah = _admin_headers(client, make_user)
+    assert _dashboard(client, marketer)["linked_this_month"] == 2
+
+    res = client.post(
+        f"/api/admin/requests/{request.id}/unlink",
+        json={"reason": "not_linked_in_sas", "link_id": _link_id(db, request)},
+        headers=ah,
+    )
+
+    assert res.status_code == 200, res.json()
+    body = _dashboard(client, marketer)
+    assert body["linked_this_month"] == 1
+    assert request.id not in [r["id"] for r in body["recent_links"]]
+
+
+def test_undo_of_a_previous_month_link_leaves_that_month(
+    db, make_user, marketer, frozen_clock
+) -> None:
+    from app.schemas.admin_links import UnlinkIn
+
+    october = NOW - timedelta(days=30)
+    request = _linked(db, marketer, october)
+    frozen_clock.set(october)
+    assert link_service.marketer_counts(db, marketer).linked_this_month == 1
+
+    frozen_clock.set(NOW)
+    link_service.unlink(
+        db,
+        make_user("super_admin"),
+        request.id,
+        UnlinkIn(reason="by_mistake", link_id=_link_id(db, request)),
+    )
+
+    frozen_clock.set(october)
+    assert link_service.marketer_counts(db, marketer).linked_this_month == 0
+
+
+def test_link_undo_link_counts_once_in_the_month_of_the_new_link(
+    client, db, make_user, marketer, frozen_clock
+) -> None:
+    from sqlalchemy import select
+
+    from app.models import RequestLink
+
+    october = NOW - timedelta(days=30)
+    request = _linked(db, marketer, october)
+    ah = _admin_headers(client, make_user)
+    frozen_clock.set(NOW)
+    undo = client.post(
+        f"/api/admin/requests/{request.id}/unlink",
+        json={"reason": "by_mistake", "link_id": _link_id(db, request)},
+        headers=ah,
+    )
+    assert undo.status_code == 200, undo.json()
+    assert client.post(f"/api/admin/requests/{request.id}/link", headers=ah).status_code == 200
+
+    body = _dashboard(client, marketer)
+    assert body["linked_this_month"] == 1
+    assert [r["id"] for r in body["recent_links"]] == [request.id]
+    frozen_clock.set(october)
+    assert link_service.marketer_counts(db, marketer).linked_this_month == 0
+    kinds = db.scalars(
+        select(RequestLink.kind)
+        .where(RequestLink.request_id == request.id)
+        .order_by(RequestLink.id)
+    ).all()
+    assert kinds == ["linked", "unlinked", "linked"]

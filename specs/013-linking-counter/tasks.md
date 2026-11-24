@@ -203,35 +203,35 @@ link date on the request.
 
 ### Tests (write first, run red)
 
-- [ ] T035 [P] [US3] Integration test `api/tests/integration/test_unlink.py`: success restores `approved`,
+- [x] T035 [P] [US3] Integration test `api/tests/integration/test_unlink.py`: success restores `approved`,
   clears data-model.md `requests.linked_at`, `requests.linked_by`, adds a `request_links` row `unlinked` with
   the reason (data-model.md `request_links.reason`), one audit `request.unlinked` with the reason, one
   `unlinked` notification whose `reason_label` is the fixed label; `approved_at`, `approved_by`,
   `counts_commission` unchanged; refusals write nothing: missing/unknown reason or `link_id` (422), stale
   `link_id` and second undo (`already_unlinked`), pending/rejected (`invalid_transition`), deleted
   (`request_deleted`), 403 without `link`.
-- [ ] T036 [P] [US3] Concurrency test in `api/tests/integration/test_link_concurrency.py`: two undos of the same
+- [x] T036 [P] [US3] Concurrency test in `api/tests/integration/test_link_concurrency.py`: two undos of the same
   link; one succeeds, one `already_unlinked`; one history row, audit and notification.
-- [ ] T037 [P] [US3] Extend `api/tests/integration/test_linked_counter.py`: undo removes a link from its month
+- [x] T037 [P] [US3] Extend `api/tests/integration/test_linked_counter.py`: undo removes a link from its month
   (also a previous month's); link → undo → link in a new month counts once, in the new month; full history
   kept (three `request_links` rows).
-- [ ] T038 [P] [US3] Extend `api/tests/integration/test_link_lists.py` for `GET /api/admin/links/recent`:
+- [x] T038 [P] [US3] Extend `api/tests/integration/test_link_lists.py` for `GET /api/admin/links/recent`:
   linked only, not deleted, newest link first across months, `linked_at`, `linked_by_name`, `link_id` = the
   current link; same search and no identity fields.
-- [ ] T039 [P] [US3] Extend `api/tests/integration/test_deletion.py`: an undone (approved again) request is
+- [x] T039 [P] [US3] Extend `api/tests/integration/test_deletion.py`: an undone (approved again) request is
   not deletable.
-- [ ] T040 [P] [US3] Vitest `web/src/__tests__/unlinkDialog.test.tsx`: the reason is required, the four labels
+- [x] T040 [P] [US3] Vitest `web/src/__tests__/unlinkDialog.test.tsx`: the reason is required, the four labels
   shown, no text field; posts `reason` and `link_id`; on `already_unlinked` shows the message and refreshes.
 
 ### Implementation
 
-- [ ] T041 [US3] Add `recent(db, q, offset, limit)` and `unlink(db, user, request_id, body)` to
+- [x] T041 [US3] Add `recent(db, q, offset, limit)` and `unlink(db, user, request_id, body)` to
   `api/app/services/link_service.py` (research R2, R3); `GET /admin/links/recent` and `POST
   /admin/requests/{id}/unlink` in `api/app/api/admin_links.py`; T035–T039 green.
-- [ ] T042 [US3] Create `web/src/pages/admin/links/UnlinkDialog.tsx` and fill the «المربوطة مؤخراً» tab of
+- [x] T042 [US3] Create `web/src/pages/admin/links/UnlinkDialog.tsx` and fill the «المربوطة مؤخراً» tab of
   `web/src/pages/admin/links/AwaitingLink.tsx` (rows with link date and who linked, «التراجع عن الربط»);
   T040 green.
-- [ ] T043 [P] [US3] Show the undo reason label from `after.reason` in `web/src/lib/auditFormat.ts`, with a
+- [x] T043 [P] [US3] Show the undo reason label from `after.reason` in `web/src/lib/auditFormat.ts`, with a
   case in `web/src/__tests__/audit-format.test.ts` (red first).
 
 ---
@@ -242,11 +242,11 @@ link date on the request.
 
 **Independent Test**: spec US4.
 
-- [ ] T044 [US4] Extend `api/tests/integration/test_admin_home.py` (red first): linked today and month by
+- [x] T044 [US4] Extend `api/tests/integration/test_admin_home.py` (red first): linked today and month by
   `linked_at` in Baghdad bounds; an undone link not counted; counts only.
-- [ ] T045 [US4] Replace the fixed `linked=0` in `api/app/services/admin_home.py` with the count of research
+- [x] T045 [US4] Replace the fixed `linked=0` in `api/app/services/admin_home.py` with the count of research
   R6; T044 green.
-- [ ] T046 Run the api and web suites; all green.
+- [x] T046 Run the api and web suites; all green.
 
 **Checkpoint**: batch 4 commit.
 

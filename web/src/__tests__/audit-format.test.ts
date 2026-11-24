@@ -224,3 +224,15 @@ describe('entries of a deleted request (specs/011 T047)', () => {
     expect(formatEntryValue(gone, 'field', 'national_id')).toBe('الرقم الوطني');
   });
 });
+
+describe('«تم الربط» and its undo (specs/013 T043)', () => {
+  it('labels the actions and shows the undo reason in Arabic', async () => {
+    const { actionLabel, formatAuditValue } = await import('../lib/auditFormat');
+    expect(actionLabel(entry({ action: 'request.linked' }))).toBe('تم الربط');
+    expect(actionLabel(entry({ action: 'request.unlinked' }))).toBe('تراجع عن الربط');
+    expect(formatAuditValue('reason', 'not_linked_in_sas')).toBe('لم يُربط فعلياً في SAS');
+    expect(formatAuditValue('reason', 'by_mistake')).toBe('ضُغط بالخطأ');
+    expect(formatAuditValue('reason', 'other_request_linked')).toBe('ربط طلب آخر بدله');
+    expect(formatAuditValue('status', 'linked')).toBe('تم الربط');
+  });
+});

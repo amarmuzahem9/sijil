@@ -139,3 +139,29 @@ def test_two_admins_one_link(engine, world, round_) -> None:
         assert request.status == "linked"
         assert request.linked_by in world["users"][1:]
     assert _writes(engine, request_id, "linked", "request.linked") == (1, 1, 1)
+
+
+@pytest.mark.parametrize("round_", range(ROUNDS))
+def test_two_admins_one_undo(engine, world, round_) -> None:
+    """specs/013 FR-009, T036: both undo the same link; one wins."""
+    from app.schemas.admin_links import UnlinkIn
+
+    request_id = _accepted(engine, world)
+    with Session(engine) as s:
+        link_service.link(s, s.get(User, world["users"][1]), request_id)
+        link_id = s.scalar(
+            select(RequestLink.id).where(
+                RequestLink.request_id == request_id, RequestLink.kind == "linked"
+            )
+        )
+    body = UnlinkIn(reason="by_mistake", link_id=link_id)
+
+    outcomes = _race(
+        engine, world, lambda s, admin: link_service.unlink(s, admin, request_id, body)
+    )
+
+    assert outcomes == ["already_unlinked", "ok"]
+    with Session(engine) as s:
+        request = s.get(Request, request_id)
+        assert (request.status, request.linked_at) == ("approved", None)
+    assert _writes(engine, request_id, "unlinked", "request.unlinked") == (1, 1, 1)

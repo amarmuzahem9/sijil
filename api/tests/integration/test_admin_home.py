@@ -137,3 +137,26 @@ def test_deletion_lowers_pending_and_keeps_the_other_counts(
         assert after[row]["pending"] == before[row]["pending"] - 1
         for key in KEYS - {"pending"}:
             assert after[row][key] == before[row][key], (row, key)
+
+
+def test_linked_counts_go_by_link_time(client, db, make_user, marketer, frozen_clock) -> None:
+    """specs/013 US4 FR-015, T044: currently linked requests by `linked_at`, Baghdad day and
+    month; an undone link does not count."""
+    frozen_clock.set(NOW)
+    today = datetime(2026, 11, 24, 5, 0, tzinfo=UTC)
+    request_factory(db, marketer, status="linked", linked_at=today, submitted_at=LAST_MONTH)
+    request_factory(db, marketer, status="linked", linked_at=EARLIER_THIS_MONTH)
+    request_factory(db, marketer, status="linked", linked_at=LAST_MONTH)
+    # 23:30 on the 23rd in Baghdad: yesterday, but this month.
+    request_factory(
+        db, marketer, status="linked", linked_at=datetime(2026, 11, 23, 20, 30, tzinfo=UTC)
+    )
+    undone = request_factory(db, marketer, status="linked", linked_at=today)
+    undone.status, undone.linked_at, undone.linked_by = "approved", None, None
+    db.flush()
+
+    body = _home(client, headers_for(client, make_user("super_admin")))
+
+    assert body["today"]["linked"] == 1
+    assert body["month"]["linked"] == 3
+    assert set(body["today"]) == KEYS

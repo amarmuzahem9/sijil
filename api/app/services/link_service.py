@@ -10,11 +10,11 @@ import logging
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.core import link_search, request_status
+from app.core import link_search, request_status, unlink_reasons
 from app.core.timeutil import baghdad_month_bounds, baghdad_month_label, utc_now
 from app.errors import AppError
 from app.models import Request, RequestLink, User
-from app.schemas.admin_links import LinkList, LinkRow
+from app.schemas.admin_links import LinkList, LinkRow, UnlinkIn
 from app.schemas.dashboard import MarketerDashboard, RecentLink
 from app.services import audit_service, notification_service
 
@@ -96,6 +96,12 @@ def awaiting(db: Session, q: str | None, offset: int, limit: int) -> LinkList:
     return _page(db, query, (Request.approved_at, Request.id), q, offset, limit)
 
 
+def recent(db: Session, q: str | None, offset: int, limit: int) -> LinkList:
+    """Linked, not deleted; the newest link first, every month (FR-004)."""
+    query = select(Request).where(Request.status == "linked", Request.deleted_at.is_(None))
+    return _page(db, query, (Request.linked_at.desc(), Request.id.desc()), q, offset, limit)
+
+
 # --- link (R2, R3) -------------------------------------------------------------------------------
 
 
@@ -142,6 +148,45 @@ def link(db: Session, user: User, request_id: int) -> Request:
     db.commit()
     # The action and the number only (constitution Principle II).
     log.info("link number=%s", request.number)
+    return request
+
+
+def unlink(db: Session, user: User, request_id: int, body: UnlinkIn) -> Request:
+    """«التراجع عن الربط»: back to accepted, with a reason from the fixed list (FR-008 to FR-010).
+    `link_id` must be the current link, so a stale page cannot undo a newer link (R2)."""
+    unlink_reasons.validate(body.reason)
+    request = _lock(db, request_id)
+    if request.status == "approved" or (
+        request.status == "linked" and _current_link_id(db, request) != body.link_id
+    ):
+        raise AppError("already_unlinked", 409)
+    # §7.2 also allows pending → approved (acceptance), so the undo names its own source state.
+    if request.status != "linked":
+        raise AppError("invalid_transition", 409)
+    request_status.check(request.status, "approved")
+
+    now = utc_now()
+    request.status = "approved"
+    request.linked_at = None
+    request.linked_by = None
+    request.updated_at = now
+    db.add(
+        RequestLink(
+            request_id=request.id, kind="unlinked", actor_id=user.id, at=now, reason=body.reason
+        )
+    )
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="request.unlinked",
+        entity_type="request",
+        entity_id=str(request.number),
+        before={"status": "linked"},
+        after={"status": "approved", "reason": body.reason},
+    )
+    notification_service.add(db, request, "unlinked", body.reason)
+    db.commit()
+    log.info("unlink number=%s reason=%s", request.number, body.reason)
     return request
 
 

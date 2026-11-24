@@ -156,3 +156,51 @@ def test_limit_out_of_range_is_422(client, h, limit) -> None:
 def test_without_link_permission_is_403(client, make_user, marketer, who) -> None:
     caller = admin_with(make_user, "review", "delete") if who == "review_admin" else marketer
     assert _awaiting(client, headers_for(client, caller)).status_code == 403
+
+
+# --- «المربوطة مؤخراً» (specs/013 US3 FR-004; T038) ---
+
+
+def _recent(client, h, **params):
+    return client.get("/api/admin/links/recent", params=params, headers=h)
+
+
+def test_recent_lists_linked_live_requests_newest_link_first(
+    client, db, h, linker, make_user, marketer
+) -> None:
+    from sqlalchemy import select
+
+    from app.models import RequestLink
+
+    linker_b = admin_with(make_user, "link", name="أدمن ربط ثاني")
+    october = request_factory(
+        db, marketer, status="linked", linked_at=NOW - timedelta(days=30), linked_by=linker_b.id
+    )
+    latest = request_factory(db, marketer, status="linked", linked_at=NOW, linked_by=linker_b.id)
+    _accepted(db, marketer, 1)
+    request_factory(db, marketer, status="rejected")
+    mark_deleted(db, request_factory(db, marketer, status="pending_review"), linker)
+
+    body = _recent(client, h).json()
+
+    assert [r["id"] for r in body["items"]] == [latest.id, october.id]
+    assert body["total"] == 2
+    row = body["items"][0]
+    assert set(row) == ROW_KEYS
+    assert datetime.fromisoformat(row["linked_at"]) == NOW
+    assert row["linked_by_name"] == "أدمن ربط ثاني"
+    current = db.scalar(select(RequestLink.id).where(RequestLink.request_id == latest.id))
+    assert row["link_id"] == current
+    text = json.dumps(body, ensure_ascii=False)
+    assert latest.national_id not in text
+    assert latest.family_number not in text
+
+
+def test_recent_search_and_permission(client, db, h, make_user, marketer) -> None:
+    target = request_factory(db, marketer, status="linked", phone="07801230001")
+    request_factory(db, marketer, status="linked", phone="07801230002")
+    for q in (f"T3C-{target.number}", "0780 123 0001", target.username.lower()):
+        assert [r["id"] for r in _recent(client, h, q=q).json()["items"]] == [target.id], q
+    assert _recent(client, h, q="1").status_code == 422
+    other = admin_with(make_user, "review")
+    assert _recent(client, headers_for(client, other)).status_code == 403

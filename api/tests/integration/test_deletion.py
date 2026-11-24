@@ -392,3 +392,22 @@ def test_a_linked_request_keeps_its_link_when_deletion_is_refused(
         select(func.count()).select_from(RequestLink).where(RequestLink.request_id == request.id)
     )
     assert rows == 1
+
+
+def test_an_undone_request_is_still_not_deletable(client, db, marketer, deleter) -> None:
+    """specs/013 FR-020, T039: after «التراجع عن الربط» the request is accepted again."""
+    from sqlalchemy import select
+
+    from app.models import RequestLink
+    from app.schemas.admin_links import UnlinkIn
+    from app.services import link_service
+
+    request = request_factory(db, marketer, status="linked")
+    link_id = db.scalar(select(RequestLink.id).where(RequestLink.request_id == request.id))
+    link_service.unlink(db, deleter, request.id, UnlinkIn(reason="by_mistake", link_id=link_id))
+
+    res = _delete(client, headers_for(client, deleter), request.id, request=request)
+
+    assert (res.status_code, res.json()["code"]) == (409, "request_not_deletable")
+    db.refresh(request)
+    assert (request.status, request.deleted_at) == ("approved", None)

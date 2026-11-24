@@ -12,6 +12,7 @@ import {
   PIN_SOURCE_LABELS,
   REASON_LABELS,
   REJECTION_REASON_LABELS,
+  UNLINK_REASON_LABELS,
   REQUEST_TYPE_LABELS,
   WARNING_LABELS,
 } from './labels';
@@ -49,6 +50,9 @@ export function formatAuditValue(field: string, value: unknown): string {
   // specs/011: the deletion reason ('other' reads «سبب آخر» in both lists) and the status.
   if (field === 'reason' && typeof value === 'string' && value in DELETION_REASON_LABELS)
     return DELETION_REASON_LABELS[value as keyof typeof DELETION_REASON_LABELS];
+  // specs/013: the reason of «التراجع عن الربط».
+  if (field === 'reason' && typeof value === 'string' && value in UNLINK_REASON_LABELS)
+    return UNLINK_REASON_LABELS[value as keyof typeof UNLINK_REASON_LABELS];
   if (field === 'status' && typeof value === 'string' && value in STATUS_LABELS)
     return STATUS_LABELS[value as keyof typeof STATUS_LABELS];
   if (field === 'despite_warnings' && Array.isArray(value)) {
