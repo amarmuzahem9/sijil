@@ -240,26 +240,26 @@ logged; a marketer sees nothing.
 
 ### Tests (write first, run red)
 
-- [ ] T041 [P] [US3] Integration tests `api/tests/integration/test_legacy_linked_record.py`: the request file's
+- [x] T041 [P] [US3] Integration tests `api/tests/integration/test_legacy_linked_record.py`: the request file's
   reason record for source `legacy` carries `legacy_number`, `full_name`, `phone`, `registered_at` (form time),
   `status` (raw «الحالة»), `incomplete`, `extra` (mother's name, mother's father's name, birth date; no e-mails),
   `image_ids`; no family number anywhere in the response; an unknown legacy ref → `available=false`.
-- [ ] T042 [P] [US3] Integration tests `api/tests/integration/test_legacy_images.py`:
+- [x] T042 [P] [US3] Integration tests `api/tests/integration/test_legacy_images.py`:
   `GET /admin/legacy-images/{id}` → 200 JPEG with `no-store` for main admin and `review`; 404 for `reports`-only,
   `link`-only, a marketer, an unknown id, a missing file; each 200 writes `image_access_log` with
   `legacy_subscriber_id`, side, `view`.
-- [ ] T043 [P] [US3] Vitest `web/src/__tests__/linkedRecordCard.test.tsx`: a `legacy` record shows «مشترك قديم»,
+- [x] T043 [P] [US3] Vitest `web/src/__tests__/linkedRecordCard.test.tsx`: a `legacy` record shows «مشترك قديم»,
   the legacy number, «تاريخ الاستمارة», «الحالة» as plain text (no status chip), «غير مكتمل» when incomplete,
   «بيانات إضافية», and images loaded from `/api/admin/legacy-images/…`; Sijil records unchanged.
 
 ### Implementation
 
-- [ ] T044 [US3] Resolver `_legacy` in `api/app/services/legacy_source.py`, registered with
+- [x] T044 [US3] Resolver `_legacy` in `api/app/services/legacy_source.py`, registered with
   `linked_records.register_resolver("legacy", …)`; add `legacy_number`, `incomplete`, `extra` to `LinkedRecord`
   (`api/app/services/linked_records.py`) and `LinkedRecordOut` (`api/app/schemas/admin_requests.py`) (T041 green).
-- [ ] T045 [US3] `review_service.open_legacy_image` in `api/app/services/review_service.py` and the route in
+- [x] T045 [US3] `review_service.open_legacy_image` in `api/app/services/review_service.py` and the route in
   `api/app/api/admin_requests.py` (T042 green).
-- [ ] T046 [US3] `web/src/pages/admin/pending/LinkedRecordCard.tsx` legacy fields, `SOURCE_LABELS.legacy` =
+- [x] T046 [US3] `web/src/pages/admin/pending/LinkedRecordCard.tsx` legacy fields, `SOURCE_LABELS.legacy` =
   «مشترك قديم» in `web/src/lib/labels.ts`, image URL by kind in `RequestImage.tsx` and `web/src/lib/adminRequests.ts`
   (T043 green).
 
@@ -269,17 +269,17 @@ logged; a marketer sees nothing.
 
 **Independent Test**: compare admin home, lists and counters before and after an import.
 
-- [ ] T047 [P] [US4] Integration test `api/tests/integration/test_legacy_isolation.py` (this guards behaviour that
+- [x] T047 [P] [US4] Integration test `api/tests/integration/test_legacy_isolation.py` (this guards behaviour that
   already holds, so prove it bites instead of red-first: run it once against a temporary helper that also inserts a
   request per legacy row and see it fail, then remove the helper): after importing the fixture, admin home numbers,
   `GET /admin/requests/pending`, «بانتظار الربط» and recent links, marketer home counter and «و M بلا عمولة», and
   notifications are identical to before; no notification row added.
-- [ ] T048 [P] [US4] Extend `api/tests/integration/test_by_number.py` and the marketer request search test:
+- [x] T048 [P] [US4] Extend `api/tests/integration/test_by_number.py` and the marketer request search test:
   `T3C-005` and `T3C-109` open or find no request.
-- [ ] T049 [US4] Extend `api/tests/integration/test_deletion.py`: deleting a pending request linked to a legacy
+- [x] T049 [US4] Extend `api/tests/integration/test_deletion.py`: deleting a pending request linked to a legacy
   record leaves the legacy row and its images unchanged; there is no route that deletes or edits a legacy row
   (route table scan).
-- [ ] T050 [US4] Run the US3 and US4 tests and the whole suites green. **Batch 5 commit.**
+- [x] T050 [US4] Run the US3 and US4 tests and the whole suites green. **Batch 5 commit.**
 
 ---
 
