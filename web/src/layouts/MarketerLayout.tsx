@@ -13,14 +13,14 @@ import { notificationKeys, UNREAD_POLL_MS, unreadCount } from '../lib/notificati
 import { AppShell } from './AppShell';
 import type { NavItem } from './AppShell';
 
-/** The bell with the unread count (specs/012 FR-020): nothing at 0. */
+/** The bell with the unread count (specs/012 FR-020): nothing at 0. At 0 the Badge is not
+ * rendered at all: MUI keeps its last number in the page while it hides. */
 function NotificationsIcon({ count }: { count: number }) {
+  if (count === 0) return <NotificationsOutlined />;
   return (
     <Badge
       color="error"
-      badgeContent={count > 0 ? <span data-testid="unread-badge">{count}</span> : null}
-      max={99}
-      invisible={count === 0}
+      badgeContent={<span data-testid="unread-badge">{count > 99 ? '99+' : count}</span>}
       overlap="circular"
     >
       <NotificationsOutlined />

@@ -107,6 +107,9 @@ No new dependency and no new service. Every decision below reuses what 005–011
 - **Mirror**: `web/src/lib/requestSearch.ts` only decides "too short"; the server classifies.
 - Results go across all statuses; the page shows them in place of the tab list while a query is typed.
 - **Scale**: one marketer's requests (hundreds), no new index needed beyond `(marketer_id, submitted_at)`.
+- **Logs** (found in batch 5, T053): uvicorn's access line carries the full URL, so the log filter
+  hides the value of `q` (`q=[REDACTED]`, `app/logging_config.py`); the search text is a phone or a
+  name and never reaches the logs (constitution Principle II, system.md §13).
 
 ## R9. The «تم الربط» tab and labels
 

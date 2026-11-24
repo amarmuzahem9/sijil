@@ -290,20 +290,38 @@ passed, web 428 passed, typecheck clean, lint 0 errors.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T052 [P] Playwright `e2e/tests/link-message-notifications.spec.ts`: marketer submits a pending request →
+- [x] T052 [P] Playwright `e2e/tests/link-message-notifications.spec.ts`: marketer submits a pending request →
   admin accepts → badge 1 → open → link message copied; admin rejects then deletes another → notification
   shows «محذوف» without the name; search by number.
-- [ ] T053 [P] Extend `api/tests/integration/test_log_safety.py` :
+- [x] T053 [P] Extend `api/tests/integration/test_log_safety.py` :
   notification writes and link message reads log no name, phone or numbers.
-- [ ] T054 Run `quickstart.md` automated block; fix anything red.
-- [ ] T055 `docker compose up` from clean, check the app starts and the migration applies.
-- [ ] T056 Write the owner's manual test in Arabic in `specs/012-link-message-notifications/manual-test-ar.md`
+- [x] T054 Run `quickstart.md` automated block; fix anything red.
+- [x] T055 `docker compose up` from clean, check the app starts and the migration applies.
+- [x] T056 Write the owner's manual test in Arabic in `specs/012-link-message-notifications/manual-test-ar.md`
   from quickstart.md › Manual scenarios.
-- [ ] T057 Fix stale numbering comments that say "linked … 012" meaning «تم الربط» (now 013) in
+- [x] T057 Fix stale numbering comments that say "linked … 012" meaning «تم الربط» (now 013) in
   `specs/010-admin-request-review/manual-test-ar.md` and `research.md` only where they mislead.
-- [ ] T058 Commit batch 5.
+- [x] T058 Commit batch 5.
 
 **Checkpoint**: batch 5 ends. The feature is ready for review.
+
+Batch 5 report:
+- T053 red first for two reasons: no `notification <kind> number=<n>` log line, and the access-log
+  check showed uvicorn's access line writes the full URL, so a search would log the phone or name
+  in `q=`. Fixed: one log line per notification (kind and number only) and the log filter hides
+  `q` (`q=[REDACTED]`). Green: 13 in `test_log_safety.py`.
+- T052 was written after the feature, so its first run tested built code. It failed on a real bug:
+  after «تعليم الكل كمقروء» the badge stayed in the page, since MUI's Badge keeps its last number
+  while hiding. A Vitest case (2 → 0) was added and ran red, then the Badge is no longer rendered
+  at 0. The same run broke `admin-review.spec.ts`: the username now also shows in the link
+  message, so the test reads the username field itself. A second run exposed a test-side wait
+  (sign-in before navigating). Final: full e2e 72 passed and 1 failed (that wait), then the fixed
+  file passed with `admin-first-login.spec.ts` (which must run first, it sets the main admin's
+  password).
+- T055: every `scripts/e2e.sh` run starts from empty volumes and migrates to 0015; the dev stack is
+  at `0015 (head)`.
+- T057: the stale «012/013» numbers in specs/010 now give today's numbers.
+- Totals: api 1236 passed, web 429 passed, typecheck clean, lint 0 errors.
 
 ---
 

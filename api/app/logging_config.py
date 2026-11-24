@@ -11,6 +11,9 @@ _SENSITIVE = r"(password|passwd|token|authorization|cookie|refresh|secret|otp)"
 _PATTERNS = [
     re.compile(r"(?i)(bearer\s+)[A-Za-z0-9._~+/=-]+"),
     re.compile(rf"(?i)(\"?{_SENSITIVE}[\w-]*\"?\s*[:=]\s*)(\"[^\"]*\"|'[^']*'|[^\s,;}}]+)"),
+    # The marketer's search box (`GET /api/requests?q=`, specs/012 R8) holds a phone or a name;
+    # uvicorn's access line carries the full URL.
+    re.compile(r"([?&]q=)[^&\s\"]*"),
 ]
 REDACTED = "[REDACTED]"
 

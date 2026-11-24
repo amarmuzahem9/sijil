@@ -124,7 +124,7 @@ the request itself removed (source `sijil`, its own id). Rejected requests never
 When the re-check runs:
 - after each pin, inside the pin transaction, to update the reasons (R3) and the type;
 - on every read of the request file, to show the warnings (no write). The warnings stay current even
-  without a pin, for example when 013/014 bring in new records;
+  without a pin, for example when 014/015 (013/014 before the renumbering) bring in new records;
 - at accept, under the row lock, to compute the final warnings.
 
 **Rationale**: one rule set for all three moments, tested as a pure function like `decide`
@@ -177,7 +177,8 @@ confirmation.
 - `register_resolver(source, fn(db, refs) -> list[LinkedRecordOut])`;
 - in 010 only `sijil` is registered. It reads the request rows and returns name, username, phone,
   tower code and name, registration date (submitted_at), current status, image ids and expiry (null);
-- 013 and 014 register `legacy` and `sas`, and SAS fills `expiry` («حسب آخر استيراد»).
+- 014 and 015 (013 and 014 before the renumbering) register `legacy` and `sas`, and SAS fills
+  `expiry` («حسب آخر استيراد»).
 
 The file groups linked records by reason row and shows the basis label. A record whose resolver is
 missing shows «سجل غير متوفر» with its source.
@@ -214,7 +215,7 @@ added next to `baghdad_month_bounds`.
 | `approved` | `approved_at` in range (the automatic approval counts at submission) |
 | `rejected` | `rejected_at` in range |
 | `pending` | current `status='pending_review'`, the same number in both rows |
-| `linked` | always 0 in 010. 012 adds `linked_at` and fills it |
+| `linked` | always 0 in 010. 013 (012 before the renumbering) adds `linked_at` and fills it |
 
 The response holds counts only.
 

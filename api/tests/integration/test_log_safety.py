@@ -484,3 +484,83 @@ def test_deletion_never_logs_personal_data(
     assert f"number={request.number}" in raw
     for secret in secrets:
         assert secret not in everything, secret
+
+
+def test_notifications_and_link_message_never_log_personal_data(
+    client, db, make_user, caplog, capsys
+) -> None:
+    """specs/012 T053: a notification logs its kind and the request number only; reading the
+    notifications, the link message or a search logs no name, phone, number or address."""
+    from tests.helpers.requests import request_factory
+    from tests.helpers.review import admin_with, headers_for
+    from tests.helpers.submit import marketer_headers
+
+    marketer = make_user("marketer")
+    one = request_factory(
+        db,
+        marketer,
+        status="pending_review",
+        full_name="اسم سري للإشعار أ",
+        address="عنوان سري للإشعار",
+        landmark="نقطة سرية للإشعار",
+    )
+    two = request_factory(db, marketer, status="pending_review", full_name="اسم سري للإشعار ب")
+    caplog.set_level(logging.DEBUG)
+
+    admin = headers_for(client, admin_with(make_user, "review"))
+    client.post(f"/api/admin/requests/{one.id}/accept", json={}, headers=admin)
+    client.post(
+        f"/api/admin/requests/{two.id}/reject",
+        json={"reason": "other", "note": "ملاحظة سرية للإشعار"},
+        headers=admin,
+    )
+    h = marketer_headers(client, marketer)
+    assert client.get("/api/notifications", headers=h).status_code == 200
+    assert client.get(f"/api/requests/{one.id}", headers=h).json()["link_message"]
+    client.get("/api/requests", params={"q": "اسم سري"}, headers=h)
+    client.get("/api/requests", params={"q": one.phone}, headers=h)
+
+    # The test client's own `httpx` lines are not server logs; the server's access line for the
+    # same URL is checked through the production filter in the next test.
+    records = [r for r in caplog.records if r.name != "httpx"]
+    raw = "\n".join(r.getMessage() for r in records)
+    printed = capsys.readouterr()
+    everything = raw + _formatted(records) + printed.out + printed.err
+    assert f"notification approved number={one.number}" in raw
+    assert f"notification rejected number={two.number}" in raw
+    for request in (one, two):
+        for secret in (
+            request.national_id,
+            request.family_number,
+            request.phone,
+            request.full_name,
+            request.username,
+        ):
+            assert secret not in everything, secret
+    for secret in ("عنوان سري للإشعار", "نقطة سرية للإشعار", "ملاحظة سرية للإشعار", "اسم سري"):
+        assert secret not in everything, secret
+
+
+def test_the_search_text_never_reaches_the_access_log() -> None:
+    """specs/012 T053: uvicorn's access line carries the full URL; the search box text (a phone or
+    a name) is hidden, the rest of the line stays readable."""
+    from urllib.parse import quote
+
+    name = quote("اسم سري للبحث")
+    for url, kept in (
+        ("/api/requests?q=07801234567", "/api/requests?q="),
+        (f"/api/requests?status=approved&q={name}", "/api/requests?status=approved&q="),
+        (f"/api/requests?q={name}&status=linked", "&status=linked"),
+    ):
+        record = logging.LogRecord(
+            "uvicorn.access",
+            logging.INFO,
+            __file__,
+            1,
+            '%s - "GET %s HTTP/1.1" %d',
+            ("127.0.0.1:5000", url, 200),
+            None,
+        )
+        line = _formatted([record])
+        assert "07801234567" not in line and name not in line, line
+        assert kept in line and "q=[REDACTED]" in line, line

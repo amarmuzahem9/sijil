@@ -75,6 +75,20 @@ describe('the unread badge', () => {
     expect(screen.queryByTestId('unread-badge')).toBeNull();
   });
 
+  it('leaves nothing behind when the count drops to 0', async () => {
+    // MUI's Badge keeps the old number while it hides; the page must not (found by e2e T052).
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    api.unreadCount.mockResolvedValueOnce({ count: 2 }).mockResolvedValue({ count: 0 });
+    show();
+    expect((await screen.findByTestId('unread-badge')).textContent).toBe('2');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(UNREAD_POLL_MS);
+    });
+    expect(api.unreadCount).toHaveBeenCalledTimes(2);
+    expect(screen.queryByTestId('unread-badge')).toBeNull();
+    expect(screen.queryByText('2')).toBeNull();
+  });
+
   it('asks again every 15 s', async () => {
     expect(UNREAD_POLL_MS).toBe(15_000);
     vi.useFakeTimers({ shouldAdvanceTime: true });

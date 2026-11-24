@@ -159,7 +159,8 @@ test('the admin accepts, rejects, pins and accepts despite a warning', async ({ 
   await accept(admin, r2);
   await page.goto(`/requests/${r2}`);
   await expect(page.getByText('تمت الموافقة')).toBeVisible();
-  await expect(page.getByText(`${TOWER}-07800001102`)).toBeVisible();
+  // The username also shows inside «رسالة الربط» since 012; check its own field.
+  await expect(page.getByTestId('request-username')).toHaveText(`${TOWER}-07800001102`);
   await expect(page.getByText(reviewer.name)).toHaveCount(0);
 
   // --- 3. reject with «سبب آخر» ------------------------------------------------------------------

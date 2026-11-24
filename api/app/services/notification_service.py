@@ -7,6 +7,8 @@ Feature 013 calls `add(..., "linked")` and `add(..., "unlinked", <code>)` and ad
 labels to `_REASON_LABELS`.
 """
 
+import logging
+
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
@@ -17,6 +19,8 @@ from app.models.notification import Notification
 from app.models.request import Request
 from app.models.user import User
 from app.schemas.notifications import NotificationOut, NotificationPage
+
+log = logging.getLogger("sijil.notifications")
 
 # The label of a reason code, by kind; never the reviewer's own note.
 _REASON_LABELS: dict[str, dict[str, str]] = {
@@ -36,6 +40,8 @@ def add(db: Session, request: Request, kind: str, reason: str | None = None) -> 
     )
     db.add(row)
     db.flush()
+    # The kind and the request number only (constitution Principle II).
+    log.info("notification %s number=%s", kind, request.number)
     return row
 
 
