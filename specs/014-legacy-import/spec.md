@@ -218,6 +218,8 @@ notifications and the monthly counter with their values before the import.
 - **FR-004**: For each flagged row the admin MUST choose «استيراد» or «تخطي»; for an odd-length family number they
   MAY instead type a corrected value. The original file value MUST be kept next to a corrected one.
 - **FR-005**: Confirmation MUST be refused while any flagged row has no choice.
+- **FR-005a**: Each group of flagged rows MUST offer «تخطي للكل», which sets «تخطي» on every row of the group; the
+  admin MUST still be able to change any of those rows afterwards.
 
 **Saving**
 
