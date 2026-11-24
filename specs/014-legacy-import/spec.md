@@ -143,8 +143,9 @@ admin and confirm the fields and images; open the same as a marketer and confirm
 2. **Given** the legacy record has images, **When** the admin opens one, **Then** it is served only after the
    permission check, and the access is logged (§13).
 3. **Given** the legacy record has a missing image, **When** it is shown, **Then** it carries «غير مكتمل».
-4. **Given** the extra fields (mother's name, mother's father's name, birth date, e-mail), **When** the record is
-   shown, **Then** they appear as «بيانات إضافية» for the admin only, and they never take part in a check.
+4. **Given** the extra fields (mother's name, mother's father's name, birth date), **When** the record is
+   shown, **Then** they appear as «بيانات إضافية» for the admin only, and they never take part in a check. The
+   e-mail columns are stored but not shown.
 
 ---
 
@@ -193,8 +194,9 @@ notifications and the monthly counter with their values before the import.
   it (kept as a record only, it can never match) or skip it.
 - **The same legacy number twice**, or a missing one: flagged; a legacy number must be unique, so only one of the
   repeated rows can be imported.
-- **Concurrent imports** by two admins: only one import can be confirmed at a time; the second sees that an import
-  is in progress.
+- **Concurrent imports** by two admins: only one confirmation runs at a time; the second waits, is re-checked
+  against what the first saved, and is refused with «تغيّرت البيانات منذ المعاينة» if any of its rows now needs a
+  new choice.
 - **A preview left unconfirmed**: it expires without saving anything.
 - **Rejected or deleted Sijil requests** never block an import row and are not listed under «موجود في طلبات
   سِجلّ» (same rule as §6.1 and §7.4).
@@ -229,7 +231,7 @@ notifications and the monthly counter with their values before the import.
   comparison key, phone normalized by §8.1 (or none if invalid), the «الحالة» value, extra data (mother's name,
   mother's father's name, birth date, both e-mail columns), the import it came from, and the «غير مكتمل» mark when a
   card image is missing.
-- **FR-007**: The system MUST fetch each Google Drive image link (`open?id=…`) at import time and store the image in
+- **FR-007**: The system MUST fetch each Google Drive image link (`open?id=…`) after upload, before confirmation, and store the image in
   Sijil's private image storage (§13), front and back, named by legacy number and side. A link that cannot be
   fetched MUST NOT stop the import; that row is saved without it and marked «غير مكتمل».
 - **FR-008**: Legacy images MUST never be sent to card reading (OCR).
