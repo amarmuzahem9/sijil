@@ -254,18 +254,18 @@ link date on the request.
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T047 [P] Extend `api/tests/integration/test_notifications.py`: the marketer's list shows `linked` and
+- [x] T047 [P] Extend `api/tests/integration/test_notifications.py`: the marketer's list shows `linked` and
   `unlinked` rows with their titles and the undo reason label, after a real link and undo.
-- [ ] T048 [P] Log safety: assert that link and unlink log lines carry only the action and the request number
+- [x] T048 [P] Log safety: assert that link and unlink log lines carry only the action and the request number
   (no name, phone or username), in `api/tests/integration/test_link.py`.
-- [ ] T049 [P] Playwright `e2e/tests/linking-counter.spec.ts`: accept → admin links → marketer badge and counter
+- [x] T049 [P] Playwright `e2e/tests/linking-counter.spec.ts`: accept → admin links → marketer badge and counter
   1 → admin undoes with «ضُغط بالخطأ» → counter 0 and notification with the reason → relink → counter 1.
-- [ ] T050 Remove the "until 013" comments in `api/app/api/marketer.py`, `api/app/services/admin_home.py`,
+- [x] T050 Remove the "until 013" comments in `api/app/api/marketer.py`, `api/app/services/admin_home.py`,
   `api/app/core/request_status.py`, `api/app/services/notification_service.py`, `web/src/lib/requestStatus.ts`,
   `web/src/pages/marketer/Requests.tsx`.
-- [ ] T051 Write `specs/013-linking-counter/manual-test-ar.md` (Arabic manual test steps from quickstart.md).
-- [ ] T052 Run the full suites (api, web, e2e) and `docker compose up`; walk quickstart.md scenarios 1–14.
-- [ ] T053 Final commit; report red/green per test task.
+- [x] T051 Write `specs/013-linking-counter/manual-test-ar.md` (Arabic manual test steps from quickstart.md).
+- [x] T052 Run the full suites (api, web, e2e) and `docker compose up`; walk quickstart.md scenarios 1–14.
+- [x] T053 Final commit; report red/green per test task.
 
 **Checkpoint**: batch 5 commit.
 

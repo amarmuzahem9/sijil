@@ -1,7 +1,9 @@
 """The allowed request status transitions (docs/system.md §7.2, specs/012 research R4).
 
 `None` is the submission of a draft: a draft is not a request status (specs/008 research R1).
-Feature 013 calls `check` for «تم الربط» (approved → linked) and its undo (linked → approved).
+`link_service` (specs/013) calls `check` for «تم الربط» (approved → linked) and its undo
+(linked → approved); the undo also checks that the request is linked, since pending → approved
+is allowed here too.
 A deleted request (011) is refused before this check, with `request_deleted`.
 """
 

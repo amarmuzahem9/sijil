@@ -143,3 +143,30 @@ def test_a_deleted_request_shows_no_name(client, db, make_user, marketer, h) -> 
     assert (rejected["full_name"], rejected["deleted"]) == (None, True)
     assert rejected["reason_label"] == "صورة البطاقة غير واضحة"
     assert name not in res.text
+
+
+def test_link_and_undo_reach_the_marketer(client, db, make_user, marketer, h) -> None:
+    """specs/013 T047: a real «تم الربط» and its undo give `linked` and `unlinked` rows, newest
+    first, with the subscriber's name and, for the undo, the fixed label of its reason."""
+    request = request_factory(db, marketer, status="approved")
+    ah = headers_for(client, admin_with(make_user, "link"))
+    linked = client.post(f"/api/admin/requests/{request.id}/link", headers=ah)
+    assert linked.status_code == 200, linked.json()
+    undo = client.post(
+        f"/api/admin/requests/{request.id}/unlink",
+        json={"reason": "other_request_linked", "link_id": linked.json()["link_id"]},
+        headers=ah,
+    )
+    assert undo.status_code == 200, undo.json()
+
+    items = client.get(LIST, headers=h).json()["items"]
+
+    assert [(i["kind"], i["reason_label"]) for i in items] == [
+        ("unlinked", "ربط طلب آخر بدله"),
+        ("linked", None),
+    ]
+    for item in items:
+        assert (item["request_id"], item["number_label"]) == (request.id, request.number_label)
+        assert item["full_name"] == request.full_name
+        assert item["deleted"] is False
+    assert _count(client, h) == 2

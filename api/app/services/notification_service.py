@@ -3,8 +3,8 @@
 `add` is called by the decision services inside their own transaction, before their commit, so a
 refused decision never writes one and an accepted one always does. The row holds no personal data;
 `page` reads the subscriber's name from the request, which a deletion (011) has set to null.
-Feature 013 calls `add(..., "linked")` and `add(..., "unlinked", <code>)` and adds its undo reason
-labels to `_REASON_LABELS`.
+`link_service` (specs/013) adds `linked` and `unlinked` (with the undo reason code, shown by its
+label from `unlink_reasons`).
 """
 
 import logging

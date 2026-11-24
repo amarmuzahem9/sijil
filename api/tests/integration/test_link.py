@@ -158,3 +158,32 @@ def test_without_link_permission_is_403(client, db, make_user, marketer, who) ->
     db.refresh(request)
     assert request.status == "approved"
     assert _writes(db, request) == (0, 0, 0)
+
+
+def test_link_and_undo_logs_hold_no_personal_data(client, db, h, marketer, caplog) -> None:
+    """specs/013 T048 (constitution Principle II): the action, the number and the reason code
+    only."""
+    import logging
+
+    caplog.set_level(logging.INFO)
+    request = request_factory(db, marketer, status="approved", phone="07801239876")
+    linked = _link(client, h, request.id)
+    client.post(
+        f"/api/admin/requests/{request.id}/unlink",
+        json={"reason": "by_mistake", "link_id": linked.json()["link_id"]},
+        headers=h,
+    )
+
+    lines = [r.getMessage() for r in caplog.records if r.name == "sijil.links"]
+    assert lines == [
+        f"link number={request.number}",
+        f"unlink number={request.number} reason=by_mistake",
+    ]
+    for secret in (
+        request.full_name,
+        request.phone,
+        request.username,
+        request.national_id,
+        request.family_number,
+    ):
+        assert secret not in caplog.text

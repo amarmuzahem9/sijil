@@ -1,8 +1,9 @@
 /**
  * «بالانتظار» and «مقبولة» in «الطلبات» (specs/008 T027, FR-019): the marketer's submitted
- * requests, newest first, each opening its result page. «مرفوضة» since 010, «تم الربط» since 012,
- * ordered by link time with its date since 013. With `q` it lists the search results across statuses (specs/012 US3). A deleted request (specs/011 R11) keeps its row under its
- * status with the grey tag «محذوف», the reason, the number, the tower and the date only.
+ * requests, newest first, each opening its result page. «مرفوضة» since 010; «تم الربط» is ordered
+ * by link time and shows the link date (specs/013). With `q` it lists the search results across
+ * statuses (specs/012 US3). A deleted request (specs/011 R11) keeps its row under its status with
+ * the grey tag «محذوف», the reason, the number, the tower and the date only.
  */
 import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';

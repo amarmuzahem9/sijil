@@ -1,7 +1,7 @@
 /**
  * «الطلبات» (docs/system.md §4.3): tabs بالانتظار / مقبولة / تم الربط / مرفوضة / مسودات.
  * «مسودات» since 005; «بالانتظار» and «مقبولة» since 008; «مرفوضة» since 010; «تم الربط» lists
- * linked requests since 012 (013 links them). The search box (specs/012 US3) finds the marketer's
+ * linked requests, newest link first, since 013. The search box (specs/012 US3) finds the marketer's
  * own requests by name, phone or number and replaces the tabs while it holds 2 characters or
  * more. With no tab in the URL the page opens on «بالانتظار» once the marketer
  * has requests, else on «مسودات» (specs/008 research R11).
