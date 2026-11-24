@@ -284,8 +284,9 @@ be deleted.
   each reason's type and the reference to the matched record.
 - **FR-009**: Deletion MUST remove every card image file of the request from storage, and its image records
   MUST no longer lead to any file.
-- **FR-010**: Deletion MUST delete the OTP codes tied to the request's phone, so the per-phone limit (5 codes
-  per hour) starts again for that phone.
+- **FR-010**: Deletion MUST delete the OTP codes tied to the request's phone, except the code of a draft
+  being verified right now, so the per-phone limit (5 codes per hour) starts again for that phone
+  (system.md v1.16 §7.4).
 
 **What is kept**
 
