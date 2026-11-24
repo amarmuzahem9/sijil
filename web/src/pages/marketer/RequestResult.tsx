@@ -3,11 +3,13 @@
  * (specs/008 FR-018, FR-019, research R11). Approved: «تمت الموافقة», the number and the
  * username with a small «نسخ اليوزر». Pending: «بانتظار موافقة المسؤول» or «طلبك بانتظار التدقيق».
  * «نسخ التفاصيل» copies the ordered text of system.md v1.11 §5.5 in both cases.
- * The link message and its share button come with feature 011.
+ * The link message and its share button come with feature 012. A deleted request (specs/011 R11)
+ * shows «تم حذف الطلب», the reason, the number, the tower and the dates, with no copy button.
  */
 import CancelOutlined from '@mui/icons-material/CancelOutlined';
 import CheckCircleOutlined from '@mui/icons-material/CheckCircleOutlined';
 import ContentCopyOutlined from '@mui/icons-material/ContentCopyOutlined';
+import DeleteIcon from '@mui/icons-material/Delete';
 import HourglassTopOutlined from '@mui/icons-material/HourglassTopOutlined';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
@@ -20,9 +22,10 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 
-import { formatMoney } from '../../lib/money';
 import {
+  DELETED_TAG,
   getRequest,
+  planLine,
   requestDetailsText,
   RESULT_TEXT,
   type SubmittedRequest,
@@ -39,7 +42,63 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
+function BackButtons() {
+  return (
+    <Stack direction="row" spacing={1}>
+      <Button component={RouterLink} to="/drafts/new" variant="outlined" fullWidth>
+        إضافة مشترك جديد
+      </Button>
+      <Button component={RouterLink} to="/requests" variant="text" fullWidth>
+        الطلبات
+      </Button>
+    </Stack>
+  );
+}
+
+/** «تم حذف الطلب»: the kept fields only, nothing to copy or share (specs/011 FR-021). */
+function DeletedResultView({ request }: { request: SubmittedRequest }) {
+  return (
+    <Stack spacing={2} sx={{ maxWidth: 640 }} data-testid="request-result">
+      <Alert
+        severity="info"
+        icon={<DeleteIcon />}
+        sx={{ fontSize: '1.15rem', fontWeight: 700, alignItems: 'center' }}
+      >
+        {RESULT_TEXT.deleted}
+        <Typography sx={{ mt: 0.5, fontWeight: 400 }}>
+          سبب الحذف: {request.deletion_label}
+        </Typography>
+      </Alert>
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Stack spacing={1.25}>
+          <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6" sx={{ fontWeight: 700 }} dir="ltr">
+              {`#${request.number_label}`}
+            </Typography>
+            <Chip
+              label={DELETED_TAG.label}
+              data-testid="request-status"
+              sx={{ bgcolor: DELETED_TAG.bg, color: DELETED_TAG.fg, fontWeight: 600 }}
+            />
+          </Stack>
+          <Row label="البرج" value={`${request.tower_name} (${request.tower_code})`} />
+          <Row label="تاريخ الإرسال" value={formatBaghdad(request.submitted_at)} />
+          {request.deleted_at && (
+            <Row label="تاريخ الحذف" value={formatBaghdad(request.deleted_at)} />
+          )}
+        </Stack>
+      </Paper>
+      <BackButtons />
+    </Stack>
+  );
+}
+
 export function RequestResultView({ request }: { request: SubmittedRequest }) {
+  if (request.result === 'deleted') return <DeletedResultView request={request} />;
+  return <LiveResultView request={request} />;
+}
+
+function LiveResultView({ request }: { request: SubmittedRequest }) {
   const [copied, setCopied] = useState<'details' | 'username' | null>(null);
   const approved = request.result === 'approved' || request.result === 'linked';
   const rejected = request.result === 'rejected';
@@ -91,13 +150,10 @@ export function RequestResultView({ request }: { request: SubmittedRequest }) {
               sx={{ bgcolor: colors.bg, color: colors.fg, fontWeight: 600 }}
             />
           </Stack>
-          <Row label="الاسم" value={request.full_name} />
+          <Row label="الاسم" value={request.full_name ?? '—'} />
           <Row label="البرج" value={`${request.tower_name} (${request.tower_code})`} />
-          <Row
-            label="الفئة"
-            value={`${request.plan_name} | التجريبي ${formatMoney(request.trial_price)} | الثاني ${formatMoney(request.second_price)}`}
-          />
-          <Row label="الهاتف" value={request.phone} />
+          <Row label="الفئة" value={planLine(request)} />
+          <Row label="الهاتف" value={request.phone ?? '—'} />
           <Row label="تاريخ الإرسال" value={formatBaghdad(request.submitted_at)} />
           <Stack
             direction="row"
@@ -145,14 +201,7 @@ export function RequestResultView({ request }: { request: SubmittedRequest }) {
         )}
       </Stack>
 
-      <Stack direction="row" spacing={1}>
-        <Button component={RouterLink} to="/drafts/new" variant="outlined" fullWidth>
-          إضافة مشترك جديد
-        </Button>
-        <Button component={RouterLink} to="/requests" variant="text" fullWidth>
-          الطلبات
-        </Button>
-      </Stack>
+      <BackButtons />
     </Stack>
   );
 }

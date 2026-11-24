@@ -195,3 +195,23 @@ def test_one_query_per_lookup(db, marketer) -> None:
     finally:
         event.remove(engine, "before_cursor_execute", count)
     assert len(statements) == 1
+
+
+def test_sijil_source_leaves_deleted_requests_out(db) -> None:
+    """specs/011 T033: next to the erased (NULL) keys, the query itself filters deleted rows.
+    `requests_erasure` makes a deleted row with keys impossible, so the SQL sent is checked."""
+    from sqlalchemy import event
+
+    statements: list[str] = []
+
+    def keep(conn, cursor, statement, *args) -> None:
+        statements.append(statement)
+
+    engine = db.get_bind().engine
+    event.listen(engine, "before_cursor_execute", keep)
+    try:
+        match_service.find_matches(db, phone="07801234567")
+    finally:
+        event.remove(engine, "before_cursor_execute", keep)
+    sijil = [s for s in statements if "FROM requests" in s]
+    assert sijil and all("requests.deleted_at IS NULL" in s for s in sijil), sijil

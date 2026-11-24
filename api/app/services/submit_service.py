@@ -15,7 +15,7 @@ import uuid
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from app.core import otp, rejection_reasons
+from app.core import deletion_reasons, otp, rejection_reasons
 from app.core.decision import decide
 from app.core.family_key import family_key
 from app.core.matches import MatchRecord
@@ -315,7 +315,45 @@ def _result(request: Request) -> str:
     return "pending_review"
 
 
+def _rejection_label(request: Request) -> str | None:
+    """A deleted request lost the note: the reason's name only (specs/011 R11)."""
+    if request.is_deleted and request.rejection_reason is not None:
+        return rejection_reasons.LABELS[request.rejection_reason]
+    return rejection_reasons.label(request.rejection_reason, request.rejection_note)
+
+
+def _deleted_out(request: Request) -> RequestOut:
+    """«محذوف»: the kept fields and the reason only (specs/011 contracts/api.md › marketer)."""
+    return RequestOut(
+        id=request.id,
+        number=request.number,
+        number_label=request.number_label,
+        type=request.type,
+        status=request.status,
+        reasons=[],
+        full_name=None,
+        tower_code=request.tower_code,
+        tower_name=request.tower_name,
+        area_name=None,
+        plan_name=None,
+        trial_price=None,
+        second_price=None,
+        phone=None,
+        address=None,
+        landmark=None,
+        marketer_name=None,
+        username=None,
+        submitted_at=request.submitted_at,
+        approved_at=None,
+        result="deleted",
+        deleted_at=request.deleted_at,
+        deletion_label=deletion_reasons.LABELS[request.deletion_reason],
+    )
+
+
 def to_out(request: Request) -> RequestOut:
+    if request.is_deleted:
+        return _deleted_out(request)
     return RequestOut(
         id=request.id,
         number=request.number,
@@ -339,7 +377,7 @@ def to_out(request: Request) -> RequestOut:
         approved_at=request.approved_at,
         result=_result(request),
         rejection_reason=request.rejection_reason,
-        rejection_label=rejection_reasons.label(request.rejection_reason, request.rejection_note),
+        rejection_label=_rejection_label(request),
         rejected_at=request.rejected_at,
     )
 
@@ -364,7 +402,13 @@ def list_own(db: Session, user: User, statuses: list[str] | None = None) -> list
             status=r.status,
             type=r.type,
             submitted_at=r.submitted_at,
-            rejection_label=rejection_reasons.label(r.rejection_reason, r.rejection_note),
+            tower_code=r.tower_code,
+            tower_name=r.tower_name,
+            rejection_label=_rejection_label(r),
+            deleted_at=r.deleted_at,
+            deletion_label=(
+                deletion_reasons.LABELS[r.deletion_reason] if r.deletion_reason else None
+            ),
         )
         for r in rows
     ]

@@ -266,3 +266,23 @@ def test_a_pin_shows_nothing_new_to_the_marketer(client, db, make_user):
     seen.assert_hides(
         old, OTHER_NID, ADMIN_NAME, '"pins"', '"previous_value"', '"warnings"', '"record"'
     )
+
+
+def test_deleted_request_shows_no_admin_or_erased_data(client, db, make_user):
+    """specs/011 T054: a deleted request tells the marketer the reason only: no admin name and no
+    erased value."""
+    from tests.helpers.requests import mark_deleted
+    from tests.helpers.review import admin_with
+
+    me = make_user("marketer")
+    own = marketer_headers(client, me)
+    request = request_factory(
+        db, me, status="pending_review", full_name=SECRET_NAME, username=SECRET_USERNAME
+    )
+    secrets = [SECRET_NAME, SECRET_USERNAME, request.phone, request.address, request.national_id]
+    mark_deleted(db, request, admin_with(make_user, "review", "delete", name="أدمن الحذف السري"))
+
+    blob = client.get(f"/api/requests/{request.id}", headers=own).text
+    blob += client.get("/api/requests", headers=own).text
+    for secret in [*secrets, "أدمن الحذف السري"]:
+        assert secret not in blob, secret

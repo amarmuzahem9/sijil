@@ -63,7 +63,11 @@ def _sijil_source(
     rows = db.execute(
         select(Request.id, Request.phone, Request.national_id, Request.family_key, Request.status)
         .where(
-            or_(*(column == value for column, value in keys)), Request.status.in_(ACTIVE_STATUSES)
+            or_(*(column == value for column, value in keys)),
+            Request.status.in_(ACTIVE_STATUSES),
+            # A deleted request blocks nothing (specs/011 R1): its keys are NULL already, and
+            # this keeps it out even so.
+            Request.deleted_at.is_(None),
         )
         .order_by(Request.id)
     )

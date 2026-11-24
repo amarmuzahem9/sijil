@@ -115,3 +115,51 @@ def test_admins_cannot_manage_admins(client, db, make_user, perms) -> None:
     r = client.patch(f"{BASE}/{caller.id}", json={"permissions": []}, headers=h)
     assert r.status_code == 403
     assert client.post(f"{BASE}/{caller.id}/deactivate", headers=h).status_code == 403
+
+
+# --- specs/011 T034: the «حذف مشترك» permission --------------------------------------------------
+
+
+def test_main_admin_gives_and_removes_delete(client, db, boss) -> None:
+    body = {
+        "name": "أدمن حذف تجريبي",
+        "phone": "07700000177",
+        "temporary_password": TEMP,
+        "permissions": ["delete", "review"],
+    }
+    r = client.post(BASE, json=body, headers=boss)
+    assert r.status_code == 201, r.json()
+    admin_id = r.json()["id"]
+    assert r.json()["permissions"] == ["review", "delete"]
+
+    r = client.patch(f"{BASE}/{admin_id}", json={"permissions": ["review"]}, headers=boss)
+    assert r.status_code == 200 and r.json()["permissions"] == ["review"]
+    entry = db.scalars(
+        select(AuditLog).where(
+            AuditLog.entity_id == str(admin_id), AuditLog.action == "user.permissions_changed"
+        )
+    ).one()
+    assert entry.before == {"permissions": ["review", "delete"]}
+    assert entry.after == {"permissions": ["review"]}
+
+
+def test_a_marketer_cannot_hold_delete(db, make_user) -> None:
+    from sqlalchemy.exc import IntegrityError
+
+    marketer = make_user("marketer")
+    marketer.permissions = ["delete"]
+    with pytest.raises(IntegrityError):
+        db.flush()
+    db.rollback()
+
+
+def test_main_admin_holds_delete_without_a_stored_permission(client, db, make_user) -> None:
+    """The main admin's permissions stay empty in the database; it holds `delete` implicitly
+    (has_any_permission), so its request files offer «حذف»."""
+    from tests.helpers.requests import request_factory
+
+    main = make_user("super_admin")
+    request = request_factory(db, make_user("marketer"), status="pending_review")
+    h = auth_header(login(client, main.phone))
+    assert main.permissions == []
+    assert client.get(f"/api/admin/requests/{request.id}", headers=h).json()["can_delete"] is True

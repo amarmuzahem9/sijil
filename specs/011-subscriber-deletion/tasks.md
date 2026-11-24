@@ -36,9 +36,13 @@ red before its code is written**. Report red and green for every test task.
 |---|---|---|
 | 1 | 1–2 (Setup, Foundational) | T001–T014 |
 | 2 | 3 (US1 delete from the file) | T015–T030 |
-| 3 | 4–5 (US2 keys freed, US3 permission) | T031–T040 |
+| 3 | 8 first (US5 marketer view), then 4–5 (US2 keys freed, US3 permission) | T054–T057, T031–T040 |
 | 4 | 6–7 (US4 «سجل محذوف» and counts, US6 open by number) | T041–T053 |
-| 5 | 8–9 (US5 marketer view, Polish) | T054–T066 |
+| 5 | 9 (Polish) | T058–T066 |
+
+US5 (T054–T057) moved to the start of batch 3 at the owner's request: after batch 2 a deleted
+request made the marketer's «الطلبات» answer 500 (the marketer schema still required the erased
+fields).
 
 ---
 
@@ -270,7 +274,7 @@ gets a new number.
 
 **Independent Test**: spec US2.
 
-- [ ] T031 [P] [US2] Write `api/tests/integration/test_deletion_frees_keys.py` (**red**). After a
+- [x] T031 [P] [US2] Write `api/tests/integration/test_deletion_frees_keys.py` (**red**). After a
   deleted pending request:
   - a new draft with the same phone passes the draft phone check;
   - `match_service.find_matches` with the old phone, national ID and family key returns nothing for
@@ -279,10 +283,10 @@ gets a new number.
   - an OTP request for the phone succeeds at once, even though the deleted request had used 5 codes
     in the hour;
   - the new request's number is greater than every existing number, deleted ones included.
-- [ ] T032 [US2] Add `Request.deleted_at.is_(None)` to `_sijil_source` in
+- [x] T032 [US2] Add `Request.deleted_at.is_(None)` to `_sijil_source` in
   `api/app/services/match_service.py`, as a second guard next to the `NULL` keys (R1). Run T031:
   **green**. Run `test_match_sources.py`: **green**.
-- [ ] T033 [P] [US2] Extend `api/tests/integration/test_match_sources.py`. `requests_erasure` makes a
+- [x] T033 [P] [US2] Extend `api/tests/integration/test_match_sources.py`. `requests_erasure` makes a
   marked row with its keys still set impossible, so test the second guard through the query instead:
   the compiled `_sijil_source` query filters `deleted_at IS NULL`. Run: **red**, then **green** with
   T032.
@@ -297,25 +301,25 @@ gets a new number.
 
 **Independent Test**: spec US3.
 
-- [ ] T034 [P] [US3] Extend `api/tests/integration/test_admins_manage.py` (**red**):
+- [x] T034 [P] [US3] Extend `api/tests/integration/test_admins_manage.py` (**red**):
   - the main admin creates and updates an admin with `delete`;
   - the change writes `user.permissions_changed` with before and after;
   - a marketer cannot hold it;
   - the main admin's own permissions show `delete` as always on.
-- [ ] T035 [US3] Make T034 **green**. The code should only need T007. Fix
+- [x] T035 [US3] Make T034 **green**. The code should only need T007. Fix
   `api/app/services/account_service.py` only if a test shows a gap.
-- [ ] T036 [P] [US3] Write the switch test in `web/src/__tests__/admins-permissions.test.tsx`
-  (**red**):
-  - the «حذف مشترك» switch appears for an added admin, off by default;
-  - it is on and locked for the main admin.
-- [ ] T037 [US3] Add the switch to `web/src/pages/admin/Admins.tsx` from the labels list (T008). Run
+- [x] T036 [P] [US3] Write the switch test in `web/src/__tests__/admins-permissions.test.tsx`:
+  the «حذف مشترك» switch appears last for an added admin, off by default, and toggles. The main
+  admin has no switches on the admins page (002); it holds every permission on the server, which
+  T034 checks through `can_delete`.
+- [x] T037 [US3] Add the switch to `web/src/pages/admin/Admins.tsx` from the labels list (T008). Run
   T036: **green**.
-- [ ] T038 [P] [US3] Extend `web/src/__tests__/deletedRequest.test.tsx`: an admin with `review` but
+- [x] T038 [P] [US3] Extend `web/src/__tests__/deletedRequest.test.tsx`: an admin with `review` but
   without `delete` sees no «حذف» button. Run: **red**, then **green** (the button follows
   `can_delete`).
-- [ ] T039 [US3] In `api/tests/integration/test_deletion.py`, add the case: `delete` turned off for an
+- [x] T039 [US3] In `api/tests/integration/test_deletion.py`, add the case: `delete` turned off for an
   admin, then the delete attempt gets 403. Run: **red**, then **green**.
-- [ ] T040 [US3] Run the whole api and web suites: **green**.
+- [x] T040 [US3] Run the whole api and web suites: **green**.
 
 **Checkpoint**: batch 3 ends. Commit.
 
@@ -388,20 +392,20 @@ gets a new number.
 
 **Independent Test**: spec US5.
 
-- [ ] T054 [P] [US5] Extend `api/tests/integration/test_requests_api.py` and `test_marketer_privacy.py`
+- [x] T054 [P] [US5] Extend `api/tests/integration/test_requests_api.py` and `test_marketer_privacy.py`
   (**red**):
   - the list and the detail of a deleted request return `result: "deleted"`, `deleted_at`,
     `deletion_label`, the number, the tower and `submitted_at`;
   - every other field is `null` ([contracts/api.md](./contracts/api.md) › marketer);
   - no admin name appears;
   - a deleted rejected request has the reason's name only and no note.
-- [ ] T055 [US5] Make the erased fields nullable and add `deleted` to `ResultCode`, plus `deleted_at`
+- [x] T055 [US5] Make the erased fields nullable and add `deleted` to `ResultCode`, plus `deleted_at`
   and `deletion_label`, in `api/app/schemas/requests.py`. Update the marketer `to_out` in
   `api/app/services/submit_service.py` (R11). Run T054: **green**.
-- [ ] T056 [P] [US5] Write `web/src/__tests__/marketerDeleted.test.tsx` (**red**):
+- [x] T056 [P] [US5] Write `web/src/__tests__/marketerDeleted.test.tsx` (**red**):
   - `SubmittedTab` shows the grey tag «محذوف» and the reason;
   - `RequestResult` shows only the kept fields and no copy or share buttons.
-- [ ] T057 [US5] Update `web/src/lib/requests.ts`, `web/src/lib/requestStatus.ts`,
+- [x] T057 [US5] Update `web/src/lib/requests.ts`, `web/src/lib/requestStatus.ts`,
   `web/src/pages/marketer/SubmittedTab.tsx` and `web/src/pages/marketer/RequestResult.tsx`. Run T056:
   **green**. Run `dashboard.test.tsx` and `requestResult.test.tsx`: **green**.
 

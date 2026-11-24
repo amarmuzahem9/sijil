@@ -315,3 +315,21 @@ def test_one_audit_entry_without_personal_data(client, db, uploads, marketer, de
     )
     assert entry.before == {"status": "pending_review", "image_count": 2, "pin_count": 1}
     assert entry.after == {"deleted": True, "reason": "test"}
+
+
+def test_delete_turned_off_is_refused_at_once(client, db, marketer, deleter, make_user) -> None:
+    """specs/011 T039: the main admin removes `delete`; the same session is refused next time."""
+    request = request_factory(db, marketer, status="pending_review")
+    h = headers_for(client, deleter)
+    assert client.get(f"/api/admin/requests/{request.id}", headers=h).json()["can_delete"] is True
+
+    owner = headers_for(client, make_user("super_admin"))
+    res = client.patch(
+        f"/api/admin/admins/{deleter.id}", json={"permissions": ["review"]}, headers=owner
+    )
+    assert res.status_code == 200, res.json()
+
+    assert client.get(f"/api/admin/requests/{request.id}", headers=h).json()["can_delete"] is False
+    res = _delete(client, h, request.id, request=request)
+    assert (res.status_code, res.json()["code"]) == (403, "forbidden")
+    assert db.get(Request, request.id).deleted_at is None

@@ -6,7 +6,7 @@ import Switch from '@mui/material/Switch';
 import { PERMISSION_LABELS, PERMISSIONS } from '../lib/labels';
 import type { Permission } from '../lib/labels';
 
-/** The six §3.3 on/off switches with their Arabic labels. */
+/** The §3.3 on/off switches with their Arabic labels, «حذف مشترك» last (specs/011). */
 export function PermissionSwitches({
   value,
   onChange,
