@@ -257,7 +257,8 @@ that it opens the request; end-to-end in 013.
 
 **Requests list (§4.3)**
 
-- **FR-012**: The «تم الربط» tab MUST list the marketer's linked requests, newest link first.
+- **FR-012**: The «تم الربط» tab MUST list the marketer's linked requests, newest link first once 013 records
+  the link time (until then, newest submission first).
 - **FR-013**: The requests page MUST offer one search box that matches the marketer's own submitted requests by
   subscriber name (part of the full name, ignoring diacritics and extra spaces), by phone (normalised per §8.1),
   or by request number (with or without «T3C-», Latin, Arabic or Indic digits). Results span all statuses and

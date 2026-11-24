@@ -13,7 +13,7 @@ from pathlib import Path
 from sqlalchemy import exists, select, text
 from sqlalchemy.orm import Session
 
-from app.core import rejection_reasons, request_number
+from app.core import rejection_reasons, request_number, request_status
 from app.core.access import has_any_permission
 from app.core.family_key import family_key
 from app.core.matches import Matches, MatchRef
@@ -401,6 +401,7 @@ def _lock_pending(db: Session, user: User, request_id: int) -> Request:
 
 def accept(db: Session, user: User, request_id: int, body: AcceptIn) -> Request:
     request = _lock_pending(db, user, request_id)
+    request_status.check(request.status, "approved")
     if request.type == "return":
         if body.counts_commission is None:
             raise AppError("commission_answer_required", 422)
@@ -444,6 +445,7 @@ def accept(db: Session, user: User, request_id: int, body: AcceptIn) -> Request:
 
 def reject(db: Session, user: User, request_id: int, body: RejectIn) -> Request:
     request = _lock_pending(db, user, request_id)
+    request_status.check(request.status, "rejected")
     note = rejection_reasons.validate(body.reason, body.note)
 
     now = utc_now()

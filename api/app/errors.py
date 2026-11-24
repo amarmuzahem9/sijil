@@ -85,6 +85,9 @@ MESSAGES: dict[str, str] = {
     "request_deleted": "تم حذف هذا الطلب مسبقاً",
     "request_not_deletable": "لا يمكن حذف طلب مقبول أو مربوط",
     "number_mismatch": "رقم الطلب غير مطابق",
+    # Statuses and notifications (specs/012 contracts/api.md)
+    "invalid_transition": "لا يمكن تغيير حالة الطلب بهذا الشكل",
+    "notification_not_found": "الإشعار غير موجود",
     "wrong_current_password": "كلمة السر الحالية غير صحيحة",
     "weak_password": "كلمة السر يجب أن تكون 8 أحرف على الأقل",
     "same_password": "كلمة السر الجديدة يجب أن تختلف عن الحالية",

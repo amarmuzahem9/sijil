@@ -15,7 +15,7 @@ import uuid
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from app.core import deletion_reasons, otp, rejection_reasons
+from app.core import deletion_reasons, otp, rejection_reasons, request_status
 from app.core.decision import decide
 from app.core.family_key import family_key
 from app.core.matches import MatchRecord
@@ -180,6 +180,7 @@ def submit(db: Session, user: User, draft_id: uuid.UUID, version: int) -> tuple[
     if decision.refusal is not None:  # an unconfirmed family; step 4 already covers it
         raise AppError("draft_incomplete", 422, extra={"missing": []})
 
+    request_status.check(None, decision.status)
     now = utc_now()
     number = db.execute(text("SELECT nextval('request_number_seq')")).scalar_one()
     request = Request(
