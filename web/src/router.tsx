@@ -32,7 +32,7 @@ import Marketers from './pages/admin/Marketers';
 import ChangePassword from './pages/ChangePassword';
 import Login from './pages/Login';
 import Dashboard from './pages/marketer/Dashboard';
-import { MarketerNotifications } from './pages/marketer/placeholders';
+import Notifications from './pages/marketer/Notifications';
 import RequestResult from './pages/marketer/RequestResult';
 import Requests from './pages/marketer/Requests';
 import SubscriberForm from './pages/marketer/subscriber/SubscriberForm';
@@ -72,7 +72,7 @@ export const routes: RouteObject[] = [
                       // specs/005: new-subscriber form. One route for /drafts/new and /drafts/{id}, so
                       // the form stays mounted when the URL is replaced after the first save.
                       { path: '/drafts/:draftId', element: <SubscriberForm /> },
-                      { path: '/notifications', element: <MarketerNotifications /> },
+                      { path: '/notifications', element: <Notifications /> },
                       { path: '/account', element: <AccountPanel /> },
                     ],
                   },

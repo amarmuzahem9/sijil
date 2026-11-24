@@ -380,5 +380,7 @@ be deleted.
   audit line stays.
 - No notification is sent to the marketer at deletion (notifications come in a later feature); FR-021 only
   covers what the marketer sees in their requests.
+  Since 012 (system.md v1.17 §4.4) a deletion sends the marketer «تم حذف الطلب» with the number and the
+  reason only (specs/012 FR-024).
 - Reports and export (019) will show a deleted request as an empty row with its kept fields; this feature only
   guarantees the data is in that shape.

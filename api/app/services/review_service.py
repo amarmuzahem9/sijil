@@ -48,7 +48,13 @@ from app.schemas.admin_requests import (
     RejectIn,
     RequestFileOut,
 )
-from app.services import audit_service, image_store, linked_records, match_service
+from app.services import (
+    audit_service,
+    image_store,
+    linked_records,
+    match_service,
+    notification_service,
+)
 
 log = logging.getLogger("sijil.review")
 
@@ -438,6 +444,8 @@ def accept(db: Session, user: User, request_id: int, body: AcceptIn) -> Request:
             "despite_warnings": list(warnings),
         },
     )
+    # specs/012 FR-016: in the decision's transaction, so only an effective decision notifies.
+    notification_service.add(db, request, "approved")
     db.commit()
     log.info("review accept number=%s warnings=%s", request.number, len(warnings))
     return request
@@ -465,6 +473,8 @@ def reject(db: Session, user: User, request_id: int, body: RejectIn) -> Request:
         # The note is the admin's own text, written for the marketer to read (research R12).
         after={"status": "rejected", "reason": body.reason, "note": note},
     )
+    # The reason's code only; the note stays on the request (specs/012 R5).
+    notification_service.add(db, request, "rejected", body.reason)
     db.commit()
     log.info("review reject number=%s reason=%s", request.number, body.reason)
     return request

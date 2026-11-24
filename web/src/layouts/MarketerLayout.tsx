@@ -2,21 +2,31 @@ import AccountCircleOutlined from '@mui/icons-material/AccountCircleOutlined';
 import HomeOutlined from '@mui/icons-material/HomeOutlined';
 import ListAltOutlined from '@mui/icons-material/ListAltOutlined';
 import NotificationsOutlined from '@mui/icons-material/NotificationsOutlined';
+import Badge from '@mui/material/Badge';
+import { useQuery } from '@tanstack/react-query';
 
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { useAuth } from '../auth/AuthProvider';
+import { notificationKeys, UNREAD_POLL_MS, unreadCount } from '../lib/notifications';
 import { AppShell } from './AppShell';
 import type { NavItem } from './AppShell';
 
-/** docs/system.md §4.1: الرئيسية، الطلبات، الإشعارات، حسابي. */
-const MARKETER_ITEMS: NavItem[] = [
-  { label: 'الرئيسية', path: '/', icon: <HomeOutlined />, exact: true },
-  { label: 'الطلبات', path: '/requests', icon: <ListAltOutlined /> },
-  { label: 'الإشعارات', path: '/notifications', icon: <NotificationsOutlined /> },
-  { label: 'حسابي', path: '/account', icon: <AccountCircleOutlined /> },
-];
+/** The bell with the unread count (specs/012 FR-020): nothing at 0. */
+function NotificationsIcon({ count }: { count: number }) {
+  return (
+    <Badge
+      color="error"
+      badgeContent={count > 0 ? <span data-testid="unread-badge">{count}</span> : null}
+      max={99}
+      invisible={count === 0}
+      overlap="circular"
+    >
+      <NotificationsOutlined />
+    </Badge>
+  );
+}
 
 export default function MarketerLayout() {
   const { refreshUser } = useAuth();
@@ -27,5 +37,23 @@ export default function MarketerLayout() {
     void refreshUser();
   }, [pathname, refreshUser]);
 
-  return <AppShell items={MARKETER_ITEMS} mobileNav="bottom" />;
+  // Asked every 15 s while the app is visible, and again on focus (research R6).
+  const unread = useQuery({
+    queryKey: notificationKeys.unread,
+    queryFn: unreadCount,
+    refetchInterval: UNREAD_POLL_MS,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+  });
+  const count = unread.data?.count ?? 0;
+
+  /** docs/system.md §4.1: الرئيسية، الطلبات، الإشعارات، حسابي. */
+  const items: NavItem[] = [
+    { label: 'الرئيسية', path: '/', icon: <HomeOutlined />, exact: true },
+    { label: 'الطلبات', path: '/requests', icon: <ListAltOutlined /> },
+    { label: 'الإشعارات', path: '/notifications', icon: <NotificationsIcon count={count} /> },
+    { label: 'حسابي', path: '/account', icon: <AccountCircleOutlined /> },
+  ];
+
+  return <AppShell items={items} mobileNav="bottom" />;
 }

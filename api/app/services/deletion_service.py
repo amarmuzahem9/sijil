@@ -21,7 +21,7 @@ from app.models import Request, RequestImage, RequestNumberPin, User
 from app.models.otp import OtpChallenge
 from app.models.request import DELETABLE_STATUSES, ERASED_COLUMNS
 from app.schemas.admin_requests import DeleteIn
-from app.services import audit_service, image_store
+from app.services import audit_service, image_store, notification_service
 from app.services.review_service import can_delete, can_review
 
 log = logging.getLogger("sijil.deletion")
@@ -87,6 +87,8 @@ def delete(db: Session, user: User, request_id: int, body: DeleteIn) -> Request:
         before=before,
         after={"deleted": True, "reason": body.reason},
     )
+    # «تم حذف الطلب» with the number and the reason only (system.md v1.17 §4.4, specs/012 FR-024).
+    notification_service.add(db, request, "deleted", body.reason)
     db.commit()
     db.expire(request, ["images", "pins"])
 

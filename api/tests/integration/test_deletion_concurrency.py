@@ -12,7 +12,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.errors import AppError
-from app.models import Area, AuditLog, Plan, Request, RequestReason, Tower, User
+from app.models import Area, AuditLog, Notification, Plan, Request, RequestReason, Tower, User
 from app.schemas.admin_requests import AcceptIn, DeleteIn
 from app.services import deletion_service, review_service
 from tests.helpers.requests import request_factory
@@ -47,6 +47,7 @@ def world(engine):
     yield ids
     with Session(engine) as s:
         req_ids = list(s.scalars(select(Request.id).where(Request.tower_id == ids["tower"])))
+        s.execute(delete(Notification).where(Notification.request_id.in_(req_ids)))
         s.execute(delete(RequestReason).where(RequestReason.request_id.in_(req_ids)))
         s.execute(delete(Request).where(Request.id.in_(req_ids)))
         s.execute(delete(AuditLog).where(AuditLog.actor_id.in_(ids["users"])))

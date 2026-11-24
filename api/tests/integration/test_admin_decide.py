@@ -232,3 +232,57 @@ def test_deleted_request_cannot_be_decided(client, db, h, reviewer, marketer, ac
     db.expire_all()
     row = db.get(Request, request.id)
     assert row.status == "pending_review" and row.approved_at is None and row.rejected_at is None
+
+
+# --- specs/012 T023: each decision notifies the marketer once ------------------------------------
+
+
+def _notifications(db, request):
+    from app.models import Notification
+
+    db.expire_all()
+    return db.scalars(select(Notification).where(Notification.request_id == request.id)).all()
+
+
+def test_accept_adds_one_approved_notification(client, db, h, marketer) -> None:
+    request = _family(db, marketer)
+    assert _accept(client, h, request.id).status_code == 200
+    (row,) = _notifications(db, request)
+    assert (row.marketer_id, row.kind, row.reason, row.read_at) == (
+        marketer.id,
+        "approved",
+        None,
+        None,
+    )
+
+
+@pytest.mark.parametrize(
+    "body,reason",
+    [
+        ({"reason": "card_unclear"}, "card_unclear"),
+        ({"reason": "other", "note": "ملاحظة المراجع التجريبية"}, "other"),
+    ],
+)
+def test_reject_adds_one_rejected_notification_with_the_code(
+    client, db, h, marketer, body, reason
+) -> None:
+    request = _family(db, marketer)
+    assert _reject(client, h, request.id, body).status_code == 200
+    (row,) = _notifications(db, request)
+    assert (row.marketer_id, row.kind, row.reason) == (marketer.id, "rejected", reason)
+
+
+def test_refused_decisions_add_no_notification(client, db, h, marketer) -> None:
+    # 409 already decided: only the first decision notifies.
+    request = _family(db, marketer)
+    assert _accept(client, h, request.id).status_code == 200
+    assert _accept(client, h, request.id).status_code == 409
+    assert _reject(client, h, request.id, {"reason": "card_unclear"}).status_code == 409
+    assert [r.kind for r in _notifications(db, request)] == ["approved"]
+
+    # 422: a return without the commission answer, an «سبب آخر» without its note.
+    ret = _return(db, marketer)
+    assert _accept(client, h, ret.id).status_code == 422
+    other = _family(db, marketer)
+    assert _reject(client, h, other.id, {"reason": "other"}).status_code == 422
+    assert _notifications(db, ret) == [] and _notifications(db, other) == []

@@ -18,6 +18,7 @@ from app.api import (
     health,
     marketer,
     marketers,
+    notifications,
     requests,
     settings,
 )
@@ -63,6 +64,7 @@ def create_app() -> FastAPI:
         catalog,
         drafts,
         requests,
+        notifications,
         client_config,
     ):
         app.include_router(module.router, prefix="/api")

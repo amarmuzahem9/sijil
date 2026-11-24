@@ -156,34 +156,34 @@ find the current suite"); run it from PowerShell.
 
 ### Tests for User Story 2 (write first, run red)
 
-- [ ] T023 [P] [US2] Extend `api/tests/integration/test_admin_decide.py`: accept adds one `approved` row for
+- [x] T023 [P] [US2] Extend `api/tests/integration/test_admin_decide.py`: accept adds one `approved` row for
   the request's marketer; reject adds one `rejected` row with the reason code («other» → label «سبب آخر»,
   no note); a refused accept/reject (`already_decided`, `warnings_unconfirmed`, 422) adds none.
-- [ ] T024 [P] [US2] Extend `api/tests/integration/test_admin_decide_concurrency.py`: two admins deciding
+- [x] T024 [P] [US2] Extend `api/tests/integration/test_admin_decide_concurrency.py`: two admins deciding
   the same request → exactly one notification (FR-017).
-- [ ] T025 [P] [US2] In `api/tests/integration/test_notifications.py`: auto-accepted submission adds no
+- [x] T025 [P] [US2] In `api/tests/integration/test_notifications.py`: auto-accepted submission adds no
   notification (FR-016); `GET /api/notifications` newest first with paging; `unread-count`; `read` and
   `read-all`; another marketer's id → 404 `notification_not_found`; admins get 403; the list never shows
   another marketer's rows (FR-023).
-- [ ] T026 [P] [US2] Extend `api/tests/integration/test_marketer_privacy.py`: notification responses carry no
+- [x] T026 [P] [US2] Extend `api/tests/integration/test_marketer_privacy.py`: notification responses carry no
   phone, national ID, family number, address, note or other subscriber's data.
-- [ ] T027 [P] [US2] Vitest `web/src/__tests__/notifications.test.tsx`: titles per kind (contracts/api.md),
+- [x] T027 [P] [US2] Vitest `web/src/__tests__/notifications.test.tsx`: titles per kind (contracts/api.md),
   number, name, reason, Baghdad time; unread rows styled; tapping marks read and navigates to
   `/requests/{id}`; «تعليم الكل كمقروء»; empty state «لا توجد إشعارات».
-- [ ] T028 [P] [US2] Vitest `web/src/__tests__/marketerBadge.test.tsx`: the bottom-bar and side-bar icon show
+- [x] T028 [P] [US2] Vitest `web/src/__tests__/marketerBadge.test.tsx`: the bottom-bar and side-bar icon show
   the unread count, nothing at 0, and refetch on the 15 s interval (fake timers).
 
 ### Implementation for User Story 2
 
-- [ ] T029 [US2] Call `notification_service.add(..., "approved")` in `accept` and `add(..., "rejected",
+- [x] T029 [US2] Call `notification_service.add(..., "approved")` in `accept` and `add(..., "rejected",
   body.reason)` in `reject` before the commit, in `api/app/services/review_service.py`; T023, T024 green.
-- [ ] T030 [US2] Create `api/app/api/notifications.py` (marketer-only routes per contracts/api.md) and include
+- [x] T030 [US2] Create `api/app/api/notifications.py` (marketer-only routes per contracts/api.md) and include
   it in `api/app/main.py`; T025, T026 green.
-- [ ] T031 [P] [US2] Create `web/src/lib/notifications.ts` (types, `KIND_TITLES`, `listNotifications(before)`,
+- [x] T031 [P] [US2] Create `web/src/lib/notifications.ts` (types, `KIND_TITLES`, `listNotifications(before)`,
   `unreadCount()`, `markRead(id)`, `markAllRead()`, query keys).
-- [ ] T032 [US2] Add the unread badge to the «الإشعارات» item in `web/src/layouts/MarketerLayout.tsx` with
+- [x] T032 [US2] Add the unread badge to the «الإشعارات» item in `web/src/layouts/MarketerLayout.tsx` with
   React Query `refetchInterval: 15_000`, `refetchIntervalInBackground: false` (research R6); T028 green.
-- [ ] T033 [US2] Create `web/src/pages/marketer/Notifications.tsx` (infinite list, tap = read + navigate,
+- [x] T033 [US2] Create `web/src/pages/marketer/Notifications.tsx` (infinite list, tap = read + navigate,
   «تعليم الكل كمقروء», invalidates the count); route it in `web/src/router.tsx` and remove
   `MarketerNotifications` from `web/src/pages/marketer/placeholders.tsx`; T027 green.
 
@@ -198,26 +198,34 @@ find the current suite"); run it from PowerShell.
 
 ### Tests for User Story 4 (write first, run red)
 
-- [ ] T034 [P] [US4] Extend `api/tests/integration/test_deletion.py`: a deletion adds one `deleted` row with
+- [x] T034 [P] [US4] Extend `api/tests/integration/test_deletion.py`: a deletion adds one `deleted` row with
   the deletion reason code; a refused deletion (`request_not_deletable`, `number_mismatch`,
   already deleted) adds none.
-- [ ] T035 [P] [US4] In `api/tests/integration/test_notifications.py`: a `rejected` notification of a request
+- [x] T035 [P] [US4] In `api/tests/integration/test_notifications.py`: a `rejected` notification of a request
   later deleted returns `full_name: null`, `deleted: true`; the `deleted` notification has
   `reason_label` = the deletion reason's label (SC-005).
-- [ ] T036 [P] [US4] Vitest case in `web/src/__tests__/notifications.test.tsx`: a deleted row shows the
+- [x] T036 [P] [US4] Vitest case in `web/src/__tests__/notifications.test.tsx`: a deleted row shows the
   number and «محذوف», no name; tapping opens `/requests/{id}` (the 011 deleted view).
 
 ### Implementation for User Story 4
 
-- [ ] T037 [US4] Call `notification_service.add(db, request, "deleted", body.reason)` before the commit in
+- [x] T037 [US4] Call `notification_service.add(db, request, "deleted", body.reason)` before the commit in
   `api/app/services/deletion_service.py`; T034, T035 green.
-- [ ] T038 [US4] Render the deleted row (grey «محذوف» tag from `DELETED_TAG`) in
+- [x] T038 [US4] Render the deleted row (grey «محذوف» tag from `DELETED_TAG`) in
   `web/src/pages/marketer/Notifications.tsx`; T036 green.
-- [ ] T039 [US4] Point the 011 note "notifications come in a later feature" to 012:
+- [x] T039 [US4] Point the 011 note "notifications come in a later feature" to 012:
   add a one-line pointer to 012 in `specs/011-subscriber-deletion/spec.md` Assumptions.
-- [ ] T040 [US4] Run api and web suites green, lint, and commit batch 3.
+- [x] T040 [US4] Run api and web suites green, lint, and commit batch 3.
 
 **Checkpoint**: batch 3 ends. Commit.
+
+Batch 3 report: red first — T023 (4 failed: no notification written), T024 (no notification for the
+winning decision), T025 + T035 (7 failed: no routes), T026 (404), T027 + T028 + T036 (no
+`lib/notifications`, no page), T034 (2 failed; its 2 refusal cases passed already, since nothing
+wrote notifications). Two test-side fixes on the way (httpx has no `.ok`; line length). The
+concurrency teardowns of 010 and 011 now delete notifications first (foreign key). Green: api 1199
+passed (+17), web 416 passed (+15; the `linked`/`unlinked` titles of T049 are covered too),
+typecheck clean, lint 0 errors. The unused `pages/marketer/placeholders.tsx` is removed.
 
 ---
 

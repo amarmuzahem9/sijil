@@ -234,6 +234,48 @@ def test_decision_shows_nothing_of_the_linked_record(client, db, h, catalog, mak
     seen.assert_hides(old, OTHER_PHONE, OTHER_NID, ADMIN_NAME, '"despite_warnings"', '"record"')
 
 
+@pytest.mark.parametrize("action", ["accept", "reject"])
+def test_notifications_show_nothing_more(client, db, h, catalog, make_user, action):
+    """specs/012 FR-019, FR-023: a notification carries the event, the number, the marketer's own
+    subscriber's name and a reason label; no phone, numbers, address, note, admin or other
+    record."""
+    old = _record(db, make_user, family_number=FAMILY, national_id=OTHER_NID, phone=OTHER_PHONE)
+    seen = Seen(client, h)
+    draft_id = complete_draft(client, h, catalog, verified=False)
+    seen.patch(draft_id, {"additional_confirmed": True})
+    res = seen.verify_and_submit(draft_id)
+    assert res.status_code == 201, res.json()
+    mine = res.json()
+
+    admin = make_user("super_admin", name=ADMIN_NAME)
+    body = {} if action == "accept" else {"reason": "other", "note": "نص ملاحظة المراجع"}
+    decided = client.post(
+        f"/api/admin/requests/{mine['id']}/{action}",
+        json=body,
+        headers=auth_header(login(client, admin.phone)),
+    )
+    assert decided.status_code == 200, decided.json()
+
+    listed = client.get("/api/notifications", headers=h)
+    assert listed.status_code == 200, listed.json()
+    (item,) = listed.json()["items"]
+    assert set(item) == {
+        "id",
+        "kind",
+        "request_id",
+        "number_label",
+        "full_name",
+        "deleted",
+        "reason_label",
+        "created_at",
+        "read_at",
+    }
+    for secret in (mine["phone"], NID, FAMILY, mine["address"], "نص ملاحظة المراجع", ADMIN_NAME):
+        assert secret not in listed.text
+    seen.bodies.append(listed.text)
+    seen.assert_hides(old, OTHER_PHONE, OTHER_NID, ADMIN_NAME)
+
+
 def test_a_pin_shows_nothing_new_to_the_marketer(client, db, make_user):
     """specs/010 T049 (FR-011): after a pin that turns the request into «اشتراك إضافي» and adds a
     linked record, the marketer sees the new type and nothing of the pin, the warnings or the

@@ -333,3 +333,35 @@ def test_delete_turned_off_is_refused_at_once(client, db, marketer, deleter, mak
     res = _delete(client, h, request.id, request=request)
     assert (res.status_code, res.json()["code"]) == (403, "forbidden")
     assert db.get(Request, request.id).deleted_at is None
+
+
+# --- specs/012 T034: a deletion notifies the marketer once -------------------------------------
+
+
+def _notifications(db, request):
+    from app.models import Notification
+
+    db.expire_all()
+    return db.scalars(select(Notification).where(Notification.request_id == request.id)).all()
+
+
+@pytest.mark.parametrize("status", ["pending_review", "rejected"])
+def test_deletion_adds_one_notification(client, db, uploads, marketer, deleter, status) -> None:
+    request = request_factory(db, marketer, status=status)
+    h = headers_for(client, deleter)
+    assert _delete(client, h, request.id, reason="test", request=request).status_code == 200
+    (row,) = _notifications(db, request)
+    assert (row.marketer_id, row.kind, row.reason) == (marketer.id, "deleted", "test")
+    # A second delete is refused and adds nothing.
+    assert _delete(client, h, request.id, request=request).status_code == 409
+    assert len(_notifications(db, request)) == 1
+
+
+@pytest.mark.parametrize("status", ["approved", "linked"])
+def test_refused_deletions_add_no_notification(client, db, marketer, deleter, status) -> None:
+    h = headers_for(client, deleter)
+    accepted = request_factory(db, marketer, status=status)
+    assert _delete(client, h, accepted.id, request=accepted).status_code == 409
+    pending = request_factory(db, marketer, status="pending_review")
+    assert _delete(client, h, pending.id, confirm="T3C-1").status_code == 422
+    assert _notifications(db, accepted) == [] and _notifications(db, pending) == []
