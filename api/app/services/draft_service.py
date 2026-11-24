@@ -721,8 +721,12 @@ def delete(db: Session, user: User, draft_id: uuid.UUID) -> None:
 
 
 def referenced_file_names(db: Session) -> set[str]:
-    """Files still in use: draft images and, from 008, submitted requests' images."""
-    from app.models import RequestImage
+    """Files still in use: draft images, submitted requests' images (008), legacy subscribers'
+    images and the staged images of open legacy previews (specs/014 research R9)."""
+    from app.models import LegacyImage, RequestImage
+    from app.services.legacy_import_service import staged_file_names
 
     drafts = set(db.scalars(select(DraftImage.file_name)).all())
-    return drafts | set(db.scalars(select(RequestImage.file_name)).all())
+    requests = set(db.scalars(select(RequestImage.file_name)).all())
+    legacy = set(db.scalars(select(LegacyImage.file_name)).all())
+    return drafts | requests | legacy | staged_file_names(db)

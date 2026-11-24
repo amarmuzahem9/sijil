@@ -9,13 +9,22 @@ import io
 import logging
 import os
 import re
+import struct
+import threading
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from fastapi import UploadFile
-from PIL import Image, ImageOps, UnidentifiedImageError
+from PIL import (
+    Image,
+    ImageFile,
+    ImageOps,
+    JpegImagePlugin,
+    PngImagePlugin,
+    UnidentifiedImageError,
+)
 
 from app.config import get_settings
 from app.errors import AppError
@@ -101,21 +110,44 @@ def save_upload(upload: UploadFile) -> StoredImage:
 
 
 LEGACY_JPEG_QUALITY = 80
-_DECODABLE = ("JPEG", "PNG")
+# Drive images only (specs/014 research R7): a separate, higher pixel limit than the phone upload
+# guard above (Image.MAX_IMAGE_PIXELS, which stays as it is). The format plugins are opened
+# directly, so Pillow's global bomb check never runs here and is never changed; this limit is
+# checked instead, before any pixel is decoded.
+LEGACY_MAX_PIXELS = 120_000_000
+_PLUGINS = (JpegImagePlugin.JpegImageFile, PngImagePlugin.PngImageFile)
+# A JPEG decodes at a reduced scale (draft); a PNG decodes in full, so those run one at a time to
+# bound memory (a 120 MP RGBA PNG needs about 480 MB).
+_FULL_DECODE = threading.Semaphore(1)
+
+
+def _open_plugin(data: bytes) -> ImageFile.ImageFile:
+    for plugin in _PLUGINS:
+        try:
+            return plugin(io.BytesIO(data))
+        except (SyntaxError, OSError, ValueError, struct.error, IndexError):
+            continue
+    raise AppError("invalid_image", 422)
 
 
 def _reencode(data: bytes) -> tuple[bytes, int, int]:
     """JPEG or PNG → upright RGB JPEG, ≤ MAX_IMAGE_EDGE on the long edge, without metadata."""
+    image = _open_plugin(data)
     try:
-        with Image.open(io.BytesIO(data)) as probe:
-            if probe.format not in _DECODABLE:
-                raise AppError("invalid_image", 422)
-            probe.verify()
-        with Image.open(io.BytesIO(data)) as image:
+        width, height = image.size
+        if width <= 0 or height <= 0 or width * height > LEGACY_MAX_PIXELS:
+            raise AppError("invalid_image", 422)
+        if image.format == "JPEG":
+            image.draft("RGB", (MAX_IMAGE_EDGE, MAX_IMAGE_EDGE))
             image.load()
-            upright = ImageOps.exif_transpose(image).convert("RGB")
-    except (UnidentifiedImageError, OSError, SyntaxError, ValueError, Image.DecompressionBombError):
+        else:
+            with _FULL_DECODE:
+                image.load()
+        upright = ImageOps.exif_transpose(image).convert("RGB")
+    except (UnidentifiedImageError, OSError, SyntaxError, ValueError, MemoryError):
         raise AppError("invalid_image", 422) from None
+    finally:
+        image.close()
     upright.thumbnail((MAX_IMAGE_EDGE, MAX_IMAGE_EDGE))
     out = io.BytesIO()
     upright.save(out, format="JPEG", quality=LEGACY_JPEG_QUALITY)

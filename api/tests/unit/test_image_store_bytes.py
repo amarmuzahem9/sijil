@@ -63,11 +63,34 @@ def test_gif_is_refused(uploads) -> None:
     assert list(uploads.iterdir()) == []
 
 
-def test_decompression_bomb_is_refused(uploads, monkeypatch) -> None:
-    monkeypatch.setattr(Image, "MAX_IMAGE_PIXELS", 1000)
+def _encoded(fmt: str, size: tuple[int, int]) -> bytes:
     buf = io.BytesIO()
-    Image.new("L", (100, 100)).save(buf, format="PNG")  # 10 000 px > 2 × 1000
+    Image.new("L", size, 128).save(buf, format=fmt)
+    return buf.getvalue()
+
+
+@pytest.mark.parametrize("fmt", ["PNG", "JPEG"])
+def test_images_above_the_legacy_pixel_limit_are_refused(uploads, monkeypatch, fmt) -> None:
+    monkeypatch.setattr(image_store, "LEGACY_MAX_PIXELS", 1000)
     with pytest.raises(AppError) as err:
-        image_store.save_bytes(buf.getvalue())
+        image_store.save_bytes(_encoded(fmt, (100, 100)))  # 10 000 px > 1000
     assert err.value.code == "invalid_image"
     assert list(uploads.iterdir()) == []
+
+
+def test_legacy_limit_is_120_megapixels_and_separate_from_uploads() -> None:
+    assert image_store.LEGACY_MAX_PIXELS == 120_000_000
+    # The phone upload guard is untouched (system.md §5.1 sizes; batch 2 decision).
+    assert Image.MAX_IMAGE_PIXELS == 4 * 1600 * 1600
+
+
+def test_a_30_megapixel_photo_is_stored_reduced_and_the_upload_guard_stays(uploads) -> None:
+    """Above the upload guard (about 20 MP), below the legacy limit: accepted for Drive images."""
+    stored = image_store.save_bytes(_encoded("JPEG", (6000, 5000)))
+    assert max(stored.width, stored.height) == 1600
+    assert Image.MAX_IMAGE_PIXELS == 4 * 1600 * 1600
+
+
+def test_the_phone_upload_path_still_refuses_30_megapixels() -> None:
+    with pytest.raises(AppError):
+        image_store._verify(_encoded("JPEG", (6000, 5000)))

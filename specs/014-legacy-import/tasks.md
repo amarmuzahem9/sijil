@@ -121,13 +121,13 @@ before confirmation; after confirmation the summary counts match.
 
 ### Tests — preview and fetching (write first, run red)
 
-- [ ] T015 [P] [US1] Synthetic fixture `api/tests/fixtures/legacy/legacy_sample.csv` (12 rows covering every R6
+- [x] T015 [P] [US1] Synthetic fixture `api/tests/fixtures/legacy/legacy_sample.csv` (13 rows covering every R6
   flag and the statuses «تم», «ملغي», «مرفوض», empty; fake Drive ids) and `expected_flags.json` (row index → flags).
-- [ ] T016 [P] [US1] Unit tests for flag computation in `api/tests/unit/test_legacy_flags.py` (research R6): repeats
+- [x] T016 [P] [US1] Unit tests for flag computation in `api/tests/unit/test_legacy_flags.py` (research R6): repeats
   in the file by family key and by phone; length; empty family; `no_check_keys`; repeated and missing legacy numbers;
   rows with `counts_in_check = false` get no `*_dup_*` or `in_sijil` flag; `allowed` choices per flag
   (`legacy_number_missing`/`name_missing` → skip only; `family_length` → import, skip, correct).
-- [ ] T017 [US1] Integration tests `api/tests/integration/test_legacy_preview.py`: POST as main admin and as a
+- [x] T017 [US1] Integration tests `api/tests/integration/test_legacy_preview.py`: POST as main admin and as a
   `reports` admin → 201 `fetching`; as `review`-only, `link`-only and a marketer → 403; missing column → 422 with
   the column names; after the job runs (executor run inline in tests) status `ready`, counts and `status_values`
   match the fixture, `flagged` matches `expected_flags.json`; `in_sijil` lists pending/approved/linked live requests
@@ -140,22 +140,22 @@ before confirmation; after confirmation the summary counts match.
 
 ### Implementation — preview and fetching
 
-- [ ] T018 [US1] Flags in `api/app/core/legacy_row.py` (`compute_flags(rows, existing)` with `existing` = the
+- [x] T018 [US1] Flags in `api/app/core/legacy_row.py` (`compute_flags(rows, existing)` with `existing` = the
   legacy numbers, family keys and phones already imported and the live Sijil requests' keys) (T016 green).
-- [ ] T019 [US1] `api/app/services/legacy_import_service.py` › `create_preview`: read file (T012), clean rows
+- [x] T019 [US1] `api/app/services/legacy_import_service.py` › `create_preview`: read file (T012), clean rows
   (T011), store data-model.md `legacy_import_previews` (`rows`, `images_total`, `expires_at`), cancel the caller's
   previous preview, sweep expired previews; submit the fetch job.
-- [ ] T020 [US1] Same service › fetch job on a `ThreadPoolExecutor(max_workers=4)`: per row and side fetch
+- [x] T020 [US1] Same service › fetch job on a `ThreadPoolExecutor(max_workers=4)`: per row and side fetch
   (T013), `save_bytes` (T014) into a staged file, record the outcome in the row's `images`, bump `images_done`;
   then compute flags (T018) and set `ready`; any unexpected error → `failed`. `sweep_at_startup` marks leftover
   `fetching` previews `failed`; wire it in `api/app/main.py` lifespan next to the card-reading sweep.
-- [ ] T021 [US1] Add the legacy image files and every staged file of an open preview to
+- [x] T021 [US1] Add the legacy image files and every staged file of an open preview to
   `draft_service.referenced_file_names` in `api/app/services/draft_service.py`.
-- [ ] T022 [US1] Schemas `api/app/schemas/legacy_import.py` (`Preview`, `FlaggedRow`, `Flag`, `ChoicesIn`,
+- [x] T022 [US1] Schemas `api/app/schemas/legacy_import.py` (`Preview`, `FlaggedRow`, `Flag`, `ChoicesIn`,
   `ImportSummary`) exactly as contracts/api.md.
-- [ ] T023 [US1] Routes `api/app/api/admin_imports.py`: `POST /admin/imports/legacy/previews`,
+- [x] T023 [US1] Routes `api/app/api/admin_imports.py`: `POST /admin/imports/legacy/previews`,
   `GET …/{id}`, `DELETE …/{id}` with `require_permission("reports")`; register the router in `api/app/main.py`.
-- [ ] T024 [US1] Run T017 green. **Batch 2 commit.**
+- [x] T024 [US1] Run T017 green. **Batch 2 commit.**
 
 ### Tests — choices and confirm (write first, run red)
 

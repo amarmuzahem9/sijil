@@ -88,10 +88,14 @@ All Technical Context unknowns are resolved below. Each entry: Decision, Rationa
   means «not shared» (`not_shared`); other failures: `not_found`, `too_large`, `not_image`, `timeout`, `network`.
   The bytes are decoded with Pillow (JPEG or PNG; others → `not_image`), EXIF-rotated, reduced to 1 600 px on the
   longest edge and saved as JPEG quality 80 through `image_store` (new `save_bytes`), so stored legacy images obey
-  the same limits as phone uploads. Known limit (batch 1): the shared decompression-bomb guard of
-  `image_store` refuses images above about 20 megapixels, so a photo taken in a phone's 50 or 108 MP mode comes back
-  `not_image` and the row is «غير مكتمل»; ordinary 12 MP phone photos pass. Raising the guard would weaken the phone
-  upload path, so it stays.
+  the same limits as phone uploads.
+  **Pixel limit (owner decision, batch 2):** Drive images have their own limit, `LEGACY_MAX_PIXELS = 120 000 000`
+  (120 MP), separate from the phone upload guard (`Image.MAX_IMAGE_PIXELS`, about 10 MP with refusal above about
+  20 MP), which is unchanged. `save_bytes` opens the JPEG or PNG plugin directly, so Pillow's global check is never
+  run or modified, and checks width × height against 120 MP from the header before decoding anything. A JPEG
+  decodes at a reduced scale (`draft`, at least 1 600 px), so even a 108 MP photo needs little memory; a PNG decodes
+  in full, one at a time (a semaphore) to bound memory. Above 120 MP the outcome is `not_image` and the row is
+  «غير مكتمل». The 15 MB download cap still applies.
 - **Rationale**: FR-007, §12.1; the fake keeps tests and e2e free of the network and of real images (CLAUDE.md).
   Re-encoding strips metadata and caps size.
 - **Alternatives**: Google Drive API with a service account — rejected: needs credentials and setup the owner did

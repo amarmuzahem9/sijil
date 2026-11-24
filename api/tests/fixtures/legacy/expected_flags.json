@@ -1,0 +1,99 @@
+{
+  "rows": 13,
+  "ready": [
+    2,
+    3,
+    10
+  ],
+  "not_counted": [
+    10,
+    11
+  ],
+  "images_total": 25,
+  "flagged": {
+    "4": [
+      {
+        "code": "family_dup_file",
+        "rows": [
+          5
+        ]
+      }
+    ],
+    "5": [
+      {
+        "code": "family_dup_file",
+        "rows": [
+          4
+        ]
+      }
+    ],
+    "6": [
+      {
+        "code": "family_length"
+      }
+    ],
+    "7": [
+      {
+        "code": "phone_invalid"
+      }
+    ],
+    "8": [
+      {
+        "code": "phone_dup_file",
+        "rows": [
+          9
+        ]
+      }
+    ],
+    "9": [
+      {
+        "code": "phone_dup_file",
+        "rows": [
+          8
+        ]
+      }
+    ],
+    "11": [
+      {
+        "code": "image_failed",
+        "side": "back",
+        "outcome": "not_shared"
+      }
+    ],
+    "12": [
+      {
+        "code": "legacy_number_missing"
+      },
+      {
+        "code": "image_failed",
+        "side": "front",
+        "outcome": "not_image"
+      }
+    ],
+    "13": [
+      {
+        "code": "image_missing",
+        "side": "front"
+      },
+      {
+        "code": "image_failed",
+        "side": "back",
+        "outcome": "not_found"
+      },
+      {
+        "code": "legacy_number_dup_file",
+        "rows": [
+          14
+        ]
+      }
+    ],
+    "14": [
+      {
+        "code": "legacy_number_dup_file",
+        "rows": [
+          13
+        ]
+      }
+    ]
+  }
+}

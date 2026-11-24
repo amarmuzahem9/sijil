@@ -8,7 +8,7 @@ How to check 014 end to end.
 
 - The app runs with `docker compose up`, with the fake card reader, the fake OTP sender and `DRIVE_MODE=fake`.
 - Accounts: the main admin; an admin with `reports` only; an admin with `review` only; the demo marketer.
-- A **synthetic** legacy file, `api/tests/fixtures/legacy/legacy_sample.csv` (and the same as `.xlsx`): 12 rows with
+- A **synthetic** legacy file, `api/tests/fixtures/legacy/legacy_sample.csv` (and the same as `.xlsx`): 13 rows with
   made-up names and numbers that cover every flag of research R6 and the statuses «تم», «ملغي», «مرفوض» and empty.
   Its image links use fake Drive ids (`fake-ok-…`, `fake-private-…`, `fake-missing-…`, `fake-html-…`) that the fake
   fetcher answers with generated images or failures. No real card image or subscriber data anywhere.

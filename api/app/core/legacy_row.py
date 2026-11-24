@@ -7,7 +7,11 @@ through §8.1 and family numbers get their §6.2 comparison key, the same helper
 Nothing here logs: rows hold personal data.
 """
 
+import copy
 import re
+from collections import defaultdict
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, time
 from typing import Any
 
@@ -239,3 +243,99 @@ def clean_row(index: int, raw: dict[str, Any]) -> dict[str, Any]:
         "drive_ids": drive_ids,
         "flags": flags,
     }
+
+
+# --- flags across rows and against stored data (research R6) ---
+
+
+@dataclass(frozen=True)
+class Existing:
+    """What is already stored. Legacy phones and family keys are those of subscribers counted in
+    the check; Sijil keys map to the request numbers of live pending, approved or linked
+    requests (rejected and deleted requests never count, §6.1, §7.4)."""
+
+    legacy_numbers: frozenset[str] = frozenset()
+    legacy_phones: frozenset[str] = frozenset()
+    legacy_family_keys: frozenset[str] = frozenset()
+    sijil_phones: Mapping[str, list[str]] = field(default_factory=dict)
+    sijil_family_keys: Mapping[str, list[str]] = field(default_factory=dict)
+
+
+# Only skip is possible: the row cannot be stored without these.
+_SKIP_ONLY = frozenset({"legacy_number_missing", "name_missing"})
+
+
+def allowed_choices(flags: list[dict[str, Any]]) -> list[str]:
+    codes = {f["code"] for f in flags}
+    if "already_imported" in codes:
+        return []
+    if codes & _SKIP_ONLY:
+        return ["skip"]
+    if "family_length" in codes:
+        return ["import", "skip", "correct"]
+    return ["import", "skip"]
+
+
+def _others(groups: dict[str, list[int]], key: str | None, index: int) -> list[int]:
+    if key is None:
+        return []
+    return [i for i in groups.get(key, []) if i != index]
+
+
+def _request_order(label: str) -> int:
+    return int(label.removeprefix("T3C-"))
+
+
+def compute_flags(rows: list[dict[str, Any]], existing: Existing) -> list[dict[str, Any]]:
+    """New rows with `flags` and `allowed`, from each row's `base_flags` and `images` outcomes,
+    repeats in the file, stored legacy subscribers and Sijil requests. The input is unchanged.
+
+    Order: the row's own flags, image failures, then family, phone, Sijil and legacy number
+    conflicts. A row already imported carries only `already_imported` and is left out of the
+    file repeats. Rows not counted in the check take and give no conflict flag.
+    """
+    out = [copy.deepcopy(row) for row in rows]
+    imported = {row["index"] for row in out if row["legacy_number"] in existing.legacy_numbers}
+    live = [row for row in out if row["index"] not in imported]
+    counted = [row for row in live if row["counts_in_check"]]
+    by_family: dict[str, list[int]] = defaultdict(list)
+    by_phone: dict[str, list[int]] = defaultdict(list)
+    for row in counted:
+        if row["family_key"]:
+            by_family[row["family_key"]].append(row["index"])
+        if row["phone"]:
+            by_phone[row["phone"]].append(row["index"])
+    by_number: dict[str, list[int]] = defaultdict(list)
+    for row in live:
+        if row["legacy_number"]:
+            by_number[row["legacy_number"]].append(row["index"])
+
+    for row in out:
+        if row["index"] in imported:
+            row["flags"] = [_flag("already_imported")]
+            row["allowed"] = []
+            continue
+        flags = list(row["base_flags"])
+        for side in ("front", "back"):
+            outcome = row.get("images", {}).get(side, {}).get("outcome")
+            if outcome not in (None, "ok", "missing"):
+                flags.append(_flag("image_failed", side=side, outcome=outcome))
+        if row["counts_in_check"]:
+            key, phone, index = row["family_key"], row["phone"], row["index"]
+            if same := _others(by_family, key, index):
+                flags.append(_flag("family_dup_file", rows=same))
+            if key and key in existing.legacy_family_keys:
+                flags.append(_flag("family_dup_legacy"))
+            if same := _others(by_phone, phone, index):
+                flags.append(_flag("phone_dup_file", rows=same))
+            if phone and phone in existing.legacy_phones:
+                flags.append(_flag("phone_dup_legacy"))
+            requests = set(existing.sijil_phones.get(phone, []) if phone else [])
+            requests |= set(existing.sijil_family_keys.get(key, []) if key else [])
+            if requests:
+                flags.append(_flag("in_sijil", requests=sorted(requests, key=_request_order)))
+        if same := _others(by_number, row["legacy_number"], row["index"]):
+            flags.append(_flag("legacy_number_dup_file", rows=same))
+        row["flags"] = flags
+        row["allowed"] = allowed_choices(flags)
+    return out

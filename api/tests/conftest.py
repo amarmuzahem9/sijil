@@ -103,6 +103,23 @@ def _card_reading_runs_inline(request, monkeypatch) -> None:
     )
 
 
+@pytest.fixture(autouse=True)
+def _legacy_fetch_runs_inline(request, monkeypatch) -> None:
+    """A legacy preview's image fetching runs at once on the test session with the fake Drive
+    fetcher, instead of on a worker thread with its own connection (specs/014 research R8)."""
+    if "db" not in request.fixturenames:
+        return
+    from app.services import legacy_import_service
+    from app.services.drive_fetcher import FakeFetcher
+
+    db = request.getfixturevalue("db")
+    monkeypatch.setattr(
+        legacy_import_service,
+        "submit",
+        lambda preview_id: legacy_import_service.run(preview_id, session=db, fetcher=FakeFetcher()),
+    )
+
+
 @pytest.fixture
 def client(db) -> Iterator[TestClient]:
     app.dependency_overrides[get_db] = lambda: db

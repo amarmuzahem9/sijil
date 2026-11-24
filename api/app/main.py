@@ -7,6 +7,7 @@ from fastapi import FastAPI
 
 from app.api import (
     admin,
+    admin_imports,
     admin_links,
     admin_requests,
     admins,
@@ -33,9 +34,12 @@ from app.services import match_service  # noqa: F401  (registers the check sourc
 async def lifespan(_: FastAPI):
     # Card readings left running by a previous process become failed/timeout (specs/006 R5).
     if get_settings().app_env != "test":
+        from app.services import legacy_import_service
         from app.services.card_reading_service import sweep_at_startup
 
         sweep_at_startup()
+        # Legacy previews left fetching by a previous process become failed (specs/014 R8).
+        legacy_import_service.sweep_at_startup()
     yield
 
 
@@ -56,6 +60,7 @@ def create_app() -> FastAPI:
         auth,
         marketer,
         admin,
+        admin_imports,
         admin_requests,
         admin_links,
         admins,
