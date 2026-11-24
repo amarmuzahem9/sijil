@@ -4,7 +4,7 @@
 Every registered source is asked and returns one `MatchRecord` per matching record, flagging which
 of the keys it holds and whether it is still pending review. In 009 the only source is `sijil`:
 submitted requests that are pending review, approved or linked. Rejected requests and drafts never
-count (system.md v1.9). Features 013/014 register `legacy` and `sas` here with the same contract: a
+count (system.md v1.9). Features 014/015 register `legacy` and `sas` here with the same contract: a
 record with no national ID or no family number simply never sets that flag. Callers pass keys
 already normalized (phone §8.1, national ID 12 digits, family key §6.2); a None key never matches.
 """

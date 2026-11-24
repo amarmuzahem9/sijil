@@ -1,6 +1,6 @@
 /**
  * «الطلبات» (docs/system.md §4.3): tabs بالانتظار / مقبولة / تم الربط / مرفوضة / مسودات.
- * «مسودات» since 005; «بالانتظار» and «مقبولة» since 008; «مرفوضة» since 010; «تم الربط» (012)
+ * «مسودات» since 005; «بالانتظار» and «مقبولة» since 008; «مرفوضة» since 010; «تم الربط» (013)
  * stays empty until then. With no tab in the URL the page opens on «بالانتظار» once the marketer
  * has requests, else on «مسودات» (specs/008 research R11).
  */

@@ -2,7 +2,7 @@
 specs/010 research R8, data-model.md › LinkedRecord).
 
 A registry like the match sources of match_service: each source resolves its own refs. In 010 only
-`sijil` (submitted requests) is registered; 013 and 014 register `legacy` and `sas`, and SAS fills
+`sijil` (submitted requests) is registered; 014 and 015 register `legacy` and `sas`, and SAS fills
 `expiry` («حسب آخر استيراد»). A ref with no resolver or no row comes back `available=False`, and the
 page shows «سجل غير متوفر». A deleted Sijil request comes back `available=False, deleted=True` with
 its request number only, and the page shows «سجل محذوف» (specs/011 R10).

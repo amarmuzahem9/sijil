@@ -1,7 +1,7 @@
 /**
  * «بالانتظار» and «مقبولة» in «الطلبات» (specs/008 T027, FR-019): the marketer's submitted
  * requests, newest first, each opening its result page. «تم الربط» and «مرفوضة» fill in with
- * 012 and 010; search arrives with 011. A deleted request (specs/011 R11) keeps its row under its
+ * 013 and 010; search arrives with 018. A deleted request (specs/011 R11) keeps its row under its
  * status with the grey tag «محذوف», the reason, the number, the tower and the date only.
  */
 import Card from '@mui/material/Card';

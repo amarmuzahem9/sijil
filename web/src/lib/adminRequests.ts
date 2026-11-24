@@ -45,7 +45,7 @@ export interface LinkedRecord {
   registered_at: string | null;
   status: string | null;
   image_ids: string[];
-  /** SAS «حسب آخر استيراد» (014); null until then. */
+  /** SAS «حسب آخر استيراد» (015); null until then. */
   expiry: string | null;
   /** A deleted Sijil request: «سجل محذوف (#T3C-…)» (specs/011 R10). */
   deleted: boolean;

@@ -40,7 +40,7 @@ import { formatBaghdad } from '../../../lib/time';
 import { RejectDialog } from './RejectDialog';
 
 /** The rule reminders next to the buttons (system.md §6.4, specs/010 US4: FR-016). The admin
- * applies the 15-day rule by hand; the SAS expiry exists only after 014. */
+ * applies the 15-day rule by hand; the SAS expiry exists only after 015. */
 /** A left-to-right value isolated inside an Arabic line (LRI … PDI). */
 const LRI = String.fromCodePoint(0x2066);
 const PDI = String.fromCodePoint(0x2069);

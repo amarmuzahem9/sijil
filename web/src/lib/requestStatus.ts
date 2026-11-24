@@ -1,7 +1,7 @@
 /**
  * Request statuses and their fixed colors (docs/system.md §7.2, constitution Principle V: the
  * same color everywhere). `draft` since 005; `pending_review` and `approved` since 008; `rejected`
- * (010) and `linked` (012) later.
+ * (010) and `linked` (013) later.
  */
 export type RequestStatus = 'draft' | 'pending_review' | 'approved' | 'rejected' | 'linked';
 

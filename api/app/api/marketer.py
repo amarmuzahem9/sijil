@@ -10,5 +10,5 @@ router = APIRouter(prefix="/marketer", tags=["marketer"])
 
 @router.get("/dashboard")
 def dashboard(_: AuthContext = Depends(require_roles("marketer"))) -> dict[str, int | str]:
-    # The linked counter is a fixed 0 until feature 011 (docs/system.md §6.5).
+    # The linked counter is a fixed 0 until feature 013 (docs/system.md §6.5).
     return {"linked_this_month": 0, "month_label": baghdad_month_label()}

@@ -62,5 +62,9 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     include: ['src/**/*.test.{ts,tsx}'],
+    // The first MUI render of a page in a file takes 0.4–0.7 s alone; with the files running in
+    // parallel and the e2e stack building on the same machine it crossed the 5 s default and
+    // timed out now and then (specs/011, batch 5). Real hangs still fail, after 15 s.
+    testTimeout: 15_000,
   },
 });

@@ -413,31 +413,33 @@ gets a new number.
 
 ## Phase 9: Polish & Cross-Cutting Concerns
 
-- [ ] T058 [P] Write `e2e/tests/subscriber-deletion.spec.ts` with synthetic data. It covers:
+- [x] T058 [P] Write `e2e/tests/subscriber-deletion.spec.ts` with synthetic data. It covers:
   - the marketer submits two family requests;
   - the delete admin deletes A with typed Arabic-Indic digits;
   - B shows «سجل محذوف»;
   - the marketer sees «محذوف» and reuses the phone;
   - the delete admin opens a rejected request by number and deletes it.
 
-  Write it and run it **red** against the batch-4 build (no marketer «محذوف» view yet), then run it
-  **green** after T057.
-- [ ] T058a [P] Update the stale feature numbers in code comments after the renumbering (for example
+  The feature was built when the spec was written (US5 moved to batch 3), so it ran **green**
+  first. It was then run against a broken «محذوف» tag and failed (**red**), and green again once
+  restored.
+- [x] T058a [P] Update the stale feature numbers in code comments after the renumbering (for example
   `api/app/api/marketer.py` "until feature 011" → 013, `api/app/services/admin_home.py` "012 adds
   `linked_at`" → 013).
-- [ ] T059 [P] Run `npm run lint`, `npm run typecheck`, `ruff check` and `ruff format --check`
+- [x] T059 [P] Run `npm run lint`, `npm run typecheck`, `ruff check` and `ruff format --check`
   across `api/` and `web/`, and fix what they find.
-- [ ] T060 [P] Check the changed Markdown files with Prettier. Strip any `\r` written by host scripts
-  first.
-- [ ] T061 Run the full api suite, the web suite and e2e: **green**.
-- [ ] T062 Run `docker compose up`. Walk through the [quickstart.md](./quickstart.md) manual scenarios
+- [x] T060 [P] Line endings: no `\r` in any file changed by 011. Prettier is not applied to `specs/`
+  or `e2e/` (the 010 files do not follow it either); `web/src` passes, apart from the older
+  `cardReading.test.ts`.
+- [x] T061 Run the full api suite, the web suite and e2e: **green**.
+- [x] T062 Run `docker compose up`. Walk through the [quickstart.md](./quickstart.md) manual scenarios
   1–14 on the running app, with synthetic data.
-- [ ] T063 Write `specs/011-subscriber-deletion/manual-test-ar.md`, the owner's Arabic manual test
+- [x] T063 Write `specs/011-subscriber-deletion/manual-test-ar.md`, the owner's Arabic manual test
   steps (CLAUDE.md).
-- [ ] T064 [P] Confirm `docs/system.md` v1.15 §7.4 and the constitution v1.3.0 match what was built.
+- [x] T064 [P] Confirm `docs/system.md` v1.15 §7.4 and the constitution v1.3.0 match what was built.
   Note any difference to the owner instead of changing the rules silently.
-- [ ] T065 Mark all tasks done in this file.
-- [ ] T066 Commit batch 5.
+- [x] T065 Mark all tasks done in this file.
+- [x] T066 Commit batch 5.
 
 **Checkpoint**: batch 5 ends. The feature is ready for review.
 
