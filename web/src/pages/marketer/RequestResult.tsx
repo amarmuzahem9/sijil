@@ -3,7 +3,7 @@
  * (specs/008 FR-018, FR-019, research R11). Approved: «تمت الموافقة», the number and the
  * username with a small «نسخ اليوزر». Pending: «بانتظار موافقة المسؤول» or «طلبك بانتظار التدقيق».
  * «نسخ التفاصيل» copies the ordered text of system.md v1.11 §5.5 in both cases.
- * The link message and its share button come with feature 012. A deleted request (specs/011 R11)
+ * Accepted or linked: «رسالة الربط» with copy and WhatsApp share (specs/012 US1). A deleted request (specs/011 R11)
  * shows «تم حذف الطلب», the reason, the number, the tower and the dates, with no copy button.
  */
 import CancelOutlined from '@mui/icons-material/CancelOutlined';
@@ -22,6 +22,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 
+import LinkMessageCard from '../../components/LinkMessageCard';
 import {
   DELETED_TAG,
   getRequest,
@@ -186,9 +187,11 @@ function LiveResultView({ request }: { request: SubmittedRequest }) {
         </Stack>
       </Paper>
 
+      {request.link_message && <LinkMessageCard text={request.link_message} />}
+
       <Stack spacing={0.5}>
         <Button
-          variant="contained"
+          variant={request.link_message ? 'outlined' : 'contained'}
           startIcon={<ContentCopyOutlined />}
           onClick={() => void copy('details')}
         >

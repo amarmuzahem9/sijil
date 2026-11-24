@@ -109,36 +109,42 @@ full api suite 1158 passed; web unchanged (391).
 
 ### Tests for User Story 1 (write first, run red)
 
-- [ ] T013 [P] [US1] Unit tests in `api/tests/unit/test_link_message.py`: golden text for new, additional and
+- [x] T013 [P] [US1] Unit tests in `api/tests/unit/test_link_message.py`: golden text for new, additional and
   return (historical username); «البرج: اسم البرج (رمز البرج)»; prices with `,`; address-only,
   landmark-only and both-empty lines; coordinates to 6 decimals without trailing zeros; `None` for
   pending, rejected and deleted; the output never contains the request's national ID or family number
   (research R2, SC-002).
-- [ ] T014 [P] [US1] Integration test in `api/tests/integration/test_link_message_api.py`:
+- [x] T014 [P] [US1] Integration test in `api/tests/integration/test_link_message_api.py`:
   `GET /api/requests/{id}` and the submit response carry `link_message` only for approved (auto and by
   admin); `null` for pending, rejected and deleted; another marketer gets 404 (contracts/api.md, FR-009).
-- [ ] T015 [P] [US1] Vitest `web/src/__tests__/linkMessage.test.tsx`: the card renders the text for an
+- [x] T015 [P] [US1] Vitest `web/src/__tests__/linkMessage.test.tsx`: the card renders the text for an
   approved request; «نسخ رسالة الربط» calls the clipboard and shows «تم النسخ»; clipboard failure shows
   «تعذّر النسخ، انسخ النص يدوياً»; «مشاركة بالواتساب» links to `https://wa.me/?text=` + encoded text; no card
   for pending, rejected or deleted; «نسخ التفاصيل» still present.
 
 ### Implementation for User Story 1
 
-- [ ] T016 [US1] Create `api/app/core/link_message.py` `compose(request) -> str | None` reading only the
+- [x] T016 [US1] Create `api/app/core/link_message.py` `compose(request) -> str | None` reading only the
   allow-listed columns (research R1–R2); T013 green.
-- [ ] T017 [US1] Add `link_message: str | None = None` to `RequestOut` in `api/app/schemas/requests.py`
+- [x] T017 [US1] Add `link_message: str | None = None` to `RequestOut` in `api/app/schemas/requests.py`
   (data-model.md › Changed: `RequestOut`) and set it in `submit_service.to_out` (`_deleted_out` keeps it
   null) in `api/app/services/submit_service.py`; T014 green.
-- [ ] T018 [P] [US1] Add `link_message: string | null` to `SubmittedRequest` in `web/src/lib/requests.ts`.
-- [ ] T019 [P] [US1] Create `web/src/lib/linkMessage.ts` (`whatsappUrl(text)`, `copyText(text)` returning
+- [x] T018 [P] [US1] Add `link_message: string | null` to `SubmittedRequest` in `web/src/lib/requests.ts`.
+- [x] T019 [P] [US1] Create `web/src/lib/linkMessage.ts` (`whatsappUrl(text)`, `copyText(text)` returning
   success).
-- [ ] T020 [US1] Create `web/src/components/LinkMessageCard.tsx` (title «رسالة الربط», the text in a
+- [x] T020 [US1] Create `web/src/components/LinkMessageCard.tsx` (title «رسالة الربط», the text in a
   selectable pre-wrap block, the two buttons, the snackbar) using T019.
-- [ ] T021 [US1] Show `LinkMessageCard` in `web/src/pages/marketer/RequestResult.tsx` when `link_message` is
+- [x] T021 [US1] Show `LinkMessageCard` in `web/src/pages/marketer/RequestResult.tsx` when `link_message` is
   set, below the details and above «نسخ التفاصيل»; remove the "comes with feature 012" comment; T015 green.
-- [ ] T022 [US1] Run api and web suites green, `npm run lint`, and commit batch 2.
+- [x] T022 [US1] Run api and web suites green, `npm run lint`, and commit batch 2.
 
 **Checkpoint**: batch 2 ends. US1 works on its own. Commit.
+
+Batch 2 report: red first — T013 (no module `link_message`), T014 (4 failed: no `link_message`;
+the 404 guard for another marketer passed already, as 008 built it), T015 (no `lib/linkMessage`).
+Green: T013 19, T014 5, T015 10. Full api 1182 passed; web 401 passed; typecheck clean; lint 0
+errors. Vitest fails to load under Git Bash with a lower-case `c:` working directory ("failed to
+find the current suite"); run it from PowerShell.
 
 ---
 

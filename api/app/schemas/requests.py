@@ -64,6 +64,8 @@ class RequestOut(BaseModel):
     # «محذوف» (specs/011 R11): when, and the reason's Arabic name. No admin name.
     deleted_at: datetime | None = None
     deletion_label: str | None = None
+    # «رسالة الربط» (system.md v1.17 §8.4, specs/012 R1): accepted or linked only, else null.
+    link_message: str | None = None
 
 
 class RequestListItem(BaseModel):

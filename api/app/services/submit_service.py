@@ -15,7 +15,7 @@ import uuid
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from app.core import deletion_reasons, otp, rejection_reasons, request_status
+from app.core import deletion_reasons, link_message, otp, rejection_reasons, request_status
 from app.core.decision import decide
 from app.core.family_key import family_key
 from app.core.matches import MatchRecord
@@ -380,6 +380,7 @@ def to_out(request: Request) -> RequestOut:
         rejection_reason=request.rejection_reason,
         rejection_label=_rejection_label(request),
         rejected_at=request.rejected_at,
+        link_message=link_message.compose(request),
     )
 
 

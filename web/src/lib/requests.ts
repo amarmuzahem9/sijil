@@ -52,6 +52,8 @@ export interface SubmittedRequest {
   /** «محذوف» (specs/011): when, and the reason's Arabic name. */
   deleted_at?: string | null;
   deletion_label?: string | null;
+  /** «رسالة الربط» composed by the server (system.md v1.17 §8.4): accepted or linked only. */
+  link_message?: string | null;
 }
 
 export interface RequestListItem {
