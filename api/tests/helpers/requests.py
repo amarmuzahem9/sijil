@@ -15,7 +15,16 @@ from sqlalchemy.orm import Session
 
 from app.core.family_key import family_key
 from app.core.timeutil import utc_now
-from app.models import Area, Plan, Request, RequestImage, RequestNumberPin, Tower, User
+from app.models import (
+    Area,
+    Plan,
+    Request,
+    RequestImage,
+    RequestLink,
+    RequestNumberPin,
+    Tower,
+    User,
+)
 from app.models.otp import OtpChallenge
 
 _counter = itertools.count(1)
@@ -33,9 +42,25 @@ def _catalog(db: Session) -> tuple[Area, Tower, Plan]:
     return area, tower, plan
 
 
+def _link_admin(db: Session) -> User:
+    """A synthetic main admin who "linked" factory rows (specs/013 tasks T010)."""
+    n = next(_counter)
+    admin = User(
+        name=f"أدمن الربط {n}",
+        phone=f"0771{n:07d}",
+        password_hash="synthetic",
+        role="super_admin",
+        permissions=[],
+    )
+    db.add(admin)
+    db.flush()
+    return admin
+
+
 def request_factory(db: Session, marketer: User, **overrides: Any) -> Request:
     """Insert a valid request. `status` defaults to approved; any field may be overridden.
-    `family_key` follows `family_number` unless given."""
+    `family_key` follows `family_number` unless given. A `linked` row gets `linked_at`,
+    `linked_by` and its `request_links` row, so it has a current `link_id` (specs/013)."""
     area, tower, plan = (
         (overrides.pop("area"), overrides.pop("tower"), overrides.pop("plan"))
         if "tower" in overrides
@@ -101,10 +126,37 @@ def request_factory(db: Session, marketer: User, **overrides: Any) -> Request:
         values.setdefault("rejected_at", now)
         values.setdefault("rejected_by", marketer.id)
         values.setdefault("rejection_reason", "card_unclear")
+    if values["status"] == "linked":
+        values.setdefault("linked_at", now)
+        if "linked_by" not in values:
+            values["linked_by"] = _link_admin(db).id
     request = Request(**values)
     db.add(request)
     db.flush()
+    if request.status == "linked":
+        db.add(
+            RequestLink(
+                request_id=request.id,
+                kind="linked",
+                actor_id=request.linked_by,
+                at=request.linked_at,
+            )
+        )
+        db.flush()
     return request
+
+
+def link_request(db: Session, request: Request, admin: User, at=None) -> RequestLink:
+    """Link an approved request directly, without the service: status, current link and its
+    history row (specs/013 data-model.md)."""
+    when = at or utc_now()
+    request.status = "linked"
+    request.linked_at = when
+    request.linked_by = admin.id
+    row = RequestLink(request_id=request.id, kind="linked", actor_id=admin.id, at=when)
+    db.add(row)
+    db.flush()
+    return row
 
 
 # --- extras for deletion tests (specs/011 tasks T014) ---------------------------------------------

@@ -88,6 +88,9 @@ MESSAGES: dict[str, str] = {
     # Statuses and notifications (specs/012 contracts/api.md)
     "invalid_transition": "لا يمكن تغيير حالة الطلب بهذا الشكل",
     "notification_not_found": "الإشعار غير موجود",
+    # «تم الربط» and its undo (specs/013 contracts/api.md)
+    "already_linked": "تم ربط هذا الطلب مسبقاً",
+    "already_unlinked": "تم التراجع عن هذا الربط مسبقاً",
     "wrong_current_password": "كلمة السر الحالية غير صحيحة",
     "weak_password": "كلمة السر يجب أن تكون 8 أحرف على الأقل",
     "same_password": "كلمة السر الجديدة يجب أن تختلف عن الحالية",

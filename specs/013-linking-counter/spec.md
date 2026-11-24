@@ -121,7 +121,7 @@ below it shows the linked names newest first, and the «تم الربط» tab sh
 ### User Story 3 - The admin undoes «تم الربط» with a reason (Priority: P2)
 
 A link was pressed by mistake, or the subscriber was not really connected. An admin with `link` finds the request
-in the «تم الربط» part of the page (recent links, searchable by number, username or phone), presses «التراجع عن
+in the «المربوطة مؤخراً» list of the page (searchable by number, username or phone), presses «التراجع عن
 الربط», picks a reason from a fixed list, and confirms. The request goes back to «مقبول (بانتظار الربط)» and
 returns to «بانتظار الربط»; it no longer counts for the marketer; the marketer is notified with the reason.
 

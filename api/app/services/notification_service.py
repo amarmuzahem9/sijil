@@ -12,7 +12,7 @@ import logging
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
-from app.core import deletion_reasons, rejection_reasons
+from app.core import deletion_reasons, rejection_reasons, unlink_reasons
 from app.core.timeutil import utc_now
 from app.errors import AppError
 from app.models.notification import Notification
@@ -26,6 +26,7 @@ log = logging.getLogger("sijil.notifications")
 _REASON_LABELS: dict[str, dict[str, str]] = {
     "rejected": rejection_reasons.LABELS,
     "deleted": deletion_reasons.LABELS,
+    "unlinked": unlink_reasons.LABELS,
 }
 
 

@@ -32,7 +32,7 @@ class Notification(Base):
         ),
         CheckConstraint(
             "(kind NOT IN ('approved','linked') OR reason IS NULL) "
-            "AND (kind NOT IN ('rejected','deleted') OR reason IS NOT NULL)",
+            "AND (kind NOT IN ('rejected','deleted','unlinked') OR reason IS NOT NULL)",
             name="notifications_reason_kind",
         ),
         Index(

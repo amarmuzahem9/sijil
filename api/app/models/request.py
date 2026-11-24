@@ -175,6 +175,32 @@ class Request(Base):
         Index("requests_national_id_idx", "national_id"),
         Index("requests_family_key_idx", "family_key"),
         Index("requests_marketer_submitted_idx", "marketer_id", text("submitted_at DESC")),
+        # specs/013 data-model.md (migration 0016)
+        CheckConstraint(
+            "(status = 'linked') = (linked_at IS NOT NULL AND linked_by IS NOT NULL)",
+            name="requests_linked_has_time",
+        ),
+        CheckConstraint(
+            "status <> 'linked' OR approved_at IS NOT NULL", name="requests_linked_approved"
+        ),
+        Index(
+            "requests_awaiting_link",
+            "approved_at",
+            "id",
+            postgresql_where=text("status = 'approved' AND deleted_at IS NULL"),
+        ),
+        Index(
+            "requests_linked_at",
+            "marketer_id",
+            "linked_at",
+            postgresql_where=text("status = 'linked'"),
+        ),
+        Index(
+            "requests_linked_recent",
+            text("linked_at DESC"),
+            text("id DESC"),
+            postgresql_where=text("status = 'linked'"),
+        ),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
@@ -250,6 +276,10 @@ class Request(Base):
         Boolean, nullable=False, default=True, server_default=text("true")
     )
     approval_warnings: Mapped[list | None] = mapped_column(JSONB)
+    # The current «تم الربط» (specs/013 data-model.md); cleared by its undo. The history is in
+    # `request_links`.
+    linked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    linked_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id"))
     rejected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     rejected_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id"))
     rejection_reason: Mapped[str | None] = mapped_column(Text)

@@ -28,3 +28,21 @@ describe('deletion reasons', () => {
     ]);
   });
 });
+
+describe('unlink reasons (specs/013 research R4)', () => {
+  it('lists the four fixed reasons in order (api/app/core/unlink_reasons.py)', async () => {
+    const { UNLINK_REASON_LABELS } = await import('../lib/labels');
+    expect(Object.entries(UNLINK_REASON_LABELS)).toEqual([
+      ['not_linked_in_sas', 'لم يُربط فعلياً في SAS'],
+      ['by_mistake', 'ضُغط بالخطأ'],
+      ['other_request_linked', 'ربط طلب آخر بدله'],
+      ['other', 'سبب آخر'],
+    ]);
+  });
+
+  it('names the link and undo audit actions', async () => {
+    const { AUDIT_ACTION_LABELS } = await import('../lib/labels');
+    expect(AUDIT_ACTION_LABELS['request.linked']).toBe('تم الربط');
+    expect(AUDIT_ACTION_LABELS['request.unlinked']).toBe('تراجع عن الربط');
+  });
+});

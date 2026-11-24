@@ -1,0 +1,21 @@
+{
+  "_comment": "The «بانتظار الربط» search box (specs/013 research R7): a request number, else a phone (system.md §8.1), else a username. Anything else searches nothing. Synthetic values only.",
+  "cases": [
+    { "q": "1004", "kind": "number", "value": 1004 },
+    { "q": "T3C-1004", "kind": "number", "value": 1004 },
+    { "q": "#t3c-١٠٠٤", "kind": "number", "value": 1004 },
+    { "q": " ۱۰۰۴ ", "kind": "number", "value": 1004 },
+    { "q": "0780 123 4567", "kind": "phone", "value": "07801234567" },
+    { "q": "+964 780 123 4567", "kind": "phone", "value": "07801234567" },
+    { "q": "٠٧٨٠١٢٣٤٥٦٧", "kind": "phone", "value": "07801234567" },
+    { "q": "alm03-07801234567", "kind": "username", "value": "ALM03-07801234567" },
+    { "q": " ALM03-07801234567 ", "kind": "username", "value": "ALM03-07801234567" },
+    { "q": "RBD-01S-07801234567", "kind": "username", "value": "RBD-01S-07801234567" },
+    { "q": "ALM03-0780123", "kind": null },
+    { "q": "أحمد علي", "kind": null },
+    { "q": "%", "kind": null },
+    { "q": "_a_", "kind": null },
+    { "q": "ahmed", "kind": null },
+    { "q": "ALM03", "kind": null }
+  ]
+}

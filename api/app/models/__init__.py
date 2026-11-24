@@ -5,6 +5,7 @@ from app.models.draft import CardReading, Draft, DraftImage, ImageAccessLog
 from app.models.notification import Notification
 from app.models.otp import OtpChallenge
 from app.models.request import Request, RequestImage, RequestNumberPin, RequestReason
+from app.models.request_link import RequestLink
 from app.models.session import UserSession
 from app.models.user import ADMIN_PERMISSIONS, ROLES, User
 
@@ -24,6 +25,7 @@ __all__ = [
     "Plan",
     "Request",
     "RequestImage",
+    "RequestLink",
     "RequestNumberPin",
     "RequestReason",
     "RewardTier",

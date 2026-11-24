@@ -66,6 +66,9 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'request.numbers_pinned': 'تثبيت رقم',
   // specs/011
   'request.deleted': 'حذف مشترك',
+  // specs/013
+  'request.linked': 'تم الربط',
+  'request.unlinked': 'تراجع عن الربط',
 };
 
 export const AUDIT_FIELD_LABELS: Record<string, string> = {
@@ -196,3 +199,12 @@ export const DELETION_REASON_LABELS = {
   other: 'سبب آخر',
 } as const;
 export type DeletionReason = keyof typeof DELETION_REASON_LABELS;
+
+/** The fixed reasons to undo «تم الربط» (system.md v1.18 §6.5); mirrors api/app/core/unlink_reasons.py. */
+export const UNLINK_REASON_LABELS = {
+  not_linked_in_sas: 'لم يُربط فعلياً في SAS',
+  by_mistake: 'ضُغط بالخطأ',
+  other_request_linked: 'ربط طلب آخر بدله',
+  other: 'سبب آخر',
+} as const;
+export type UnlinkReason = keyof typeof UNLINK_REASON_LABELS;
