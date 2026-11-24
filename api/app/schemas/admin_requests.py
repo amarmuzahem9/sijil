@@ -67,6 +67,10 @@ class LinkedRecordOut(BaseModel):
     # specs/011 R10: a deleted Sijil request, shown as «سجل محذوف (#T3C-…)».
     deleted: bool = False
     number_label: str | None = None
+    # specs/014 R12: only on a legacy subscriber. No family number on any record.
+    legacy_number: str | None = None
+    incomplete: bool | None = None
+    extra: dict[str, str | None] | None = None
 
 
 class ReasonOut(BaseModel):

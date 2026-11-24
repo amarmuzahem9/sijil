@@ -63,12 +63,13 @@ def test_registered_resolver_is_used(db) -> None:
     def fake(db, refs):
         return {r: linked_records.LinkedRecord(r.source, r.ref_id, True, "قديم") for r in refs}
 
-    linked_records.register_resolver("legacy", fake)
+    # A test-only source: unregistering it cannot remove a real resolver (014 registers `legacy`).
+    linked_records.register_resolver("test_source", fake)
     try:
-        ref = MatchRef("legacy", "5")
+        ref = MatchRef("test_source", "5")
         assert linked_records.resolve(db, [ref])[ref].full_name == "قديم"
     finally:
-        linked_records.unregister_resolver("legacy")
+        linked_records.unregister_resolver("test_source")
 
 
 def test_record_never_carries_card_data(db, make_user) -> None:

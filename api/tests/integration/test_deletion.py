@@ -411,3 +411,59 @@ def test_an_undone_request_is_still_not_deletable(client, db, marketer, deleter)
     assert (res.status_code, res.json()["code"]) == (409, "request_not_deletable")
     db.refresh(request)
     assert (request.status, request.deleted_at) == ("approved", None)
+
+
+def test_deleting_a_request_linked_to_a_legacy_subscriber_leaves_it(
+    client, db, uploads, marketer, deleter, make_user
+) -> None:
+    """specs/014 US4 scenario 4: the legacy row and its images are unchanged."""
+    import uuid
+
+    from app.models import LegacyImage, LegacySubscriber, RequestReason
+    from tests.helpers.legacy import legacy_subscriber
+
+    sub = legacy_subscriber(
+        db, make_user("super_admin"), phone="07811116666", family_number="6666F0000000000006"
+    )
+    image = LegacyImage(
+        id=uuid.uuid4(),
+        legacy_subscriber_id=sub.id,
+        side="front",
+        file_name="b" * 32 + ".jpg",
+        size_bytes=1,
+        width=1,
+        height=1,
+    )
+    db.add(image)
+    request = request_factory(db, marketer, status="pending_review")
+    db.add(
+        RequestReason(
+            request_id=request.id,
+            reason="family_exists",
+            matched_source="legacy",
+            matched_ref=str(sub.id),
+            details={},
+        )
+    )
+    db.flush()
+    before = (sub.full_name, sub.phone, sub.family_number, sub.family_key, sub.incomplete)
+
+    res = _delete(client, headers_for(client, deleter), request.id, request=request)
+
+    assert res.status_code == 200, res.json()
+    db.expire_all()
+    sub = db.get(LegacySubscriber, sub.id)
+    assert (sub.full_name, sub.phone, sub.family_number, sub.family_key, sub.incomplete) == before
+    assert db.get(LegacyImage, image.id) is not None
+
+
+def test_no_route_deletes_or_edits_a_legacy_subscriber(client) -> None:
+    """specs/014 FR-019: subscribers are never physically deleted; 014 has no edit either. Read
+    from the OpenAPI schema, which lists every route of every included router."""
+    paths = client.get("/api/openapi.json").json()["paths"]
+    legacy = {path: set(ops) for path, ops in paths.items() if "legacy" in path}
+    assert legacy, "the legacy routes exist"
+    for path, methods in legacy.items():
+        if methods & {"delete", "patch", "put"}:
+            # Only an import preview may be cancelled or have its choices set.
+            assert path.startswith("/api/admin/imports/legacy/previews"), path

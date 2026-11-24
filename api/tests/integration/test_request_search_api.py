@@ -107,3 +107,14 @@ def test_too_short_is_422(client, h, q) -> None:
 def test_text_that_is_nothing_finds_nothing(client, h, mine) -> None:
     assert _ids(client, h, q="%%") == []
     assert _ids(client, h, q="ahmed") == []
+
+
+@pytest.mark.parametrize("q", ["T3C-005", "T3C-109", "مشترك قديم للبحث"])
+def test_a_legacy_subscriber_is_never_found(client, db, h, mine, make_user, q) -> None:
+    """specs/014 FR-017, FR-018: legacy subscribers are not requests; the search finds none."""
+    from tests.helpers.legacy import legacy_subscriber
+
+    admin = make_user("super_admin")
+    legacy_subscriber(db, admin, legacy_number="T3C-005", full_name="مشترك قديم للبحث")
+    legacy_subscriber(db, admin, legacy_number="T3C-109", phone="07801110001")
+    assert _ids(client, h, q=q) == []

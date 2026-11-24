@@ -75,3 +75,15 @@ def test_main_admin_finds(client, db, marketer, make_user) -> None:
     request = request_factory(db, marketer, status="pending_review")
     res = _find(client, headers_for(client, make_user("super_admin")), request.number_label)
     assert res.json() == {"id": request.id}
+
+
+@pytest.mark.parametrize("text", ["T3C-005", "T3C-109", "t3c-001", "005"])
+def test_a_legacy_number_opens_no_request(client, db, reviewer, make_user, text) -> None:
+    """specs/014 FR-018: legacy numbers T3C-001 … T3C-109 are not request numbers (§7.3)."""
+    from tests.helpers.legacy import legacy_subscriber
+
+    legacy_subscriber(db, make_user("super_admin"), legacy_number="T3C-005")
+    legacy_subscriber(db, make_user("super_admin"), legacy_number="T3C-109")
+    res = _find(client, headers_for(client, reviewer), text)
+    assert res.status_code == 404
+    assert res.json()["code"] == "request_not_found"

@@ -115,6 +115,26 @@ def delete_request(
     return review_service.to_file(db, request, ctx.user)
 
 
+@router.get("/legacy-images/{image_id}", response_class=FileResponse)
+def get_legacy_image(
+    image_id: uuid.UUID,
+    ctx: AuthContext = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> FileResponse:
+    """A legacy subscriber's card image for review admins (specs/014 R13). Never cached; every
+    open is logged."""
+    path = review_service.open_legacy_image(db, ctx.user, image_id)
+    return FileResponse(
+        path,
+        media_type="image/jpeg",
+        headers={
+            "Cache-Control": "private, no-store",
+            "Content-Disposition": "inline",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
 @router.get("/request-images/{image_id}", response_class=FileResponse)
 def get_request_image(
     image_id: uuid.UUID,

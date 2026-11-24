@@ -632,6 +632,31 @@ def pin(db: Session, user: User, request_id: int, body: PinIn) -> Request:
 # --- images (R9) ---------------------------------------------------------------------------------
 
 
+def open_legacy_image(db: Session, user: User, image_id: uuid.UUID) -> Path:
+    """The file of a legacy subscriber's image for a review admin (specs/014 R13). Anyone else, a
+    missing image and a missing file all get the same 404. Each open is logged (§13)."""
+    from app.models import LegacyImage
+
+    image = db.get(LegacyImage, image_id)
+    if image is None or not can_review(user):
+        raise AppError("image_not_found", 404)
+    path = image_store.open_path(image.file_name)
+    if not path.is_file():
+        log.error("legacy image file missing image=%s", image.id)
+        raise AppError("image_not_found", 404)
+    db.add(
+        ImageAccessLog(
+            user_id=user.id,
+            image_id=image.id,
+            legacy_subscriber_id=image.legacy_subscriber_id,
+            side=image.side,
+            purpose="view",
+        )
+    )
+    db.commit()
+    return path
+
+
 def open_request_image(db: Session, user: User, image_id: uuid.UUID) -> Path:
     """The file of a request image for a review admin. Anyone else, a missing image and a missing
     file all get the same 404. Each successful open is written to image_access_log (§13)."""

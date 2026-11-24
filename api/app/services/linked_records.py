@@ -40,6 +40,11 @@ class LinkedRecord:
     # specs/011 R10: «سجل محذوف (#T3C-…)».
     deleted: bool = False
     number_label: str | None = None
+    # specs/014 R12: a legacy subscriber's number (T3C-001 …), «غير مكتمل», and «بيانات إضافية»
+    # (mother's name, mother's father's name, birth date; never the e-mails). None for others.
+    legacy_number: str | None = None
+    incomplete: bool | None = None
+    extra: dict[str, str | None] | None = None
 
 
 Resolver = Callable[[Session, list[MatchRef]], dict[MatchRef, LinkedRecord]]

@@ -60,7 +60,7 @@ describe('RequestReviewView', () => {
     expect(card.getAllByTestId('readonly-fields').length).toBeGreaterThan(0);
     expect(await card.findByRole('img', { name: 'وجه البطاقة' })).toBeTruthy();
     expect(card.getByRole('img', { name: 'ظهر البطاقة' })).toBeTruthy();
-    expect(requestImageUrl).toHaveBeenCalledWith('img-front');
+    expect(requestImageUrl).toHaveBeenCalledWith('img-front', 'request');
   });
 
   it('puts «لم تقرأه البطاقة» under the box of a name the card did not read', () => {
@@ -110,7 +110,7 @@ describe('RequestReviewView', () => {
     show();
     const reasons = section('الأسباب');
     expect(reasons.getByText('سجل غير متوفر')).toBeTruthy();
-    expect(reasons.getByText('قديم')).toBeTruthy();
+    expect(reasons.getByText('مشترك قديم')).toBeTruthy(); // specs/014 R12
     expect(reasons.getByText('لم يعد ينطبق')).toBeTruthy();
   });
   it('shows «تثبيت الأرقام» only when the marketer edited a number', () => {

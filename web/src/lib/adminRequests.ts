@@ -50,6 +50,10 @@ export interface LinkedRecord {
   /** A deleted Sijil request: «سجل محذوف (#T3C-…)» (specs/011 R10). */
   deleted: boolean;
   number_label: string | null;
+  /** A legacy subscriber (specs/014 R12): its old number, «غير مكتمل», «بيانات إضافية». */
+  legacy_number?: string | null;
+  incomplete?: boolean | null;
+  extra?: Record<string, string | null> | null;
 }
 
 export interface ReviewReason {
@@ -148,10 +152,20 @@ export const findByNumber = (text: string) =>
 export const getRequestFile = (id: number | string) =>
   apiFetch<RequestFile>(`/api/admin/requests/${encodeURIComponent(String(id))}`);
 
-/** An object URL for a request image; each fetch is logged on the server (§13). The caller
- * revokes it with URL.revokeObjectURL when done. */
-export async function requestImageUrl(imageId: string): Promise<string> {
-  const blob = await apiFetchBlob(`/api/admin/request-images/${encodeURIComponent(imageId)}`);
+export type ImageKind = 'request' | 'legacy';
+
+const IMAGE_ROUTES: Record<ImageKind, string> = {
+  request: '/api/admin/request-images',
+  legacy: '/api/admin/legacy-images', // specs/014 R13
+};
+
+/** An object URL for a request (or legacy subscriber) image; each fetch is logged on the server
+ * (§13). The caller revokes it with URL.revokeObjectURL when done. */
+export async function requestImageUrl(
+  imageId: string,
+  kind: ImageKind = 'request',
+): Promise<string> {
+  const blob = await apiFetchBlob(`${IMAGE_ROUTES[kind]}/${encodeURIComponent(imageId)}`);
   return URL.createObjectURL(blob);
 }
 

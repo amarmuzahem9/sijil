@@ -157,7 +157,7 @@ export function linkBasisLabel(reason: string, basis: string | null): string {
 
 export const SOURCE_LABELS: Record<string, string> = {
   sijil: 'سِجلّ',
-  legacy: 'قديم',
+  legacy: 'مشترك قديم',
   sas: 'SAS',
 };
 

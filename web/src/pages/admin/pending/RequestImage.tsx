@@ -4,16 +4,19 @@ import Skeleton from '@mui/material/Skeleton';
 import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 
-import { requestImageUrl } from '../../../lib/adminRequests';
+import { type ImageKind, requestImageUrl } from '../../../lib/adminRequests';
 
 export function RequestImage({
   imageId,
   alt,
   height = 180,
+  kind = 'request',
 }: {
   imageId: string;
   alt: string;
   height?: number;
+  /** A legacy subscriber's image comes from its own route (specs/014 R13). */
+  kind?: ImageKind;
 }) {
   const [url, setUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -21,7 +24,7 @@ export function RequestImage({
   useEffect(() => {
     let alive = true;
     let made: string | null = null;
-    requestImageUrl(imageId)
+    requestImageUrl(imageId, kind)
       .then((u) => {
         made = u;
         if (alive) setUrl(u);
@@ -32,7 +35,7 @@ export function RequestImage({
       alive = false;
       if (made) URL.revokeObjectURL(made);
     };
-  }, [imageId]);
+  }, [imageId, kind]);
 
   if (failed)
     return (
