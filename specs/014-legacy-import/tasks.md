@@ -209,25 +209,25 @@ match; nothing reaches the marketer.
 
 ### Tests (write first, run red)
 
-- [ ] T035 [P] [US2] Integration tests `api/tests/integration/test_legacy_source.py`: `find_matches` returns a
+- [x] T035 [P] [US2] Integration tests `api/tests/integration/test_legacy_source.py`: `find_matches` returns a
   `legacy` record with `phone=True` for a legacy phone and `family=True` for a legacy family key, never
   `national_id` or `pending`; no match for a `counts_in_check = false` row, for a skipped row, for NULL keys.
-- [ ] T036 [P] [US2] Integration tests `api/tests/integration/test_legacy_decisions.py`: draft check with a legacy
+- [x] T036 [P] [US2] Integration tests `api/tests/integration/test_legacy_decisions.py`: draft check with a legacy
   phone → case 1 with «طلب العودة للخدمة» and «الاتصال بالإدارة»; submit of a new request with it → refused, draft
   kept; a new request with a legacy family key and a free phone → `pending_review`, type `additional`, reason
   `family_exists` with `matched_source = 'legacy'`; a return by phone to a legacy target → accepted later with
   username `{tower}-{phone}` (FR-013); the 010 re-check after a pin also finds the legacy record; a «مرفوض» legacy
   row's phone → normal flow.
-- [ ] T037 [P] [US2] Extend `api/tests/integration/test_marketer_privacy.py`: no marketer response in the flows of
+- [x] T037 [P] [US2] Extend `api/tests/integration/test_marketer_privacy.py`: no marketer response in the flows of
   T036 contains the legacy row's name, phone, legacy number, family number or image id.
 
 ### Implementation
 
-- [ ] T038 [US2] `api/app/services/legacy_source.py` › `_legacy_source` (query data-model.md
+- [x] T038 [US2] `api/app/services/legacy_source.py` › `_legacy_source` (query data-model.md
   `legacy_subscribers.phone` and `legacy_subscribers.family_key` where `counts_in_check`), registered with
   `match_service.register_source("legacy", …)`; import the module in `api/app/main.py` (T035 green).
-- [ ] T039 [US2] Run T036, T037 green; fix only what they reveal (no change expected in decision or submit code).
-- [ ] T040 [US2] Run the whole api suite green. **Batch 4 commit.**
+- [x] T039 [US2] Run T036, T037 green; fix only what they reveal (no change expected in decision or submit code).
+- [x] T040 [US2] Run the whole api suite green. **Batch 4 commit.**
 
 ---
 

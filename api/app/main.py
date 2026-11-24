@@ -27,7 +27,10 @@ from app.api import (
 from app.config import get_settings
 from app.errors import install_error_handlers
 from app.logging_config import setup_logging
-from app.services import match_service  # noqa: F401  (registers the check source and catalog usage checks)
+from app.services import (
+    legacy_source,  # noqa: F401  (registers legacy subscribers, specs/014)
+    match_service,  # noqa: F401  (registers the check source and catalog usage checks)
+)
 
 
 @asynccontextmanager

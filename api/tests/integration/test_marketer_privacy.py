@@ -192,6 +192,79 @@ def test_pending_block(client, db, h, catalog, make_user):
     seen.assert_hides(old, OTHER_PHONE)
 
 
+# --- legacy subscribers (specs/014 FR-014, SC-004) -----------------------------------------------
+
+LEGACY_NAME = "مشترك قديم سري جداً"
+LEGACY_NUMBER = "T3C-077"
+LEGACY_FAMILY_WRITTEN = "1o64 l00m 123456789o"  # same key as the fake card's FAMILY
+LEGACY_IMAGE = uuid.UUID("0140a000-0000-4000-8000-000000000077")
+
+
+def _legacy(db, make_user, **values):
+    from app.models import LegacyImage
+    from tests.helpers.legacy import legacy_subscriber
+
+    sub = legacy_subscriber(
+        db,
+        make_user("super_admin"),
+        full_name=LEGACY_NAME,
+        legacy_number=LEGACY_NUMBER,
+        extra={"mother_name": "أم سرية", "email_1": "secret@example.com"},
+        **values,
+    )
+    db.add(
+        LegacyImage(
+            id=LEGACY_IMAGE,
+            legacy_subscriber_id=sub.id,
+            side="front",
+            file_name="a" * 32 + ".jpg",
+            size_bytes=1,
+            width=1,
+            height=1,
+        )
+    )
+    db.flush()
+    return sub
+
+
+def _assert_hides_legacy(seen, *extra: str):
+    blob = "\n".join(seen.bodies)
+    for secret in (
+        LEGACY_NAME,
+        LEGACY_NUMBER,
+        str(LEGACY_IMAGE),
+        "أم سرية",
+        "secret@example.com",
+        '"legacy"',
+        '"matched_ref"',
+        '"matched_source"',
+        *extra,
+    ):
+        assert secret not in blob, secret
+
+
+def test_return_by_phone_to_a_legacy_subscriber(client, db, h, catalog, make_user):
+    _legacy(db, make_user, phone=PHONE, family_number="5555Z0000000000005")
+    seen = Seen(client, h)
+    draft_id = complete_draft(client, h, catalog, verified=False)
+    seen.get(f"/api/drafts/{draft_id}")
+    seen.post(f"/api/drafts/{draft_id}/otp/send")  # refused, names no one
+    seen.patch(draft_id, {"return_chosen": True})
+    seen.post(f"/api/drafts/{draft_id}/contact-admin")
+    assert seen.verify_and_submit(draft_id).status_code == 201
+    _assert_hides_legacy(seen, "5555Z0000000000005")
+
+
+def test_second_subscription_from_a_legacy_family(client, db, h, catalog, make_user):
+    _legacy(db, make_user, phone=OTHER_PHONE, family_number=LEGACY_FAMILY_WRITTEN)
+    seen = Seen(client, h)
+    draft_id = complete_draft(client, h, catalog, verified=False)
+    seen.get(f"/api/drafts/{draft_id}")
+    seen.patch(draft_id, {"additional_confirmed": True})
+    assert seen.verify_and_submit(draft_id).status_code == 201
+    _assert_hides_legacy(seen, OTHER_PHONE, LEGACY_FAMILY_WRITTEN)
+
+
 def test_the_test_catches_a_leak(client, db, h, make_user):
     """The check itself can fail: a body holding the name is caught."""
     old = _record(db, make_user)
