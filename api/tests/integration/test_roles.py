@@ -31,7 +31,13 @@ def test_marketer_dashboard(client, make_user) -> None:
     user = make_user("marketer")
     r = client.get("/api/marketer/dashboard", headers=auth_header(login(client, user.phone)))
     assert r.status_code == 200
-    assert r.json() == {"linked_this_month": 0, "month_label": baghdad_month_label()}
+    # specs/013 contracts/api.md › dashboard: a marketer with no links yet.
+    assert r.json() == {
+        "linked_this_month": 0,
+        "linked_without_commission": 0,
+        "month_label": baghdad_month_label(),
+        "recent_links": [],
+    }
 
 
 @pytest.mark.parametrize("role", ["super_admin", "admin"])

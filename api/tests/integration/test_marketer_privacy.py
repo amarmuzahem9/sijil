@@ -328,3 +328,25 @@ def test_deleted_request_shows_no_admin_or_erased_data(client, db, make_user):
     blob += client.get("/api/requests", headers=own).text
     for secret in [*secrets, "أدمن الحذف السري"]:
         assert secret not in blob, secret
+
+
+def test_links_of_another_marketer_never_reach_this_one(client, db, make_user) -> None:
+    """specs/013 FR-019, T034: the home counter, its latest links and the «تم الربط» tab hold the
+    caller's links only, and never who linked."""
+    me, other = make_user("marketer"), make_user("marketer")
+    mine = request_factory(db, me, status="linked")
+    theirs = request_factory(db, other, status="linked", full_name=SECRET_NAME)
+    h = auth_header(login(client, me.phone))
+
+    dashboard = client.get("/api/marketer/dashboard", headers=h)
+    tab = client.get("/api/requests", params={"status": "linked"}, headers=h)
+    page = client.get(f"/api/requests/{theirs.id}", headers=h)
+
+    assert dashboard.json()["linked_this_month"] == 1
+    assert [r["id"] for r in dashboard.json()["recent_links"]] == [mine.id]
+    assert [r["id"] for r in tab.json()["items"]] == [mine.id]
+    assert page.status_code == 404
+    for res in (dashboard, tab):
+        assert SECRET_NAME not in res.text
+        assert theirs.number_label not in res.text
+        assert "linked_by" not in res.text

@@ -56,6 +56,8 @@ def test_list_is_own_newest_first_and_filters(client, db, h, make_user, catalog)
         # specs/011 R11
         "deleted_at",
         "deletion_label",
+        # specs/013 R8
+        "linked_at",
     }
     assert items[1]["number_label"] == approved["number_label"]
 

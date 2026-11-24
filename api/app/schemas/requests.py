@@ -61,6 +61,8 @@ class RequestOut(BaseModel):
     rejection_reason: str | None = None
     rejection_label: str | None = None
     rejected_at: datetime | None = None
+    # The current «تم الربط» (specs/013 R8); never who linked.
+    linked_at: datetime | None = None
     # «محذوف» (specs/011 R11): when, and the reason's Arabic name. No admin name.
     deleted_at: datetime | None = None
     deletion_label: str | None = None
@@ -82,6 +84,8 @@ class RequestListItem(BaseModel):
     # «محذوف» rows (specs/011 R11).
     deleted_at: datetime | None = None
     deletion_label: str | None = None
+    # The current «تم الربط» (specs/013 R8).
+    linked_at: datetime | None = None
 
 
 class RequestList(BaseModel):

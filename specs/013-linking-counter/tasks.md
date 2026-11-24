@@ -160,35 +160,35 @@ link date on the request.
 
 ### Tests (write first, run red)
 
-- [ ] T025 [P] [US2] Integration test `api/tests/integration/test_linked_counter.py` for `GET
+- [x] T025 [P] [US2] Integration test `api/tests/integration/test_linked_counter.py` for `GET
   /api/marketer/dashboard` (data-model.md › Counting rule): commission links count in `linked_this_month`, a
   return with `counts_commission=false` counts in `linked_without_commission`; Baghdad boundaries with the
   clock fixture (a link at 23:59 Baghdad on the last day counts in that month, 00:00 in the next); last month's
   links do not count; another marketer's links do not count; an archived marketer's links still count
   (spec Edge Cases); a deleted row never counts (FR-020); `recent_links` up to 10, newest first, this month
   only, caller's only.
-- [ ] T026 [P] [US2] Integration test `api/tests/integration/test_linked_tab.py`: `GET
+- [x] T026 [P] [US2] Integration test `api/tests/integration/test_linked_tab.py`: `GET
   /api/requests?status=linked` ordered by `linked_at` desc; `linked_at` present on list items and `GET
   /api/requests/{id}`, null when not linked; no `linked_by` key in either.
-- [ ] T027 [P] [US2] Extend `web/src/__tests__/dashboard.test.tsx`: «تم الربط هذا الشهر: N»; «و M بلا عمولة»
+- [x] T027 [P] [US2] Extend `web/src/__tests__/dashboard.test.tsx`: «تم الربط هذا الشهر: N»; «و M بلا عمولة»
   only when M > 0; the latest links list with green chips linking to the request; empty state.
-- [ ] T028 [P] [US2] Vitest `web/src/__tests__/linkedTab.test.tsx`: the «تم الربط» tab shows each row's link
+- [x] T028 [P] [US2] Vitest `web/src/__tests__/linkedTab.test.tsx`: the «تم الربط» tab shows each row's link
   date; the request page shows «تاريخ الربط» for a linked request and the link message stays.
 
 ### Implementation
 
-- [ ] T029 [US2] Add `marketer_counts(db, user)` to `api/app/services/link_service.py` and return
+- [x] T029 [US2] Add `marketer_counts(db, user)` to `api/app/services/link_service.py` and return
   `linked_this_month`, `linked_without_commission`, `month_label`, `recent_links` from `dashboard` in
   `api/app/api/marketer.py` (contracts/api.md › dashboard); T025 green.
-- [ ] T030 [US2] Add `linked_at` to `RequestOut` and `RequestListItem` in `api/app/schemas/requests.py`, fill
+- [x] T030 [US2] Add `linked_at` to `RequestOut` and `RequestListItem` in `api/app/schemas/requests.py`, fill
   it in `to_out` and `list_own` (null on a deleted row), and order by `linked_at DESC, id DESC` when statuses
   are exactly `['linked']` in `api/app/services/submit_service.py`; T026 green.
-- [ ] T031 [P] [US2] Add `linked_at` to the request types in `web/src/lib/requests.ts`.
-- [ ] T032 [US2] Update `web/src/pages/marketer/Dashboard.tsx`: the counter, «و M بلا عمولة», the latest links
+- [x] T031 [P] [US2] Add `linked_at` to the request types in `web/src/lib/requests.ts`.
+- [x] T032 [US2] Update `web/src/pages/marketer/Dashboard.tsx`: the counter, «و M بلا عمولة», the latest links
   list; T027 green.
-- [ ] T033 [US2] Show the link date in `web/src/pages/marketer/SubmittedTab.tsx` (linked rows) and «تاريخ
+- [x] T033 [US2] Show the link date in `web/src/pages/marketer/SubmittedTab.tsx` (linked rows) and «تاريخ
   الربط» in `web/src/pages/marketer/RequestResult.tsx`; T028 green.
-- [ ] T034 [US2] Extend `api/tests/integration/test_marketer_privacy.py`: a marketer's dashboard and lists never
+- [x] T034 [US2] Extend `api/tests/integration/test_marketer_privacy.py`: a marketer's dashboard and lists never
   include another marketer's links. Run both suites; all green.
 
 **Checkpoint**: batch 3 commit.

@@ -54,6 +54,8 @@ export interface SubmittedRequest {
   deletion_label?: string | null;
   /** «رسالة الربط» composed by the server (system.md v1.17 §8.4): accepted or linked only. */
   link_message?: string | null;
+  /** The current «تم الربط» (specs/013 R8); null unless linked. */
+  linked_at?: string | null;
 }
 
 export interface RequestListItem {
@@ -69,6 +71,8 @@ export interface RequestListItem {
   rejection_label: string | null;
   deleted_at: string | null;
   deletion_label: string | null;
+  /** The current «تم الربط» (specs/013 R8); null unless linked. */
+  linked_at?: string | null;
 }
 
 /** «PLUS | التجريبي … | الثاني …»; a deleted request has no prices (specs/011 R11). */

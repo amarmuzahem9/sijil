@@ -11,10 +11,11 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core import link_search, request_status
-from app.core.timeutil import utc_now
+from app.core.timeutil import baghdad_month_bounds, baghdad_month_label, utc_now
 from app.errors import AppError
 from app.models import Request, RequestLink, User
 from app.schemas.admin_links import LinkList, LinkRow
+from app.schemas.dashboard import MarketerDashboard, RecentLink
 from app.services import audit_service, notification_service
 
 log = logging.getLogger("sijil.links")
@@ -142,3 +143,45 @@ def link(db: Session, user: User, request_id: int) -> Request:
     # The action and the number only (constitution Principle II).
     log.info("link number=%s", request.number)
     return request
+
+
+# --- the marketer home (R5) ----------------------------------------------------------------------
+
+RECENT_LIMIT = 10
+
+
+def marketer_counts(db: Session, user: User) -> MarketerDashboard:
+    """This Baghdad month's links of `user`: counted for commission, without commission, and the
+    latest ten. A request has one current `linked_at`, so it counts once (FR-012)."""
+    start, end = baghdad_month_bounds()
+    this_month = (
+        Request.marketer_id == user.id,
+        Request.status == "linked",
+        Request.deleted_at.is_(None),
+        Request.linked_at >= start,
+        Request.linked_at < end,
+    )
+    split = dict(
+        db.execute(
+            select(Request.counts_commission, func.count())
+            .where(*this_month)
+            .group_by(Request.counts_commission)
+        ).all()
+    )
+    recent = db.scalars(
+        select(Request)
+        .where(*this_month)
+        .order_by(Request.linked_at.desc(), Request.id.desc())
+        .limit(RECENT_LIMIT)
+    ).all()
+    return MarketerDashboard(
+        linked_this_month=split.get(True, 0),
+        linked_without_commission=split.get(False, 0),
+        month_label=baghdad_month_label(),
+        recent_links=[
+            RecentLink(
+                id=r.id, number_label=r.number_label, full_name=r.full_name, linked_at=r.linked_at
+            )
+            for r in recent
+        ],
+    )

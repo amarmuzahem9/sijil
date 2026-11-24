@@ -1,7 +1,7 @@
 /**
  * «بالانتظار» and «مقبولة» in «الطلبات» (specs/008 T027, FR-019): the marketer's submitted
- * requests, newest first, each opening its result page. «مرفوضة» since 010, «تم الربط» since 012
- * (filled by 013). With `q` it lists the search results across statuses (specs/012 US3). A deleted request (specs/011 R11) keeps its row under its
+ * requests, newest first, each opening its result page. «مرفوضة» since 010, «تم الربط» since 012,
+ * ordered by link time with its date since 013. With `q` it lists the search results across statuses (specs/012 US3). A deleted request (specs/011 R11) keeps its row under its
  * status with the grey tag «محذوف», the reason, the number, the tower and the date only.
  */
 import Card from '@mui/material/Card';
@@ -58,6 +58,11 @@ export function SubmittedTab({ statuses, q }: { statuses: SubmittedStatus[]; q?:
                     <span dir="ltr">{`#${item.number_label}`}</span> ·{' '}
                     {formatBaghdad(item.submitted_at)}
                   </Typography>
+                  {!deleted && item.status === 'linked' && item.linked_at && (
+                    <Typography variant="body2" color="success.main">
+                      تاريخ الربط: {formatBaghdad(item.linked_at)}
+                    </Typography>
+                  )}
                   {deleted && (
                     <Typography variant="body2" color="text.secondary">
                       سبب الحذف: {item.deletion_label}

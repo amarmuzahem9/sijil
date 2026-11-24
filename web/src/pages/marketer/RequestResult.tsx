@@ -156,6 +156,9 @@ function LiveResultView({ request }: { request: SubmittedRequest }) {
           <Row label="الفئة" value={planLine(request)} />
           <Row label="الهاتف" value={request.phone ?? '—'} />
           <Row label="تاريخ الإرسال" value={formatBaghdad(request.submitted_at)} />
+          {request.status === 'linked' && request.linked_at && (
+            <Row label="تاريخ الربط" value={formatBaghdad(request.linked_at)} />
+          )}
           <Stack
             direction="row"
             spacing={1}

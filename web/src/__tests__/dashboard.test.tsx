@@ -2,15 +2,28 @@
  * The marketer dashboard (specs/009 US4, FR-005c; owner's Q3): «إضافة اشتراك لمشترك موجود» opens
  * the same subscriber form as «إضافة مشترك جديد». There is no search; the checks decide the path.
  */
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+const apiFetch = vi.fn();
 vi.mock('../lib/api', async (original) => ({
   ...(await original<typeof import('../lib/api')>()),
-  apiFetch: vi.fn().mockResolvedValue({ linked_this_month: 0, month_label: 'تشرين الثاني' }),
+  apiFetch: (...args: unknown[]) => apiFetch(...args),
 }));
+
+const EMPTY = {
+  linked_this_month: 0,
+  linked_without_commission: 0,
+  month_label: 'تشرين الثاني 2026',
+  recent_links: [],
+};
+
+beforeEach(() => {
+  apiFetch.mockReset();
+  apiFetch.mockResolvedValue(EMPTY);
+});
 
 import Dashboard from '../pages/marketer/Dashboard';
 
@@ -36,5 +49,52 @@ describe('Dashboard', () => {
     expect(existing.getAttribute('href')).toBe(fresh.getAttribute('href'));
     expect(existing.getAttribute('aria-disabled')).not.toBe('true');
     expect(screen.queryByText('قريباً')).toBeNull();
+  });
+});
+
+describe('«تم الربط هذا الشهر» (specs/013 US2, FR-011, FR-014)', () => {
+  it('shows the commission count and hides «بلا عمولة» at zero', async () => {
+    apiFetch.mockResolvedValue({ ...EMPTY, linked_this_month: 27 });
+    show();
+    expect((await screen.findByTestId('linked-counter')).textContent).toBe(
+      'تم الربط هذا الشهر: 27',
+    );
+    expect(screen.queryByText(/بلا عمولة/)).toBeNull();
+    expect(screen.getByText('لا يوجد مشتركون مربوطون هذا الشهر')).toBeTruthy();
+  });
+
+  it('shows «و M بلا عمولة» under the count when M > 0', async () => {
+    apiFetch.mockResolvedValue({ ...EMPTY, linked_this_month: 3, linked_without_commission: 2 });
+    show();
+    expect((await screen.findByTestId('linked-without-commission')).textContent).toBe(
+      'و 2 بلا عمولة',
+    );
+  });
+
+  it('lists the latest links with a green chip, each opening its request', async () => {
+    apiFetch.mockResolvedValue({
+      ...EMPTY,
+      linked_this_month: 2,
+      recent_links: [
+        {
+          id: 31,
+          number_label: 'T3C-1031',
+          full_name: 'عينة أولى',
+          linked_at: '2026-11-24T09:00:00Z',
+        },
+        {
+          id: 30,
+          number_label: 'T3C-1030',
+          full_name: 'عينة ثانية',
+          linked_at: '2026-11-23T09:00:00Z',
+        },
+      ],
+    });
+    show();
+    const list = await screen.findByTestId('recent-links');
+    const links = within(list).getAllByRole('link');
+    expect(links.map((a) => a.getAttribute('href'))).toEqual(['/requests/31', '/requests/30']);
+    expect(within(links[0]).getByText('عينة أولى')).toBeTruthy();
+    expect(within(links[0]).getByText('تم الربط')).toBeTruthy();
   });
 });

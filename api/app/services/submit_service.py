@@ -388,6 +388,7 @@ def to_out(request: Request) -> RequestOut:
         rejection_label=_rejection_label(request),
         rejected_at=request.rejected_at,
         link_message=link_message.compose(request),
+        linked_at=request.linked_at,
     )
 
 
@@ -421,7 +422,12 @@ def list_own(
         query = query.where(Request.status.in_(statuses))
     if q is not None:
         query = _search(query, q)
-    rows = db.scalars(query.order_by(Request.submitted_at.desc(), Request.id.desc())).all()
+    # The «تم الربط» tab goes by link time, newest first (specs/013 FR-017); the rest by submission.
+    if statuses == ["linked"] and q is None:
+        order = (Request.linked_at.desc(), Request.id.desc())
+    else:
+        order = (Request.submitted_at.desc(), Request.id.desc())
+    rows = db.scalars(query.order_by(*order)).all()
     return [
         RequestListItem(
             id=r.id,
@@ -437,6 +443,7 @@ def list_own(
             deletion_label=(
                 deletion_reasons.LABELS[r.deletion_reason] if r.deletion_reason else None
             ),
+            linked_at=r.linked_at,
         )
         for r in rows
     ]
