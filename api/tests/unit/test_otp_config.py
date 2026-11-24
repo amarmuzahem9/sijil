@@ -31,4 +31,8 @@ def test_dev_fake_with_code_and_production_otpiq_are_accepted() -> None:
         name: "p" * 20
         for name in ("postgres_password", "superadmin_password", "demo_marketer_password")
     }
-    assert Settings(**BASE, **strong, app_env="production", otp_mode="otpiq").otp_mode == "otpiq"
+    # drive_mode explicit: conftest sets DRIVE_MODE=fake, which production refuses (specs/014).
+    production = Settings(
+        **BASE, **strong, app_env="production", otp_mode="otpiq", drive_mode="google"
+    )
+    assert production.otp_mode == "otpiq"

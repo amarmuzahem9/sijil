@@ -7,6 +7,9 @@ services:
         INSTALL_DEV: "true"
     environment:
       APP_ENV: development
+      # Generated legacy card images (specs/014 research R7); the real file is imported on the
+      # server only.
+      DRIVE_MODE: fake
       # Bind mounts from Windows/macOS don't deliver file events; poll instead.
       WATCHFILES_FORCE_POLLING: "true"
     volumes:

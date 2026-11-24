@@ -242,6 +242,8 @@ class ImageAccessLog(Base):
     draft_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     # Set when a review admin opens a request image (specs/010 research R9).
     request_id: Mapped[int | None] = mapped_column(BigInteger)
+    # Set when a review admin opens a legacy subscriber's image (specs/014 research R13).
+    legacy_subscriber_id: Mapped[int | None] = mapped_column(BigInteger)
     side: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = _ts()
     # `view` = a person opened the image (005); `ocr` = the server sent it to the card reader

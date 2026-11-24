@@ -58,6 +58,11 @@ class Settings(BaseSettings):
     otpiq_base_url: str = "https://api.otpiq.com/api"
     otp_fake_code: str = ""
 
+    # Legacy card images (specs/014 research R7). `google` = download shared Google Drive links;
+    # `fake` = generated images and failures by file id (tests, e2e, local development). `fake`
+    # is refused in staging/production.
+    drive_mode: Literal["google", "fake"] = "google"
+
     @property
     def map_center(self) -> tuple[float, float]:
         """`map_default_center` as (lat, lng); validated at startup by `_check_map_center`."""
@@ -111,6 +116,8 @@ class Settings(BaseSettings):
             problems.append("OTP_MODE must be otpiq")
         if self.otp_fake_code:
             problems.append("OTP_FAKE_CODE must be empty")
+        if self.drive_mode == "fake":
+            problems.append("DRIVE_MODE must be google")
         if problems:
             # Names only — never the values.
             raise ValueError(f"Refusing to start in {self.app_env}: " + "; ".join(problems))

@@ -19,6 +19,10 @@ dependencies = [
     "Pillow==13.0.0",
     # Feature 006: calls the internal card reader service (specs/006 research R5).
     "httpx==0.28.1",
+    # Feature 014: read the legacy Google Form export (.xlsx); defusedxml guards openpyxl's XML
+    # parser (specs/014 research R4).
+    "openpyxl==3.1.5",
+    "defusedxml==0.7.1",
 ]
 
 [project.optional-dependencies]

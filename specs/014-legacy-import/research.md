@@ -88,7 +88,10 @@ All Technical Context unknowns are resolved below. Each entry: Decision, Rationa
   means «not shared» (`not_shared`); other failures: `not_found`, `too_large`, `not_image`, `timeout`, `network`.
   The bytes are decoded with Pillow (JPEG or PNG; others → `not_image`), EXIF-rotated, reduced to 1 600 px on the
   longest edge and saved as JPEG quality 80 through `image_store` (new `save_bytes`), so stored legacy images obey
-  the same limits as phone uploads.
+  the same limits as phone uploads. Known limit (batch 1): the shared decompression-bomb guard of
+  `image_store` refuses images above about 20 megapixels, so a photo taken in a phone's 50 or 108 MP mode comes back
+  `not_image` and the row is «غير مكتمل»; ordinary 12 MP phone photos pass. Raising the guard would weaken the phone
+  upload path, so it stays.
 - **Rationale**: FR-007, §12.1; the fake keeps tests and e2e free of the network and of real images (CLAUDE.md).
   Re-encoding strips metadata and caps size.
 - **Alternatives**: Google Drive API with a service account — rejected: needs credentials and setup the owner did

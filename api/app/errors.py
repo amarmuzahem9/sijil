@@ -91,6 +91,16 @@ MESSAGES: dict[str, str] = {
     # «تم الربط» and its undo (specs/013 contracts/api.md)
     "already_linked": "تم ربط هذا الطلب مسبقاً",
     "already_unlinked": "تم التراجع عن هذا الربط مسبقاً",
+    # Legacy subscribers import (specs/014 contracts/api.md)
+    "import_file_unreadable": "تعذّرت قراءة الملف، ارفع ملف xlsx أو csv",
+    "import_columns_missing": "الملف ينقصه عمود",
+    "import_too_many_rows": "الملف فيه أكثر من 2,000 صف",
+    "import_file_too_large": "حجم الملف أكبر من 5 ميغابايت",
+    "preview_not_found": "المعاينة غير موجودة أو انتهت، ارفع الملف من جديد",
+    "preview_not_ready": "المعاينة لم تكتمل بعد",
+    "preview_choices_missing": "بقيت صفوف بلا اختيار",
+    "preview_changed": "تغيّرت البيانات منذ المعاينة، راجع الصفوف المعلّمة",
+    "choice_not_allowed": "هذا الاختيار غير مسموح لهذا الصف",
     "wrong_current_password": "كلمة السر الحالية غير صحيحة",
     "weak_password": "كلمة السر يجب أن تكون 8 أحرف على الأقل",
     "same_password": "كلمة السر الجديدة يجب أن تختلف عن الحالية",

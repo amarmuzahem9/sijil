@@ -41,14 +41,14 @@ code is written**. Report red and green for every test task.
 
 ## Phase 1: Setup
 
-- [ ] T001 Confirm the baseline: `docker compose up -d`, then `docker compose exec api pytest` and
+- [x] T001 Confirm the baseline: `docker compose up -d`, then `docker compose exec api pytest` and
   `cd web && npm test` are green on the branch before any change; note the counts in the batch report.
-- [ ] T002 Add `openpyxl` and `defusedxml` (pinned exact versions) to `api/pyproject.toml` dependencies, with a
+- [x] T002 Add `openpyxl` and `defusedxml` (pinned exact versions) to `api/pyproject.toml` dependencies, with a
   comment pointing to specs/014 research R4; rebuild the api image and check both import.
-- [ ] T003 [P] Add `DRIVE_MODE` (`google` | `fake`, default `google`) to `api/app/config.py`, refused as `fake` in
+- [x] T003 [P] Add `DRIVE_MODE` (`google` | `fake`, default `google`) to `api/app/config.py`, refused as `fake` in
   staging/production like `OTP_MODE` (research R7); document it in `.env.example`; set `DRIVE_MODE=fake` in
   `docker-compose.override.yml` test/dev settings and `docker-compose.e2e.yml`.
-- [ ] T004 [P] Add error codes with Arabic messages in `api/app/errors.py`: `import_file_unreadable`,
+- [x] T004 [P] Add error codes with Arabic messages in `api/app/errors.py`: `import_file_unreadable`,
   `import_columns_missing`, `import_too_many_rows`, `import_file_too_large`, `preview_not_found`,
   `preview_not_ready`, `preview_choices_missing`, `preview_changed`, `choice_not_allowed` (contracts/api.md).
 
@@ -61,13 +61,13 @@ every story uses.
 
 ### Tests (write first, run red)
 
-- [ ] T005 [P] Migration test `api/tests/integration/test_migration_0017.py`: tables `legacy_imports`,
+- [x] T005 [P] Migration test `api/tests/integration/test_migration_0017.py`: tables `legacy_imports`,
   `legacy_subscribers`, `legacy_images`, `legacy_import_previews` exist; data-model.md
   `legacy_subscribers.legacy_number` is unique and refuses a value not matching its pattern;
   `legacy_subscribers.phone` refuses a non-§8.1 value and accepts NULL; `legacy_images.side` accepts only
   `front`/`back` and is unique per subscriber; `image_access_log.legacy_subscriber_id` exists and is nullable;
   downgrade then upgrade works.
-- [ ] T006 [P] Unit tests `api/tests/unit/test_legacy_row.py` with fixture `api/tests/fixtures/legacy/row_cases.json`
+- [x] T006 [P] Unit tests `api/tests/unit/test_legacy_row.py` with the cases inline
   (research R5, R3): header matching (spaces, «البطافة» and «البطاقة», missing required columns named); legacy
   number cleaning (`t3c-7`, Arabic digits → `T3C-007`, `ABC` → missing); names trimmed and collapsed, full name of
   the non-empty three; phone via §8.1 (hidden marks, `964…`) or NULL with `phone_invalid`/`phone_missing`; family
@@ -75,20 +75,20 @@ every story uses.
   `DD/MM/YYYY HH:MM:SS`) read as Baghdad and returned in UTC, unreadable → None; `counts_in_check` false only for
   «ملغي» and «مرفوض» after trimming; Drive id extraction from `open?id=`, `/file/d/<id>/view`, `uc?id=`, several
   links → first, garbage → None.
-- [ ] T007 [P] Unit tests `api/tests/unit/test_legacy_file.py`: a synthetic `.csv` (UTF-8 with and without BOM) and
+- [x] T007 [P] Unit tests `api/tests/unit/test_legacy_file.py`: a synthetic `.csv` (UTF-8 with and without BOM) and
   the same rows as `.xlsx` (built in the test with openpyxl) give identical raw rows; a non-sheet file →
   `import_file_unreadable`; > 2 000 rows → `import_too_many_rows`; empty trailing rows ignored.
-- [ ] T008 [P] Unit tests `api/tests/unit/test_drive_fetcher.py`: the fake answers `fake-ok-*` with a generated JPEG,
+- [x] T008 [P] Unit tests `api/tests/unit/test_drive_fetcher.py`: the fake answers `fake-ok-*` with a generated JPEG,
   `fake-png-*` with a PNG, `fake-private-*` with `not_shared`, `fake-missing-*` with `not_found`, `fake-big-*` with
   `too_large`, `fake-text-*` with `not_image`; the google adapter, with `httpx.MockTransport`, maps an HTML answer to
   `not_shared`, 404 to `not_found`, a body over 15 MB to `too_large` (stops reading), a timeout to `timeout`.
-- [ ] T009 [P] Unit test in `api/tests/unit/test_image_store_bytes.py`: `image_store.save_bytes` takes a 3000×2000
+- [x] T009 [P] Unit test in `api/tests/unit/test_image_store_bytes.py`: `image_store.save_bytes` takes a 3000×2000
   PNG with an EXIF rotation and stores a JPEG ≤ 1600 px on the long edge, rotated upright, with no EXIF; rejects
   non-image bytes and a decompression bomb with `invalid_image`; writes nothing on failure.
 
 ### Implementation
 
-- [ ] T010 Migration `api/migrations/versions/0017_legacy_import.py` and models `api/app/models/legacy.py`
+- [x] T010 Migration `api/migrations/versions/0017_legacy_import.py` and models `api/app/models/legacy.py`
   (exported from `api/app/models/__init__.py`) for every column of data-model.md `legacy_imports`,
   `legacy_subscribers`, `legacy_images`, `legacy_import_previews`, with their constraints as data-model.md defines
   them for: `legacy_imports.file_name`, `legacy_imports.created_by`; `legacy_subscribers.legacy_number`,
@@ -99,15 +99,15 @@ every story uses.
   `legacy_import_previews.created_by`, `legacy_import_previews.rows`; plus data-model.md
   `image_access_log.legacy_subscriber_id` in `api/app/models/draft.py`; partial indexes on phone and family_key
   where `counts_in_check` (T005 green).
-- [ ] T011 Pure rules `api/app/core/legacy_row.py`: headers, `clean_row` (returns the cleaned values of
+- [x] T011 Pure rules `api/app/core/legacy_row.py`: headers, `clean_row` (returns the cleaned values of
   data-model.md `PreviewRow`), legacy number, timestamps, status rule, Drive id; reuse `app.core.phone` and
   `app.core.family_key` (T006 green).
-- [ ] T012 [P] File reader `api/app/services/legacy_file.py` (openpyxl read-only, data only; csv stdlib; in memory,
+- [x] T012 [P] File reader `api/app/services/legacy_file.py` (openpyxl read-only, data only; csv stdlib; in memory,
   never written to disk; 5 MB cap) (T007 green).
-- [ ] T013 [P] Adapter `api/app/services/drive_fetcher.py`: `fetch(file_id) -> FetchResult(outcome, data)`,
+- [x] T013 [P] Adapter `api/app/services/drive_fetcher.py`: `fetch(file_id) -> FetchResult(outcome, data)`,
   google (httpx, `uc?export=download`, 30 s, streamed with the 15 MB cap) and fake; selected by `DRIVE_MODE`
   (T008 green).
-- [ ] T014 `image_store.save_bytes` in `api/app/services/image_store.py` (Pillow: JPEG or PNG only, exif_transpose,
+- [x] T014 `image_store.save_bytes` in `api/app/services/image_store.py` (Pillow: JPEG or PNG only, exif_transpose,
   RGB, thumbnail 1600, JPEG q80, atomic write like `save_upload`) (T009 green). **Batch 1 commit.**
 
 ---

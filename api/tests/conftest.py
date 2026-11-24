@@ -22,6 +22,8 @@ os.environ["OCR_MODE"] = "fake"
 os.environ["OTP_MODE"] = "fake"
 os.environ["OTP_FAKE_CODE"] = ""
 os.environ["OTPIQ_API_KEY"] = "sk_dev_test-marker-not-a-real-key"
+# Tests never download from Google Drive (specs/014 research R7).
+os.environ["DRIVE_MODE"] = "fake"
 
 from alembic import command  # noqa: E402
 from alembic.config import Config  # noqa: E402
