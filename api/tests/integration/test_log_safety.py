@@ -564,3 +564,88 @@ def test_the_search_text_never_reaches_the_access_log() -> None:
         line = _formatted([record])
         assert "07801234567" not in line and name not in line, line
         assert kept in line and "q=[REDACTED]" in line, line
+
+
+def test_the_legacy_import_never_logs_personal_data(
+    client, db, make_user, caplog, capsys, tmp_path, monkeypatch
+) -> None:
+    """specs/014 FR-009, Principle II: the import, its image fetching, the check against legacy
+    subscribers, the review file and a legacy image open log ids and counts only."""
+    from pathlib import Path
+
+    from sqlalchemy import select
+
+    from app.models import LegacyImage, LegacySubscriber, RequestReason
+    from app.services import drive_fetcher, match_service
+    from tests.helpers.review import admin_with, headers_for, pending_request
+
+    monkeypatch.setattr(get_settings(), "uploads_dir", str(tmp_path))
+    caplog.set_level(logging.DEBUG)
+    sample = (
+        Path(__file__).parent.parent / "fixtures" / "legacy" / "legacy_sample.csv"
+    ).read_bytes()
+    url = "/api/admin/imports/legacy/previews"
+    reporter = admin_with(make_user, "reports")
+    h = headers_for(client, reporter)
+
+    preview = client.post(url, files={"file": ("legacy.csv", sample, "text/csv")}, headers=h).json()
+    pid = preview["id"]
+    choices = [{"index": i, "choice": "import"} for i in (4, 5, 7, 8, 9, 11, 13)] + [
+        {"index": 12, "choice": "skip"},
+        {"index": 14, "choice": "skip"},
+        {"index": 6, "choice": "correct", "family_number": "1111A0000000000006"},
+    ]
+    assert (
+        client.put(f"{url}/{pid}/choices", json={"choices": choices}, headers=h).status_code == 200
+    )
+    assert client.post(f"{url}/{pid}/confirm", headers=h).status_code == 201
+    # A re-upload, and the Google adapter failing on the network.
+    client.post(url, files={"file": ("legacy.csv", sample, "text/csv")}, headers=h)
+    google = drive_fetcher.GoogleFetcher(
+        client=drive_fetcher.httpx.Client(
+            transport=drive_fetcher.httpx.MockTransport(lambda r: drive_fetcher.httpx.Response(500))
+        )
+    )
+    google.fetch("fake-ok-f-0002")
+
+    # The check, the review file and a legacy image open.
+    match_service.find_matches(db, phone="07811110002", family_key="1111A0000000000004")
+    sub = db.scalars(
+        select(LegacySubscriber).where(LegacySubscriber.legacy_number == "T3C-001")
+    ).one()
+    request = pending_request(db, make_user("marketer"), [])
+    db.add(
+        RequestReason(
+            request_id=request.id,
+            reason="family_exists",
+            matched_source="legacy",
+            matched_ref=str(sub.id),
+            details={},
+        )
+    )
+    db.flush()
+    reviewer = headers_for(client, admin_with(make_user, "review"))
+    assert client.get(f"/api/admin/requests/{request.id}", headers=reviewer).status_code == 200
+    image = db.scalars(
+        select(LegacyImage).where(LegacyImage.legacy_subscriber_id == sub.id)
+    ).first()
+    assert client.get(f"/api/admin/legacy-images/{image.id}", headers=reviewer).status_code == 200
+
+    printed = capsys.readouterr()
+    raw = "\n".join(r.getMessage() for r in caplog.records)
+    everything = raw + _formatted(list(caplog.records)) + printed.out + printed.err
+    assert "legacy import confirmed" in raw
+    for secret in (
+        "07811110002",
+        "0781111",
+        "1111A0000000000004",
+        "1111a00000000000o4",
+        "1111A0000000000006",
+        "سمير",
+        "عينة",
+        "sample@example.com",
+        "fake-ok-f-0002",
+        "fake-private-0011",
+        image.file_name,
+    ):
+        assert secret not in everything, secret

@@ -56,3 +56,8 @@ def setup_logging(level: int = logging.INFO) -> None:
         lg = logging.getLogger(name)
         lg.handlers[:] = []
         lg.propagate = True
+    # httpx logs every request URL at INFO. A Google Drive URL carries the id of a shared card
+    # image (specs/014), which is enough to download it: never log request URLs (Principle II).
+    # Adapters log their own failures without the URL.
+    for name in ("httpx", "httpcore"):
+        logging.getLogger(name).setLevel(logging.WARNING)

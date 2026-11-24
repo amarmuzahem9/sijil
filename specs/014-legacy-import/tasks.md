@@ -285,18 +285,19 @@ logged; a marketer sees nothing.
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T051 [P] Playwright `e2e/tests/legacy-import.spec.ts` (fake Drive, synthetic csv): a `reports` admin uploads,
+- [x] T051 [P] Playwright `e2e/tests/legacy-import.spec.ts` (fake Drive, synthetic csv): a `reports` admin uploads,
   resolves the flagged rows (one with «تخطي للكل» then one row switched back), confirms; the marketer's new draft
   with a legacy phone shows case 1; a new request with a legacy family number goes to the admin; the review admin
   sees «مشترك قديم» with images.
-- [ ] T052 [P] Log safety: extend `api/tests/integration/test_log_safety.py` to the import and fetch flows.
-- [ ] T053 [P] Confirm no code path sends legacy images to the card reader: test that `card_reading_service` is
-  never called during preview or confirm (mock raises) in `api/tests/integration/test_legacy_preview.py`.
-- [ ] T054 Run `ruff`, `npm run lint`, `npm run build`, the full pytest, Vitest and Playwright suites; all green.
-- [ ] T055 `docker compose up` and run the quickstart scenarios 1–15 against the synthetic file.
-- [ ] T056 Write `specs/014-legacy-import/manual-test-ar.md`: Arabic manual steps for the owner, including how to
+- [x] T052 [P] Log safety: extend `api/tests/integration/test_log_safety.py` to the import and fetch flows.
+- [x] T053 [P] Confirm no code path sends legacy images to the card reader: covered since batch 2 by
+  `test_images_are_never_sent_to_the_card_reader` in `api/tests/integration/test_legacy_preview.py` (the card
+  reader's `submit` and `run` raise; the preview still completes).
+- [x] T054 Run `ruff`, `npm run lint`, `npm run build`, the full pytest, Vitest and Playwright suites; all green.
+- [x] T055 `docker compose up` and run the quickstart scenarios 1–15 against the synthetic file.
+- [x] T056 Write `specs/014-legacy-import/manual-test-ar.md`: Arabic manual steps for the owner, including how to
   import the real file on the server (share the Drive files «لأي شخص لديه الرابط» first, `DRIVE_MODE=google`).
-- [ ] T057 Mark tasks done, update the spec status. **Batch 6 commit.**
+- [x] T057 Mark tasks done, update the spec status. **Batch 6 commit.**
 
 ---
 
