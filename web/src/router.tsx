@@ -15,13 +15,13 @@ import AdminLayout from './layouts/AdminLayout';
 import MarketerLayout from './layouts/MarketerLayout';
 import AccountPanel from './pages/AccountPanel';
 import {
-  AdminAwaitingLink,
   AdminBackup,
   AdminImport,
   AdminReports,
   AdminSubscribers,
 } from './pages/admin/placeholders';
 import Admins from './pages/admin/Admins';
+import AwaitingLink from './pages/admin/links/AwaitingLink';
 import AdminHome from './pages/admin/Home';
 import PendingList from './pages/admin/pending/PendingList';
 import RequestReview from './pages/admin/pending/RequestReview';
@@ -90,7 +90,7 @@ export const routes: RouteObject[] = [
                       page('pending', { path: 'pending/:requestId', element: <RequestReview /> }),
                       page('awaiting_link', {
                         path: 'awaiting-link',
-                        element: <AdminAwaitingLink />,
+                        element: <AwaitingLink />,
                       }),
                       page('subscribers', { path: 'subscribers', element: <AdminSubscribers /> }),
                       page('marketers', { path: 'marketers', element: <Marketers /> }),

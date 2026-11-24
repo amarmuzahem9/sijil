@@ -47,7 +47,7 @@ def _link_admin(db: Session) -> User:
     n = next(_counter)
     admin = User(
         name=f"أدمن الربط {n}",
-        phone=f"0771{n:07d}",
+        phone=f"0776{n:07d}",  # not make_user's 0771000…
         password_hash="synthetic",
         role="super_admin",
         permissions=[],

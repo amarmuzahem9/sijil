@@ -365,3 +365,30 @@ def test_refused_deletions_add_no_notification(client, db, marketer, deleter, st
     pending = request_factory(db, marketer, status="pending_review")
     assert _delete(client, h, pending.id, confirm="T3C-1").status_code == 422
     assert _notifications(db, accepted) == [] and _notifications(db, pending) == []
+
+
+def test_a_linked_request_keeps_its_link_when_deletion_is_refused(
+    client, db, marketer, deleter
+) -> None:
+    """specs/013 FR-020: a real link (time, admin, history row) is untouched by the refusal."""
+    from sqlalchemy import func, select
+
+    from app.models import RequestLink
+
+    request = request_factory(db, marketer, status="linked")
+    linked_at, linked_by = request.linked_at, request.linked_by
+
+    res = _delete(client, headers_for(client, deleter), request.id, request=request)
+
+    assert (res.status_code, res.json()["code"]) == (409, "request_not_deletable")
+    db.refresh(request)
+    assert (request.status, request.linked_at, request.linked_by) == (
+        "linked",
+        linked_at,
+        linked_by,
+    )
+    assert request.deleted_at is None
+    rows = db.scalar(
+        select(func.count()).select_from(RequestLink).where(RequestLink.request_id == request.id)
+    )
+    assert rows == 1

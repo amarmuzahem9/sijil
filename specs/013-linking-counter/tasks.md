@@ -106,46 +106,46 @@ list, the marketer gets «تم ربط المشترك».
 
 ### Tests (write first, run red)
 
-- [ ] T012 [P] [US1] Integration test `api/tests/integration/test_link.py`: success sets status, data-model.md
+- [x] T012 [P] [US1] Integration test `api/tests/integration/test_link.py`: success sets status, data-model.md
   `requests.linked_at` from `utc_now()` and `requests.linked_by`, adds one `request_links` row `linked`, one
   audit `request.linked` (before/after status, entity = number), one `linked` notification; refusals write
   nothing: pending (`invalid_transition`), rejected (`invalid_transition`), deleted (`request_deleted`), already
   linked (`already_linked`), unknown id (404), admin without `link` and marketer (403); `approved_at`,
   `approved_by`, `counts_commission` unchanged.
-- [ ] T013 [P] [US1] Concurrency test `api/tests/integration/test_link_concurrency.py`: two sessions link the
+- [x] T013 [P] [US1] Concurrency test `api/tests/integration/test_link_concurrency.py`: two sessions link the
   same request; one 200, one `already_linked`; one history row, one audit, one notification (pattern of
   `test_admin_decide_concurrency`).
-- [ ] T014 [P] [US1] Integration test `api/tests/integration/test_link_lists.py` for `GET
+- [x] T014 [P] [US1] Integration test `api/tests/integration/test_link_lists.py` for `GET
   /api/admin/links/awaiting`: only approved, not deleted, oldest `approved_at` first; row keys exactly the
   `LinkRow` fields of contracts/api.md (assert no `national_id`, `family_number`, card or image key and that
   the JSON text holds neither number); search by number, phone, username; `q` of 1 character → 422; offset and
   limit; `total`; 403 without `link`.
-- [ ] T015 [P] [US1] Vitest `web/src/__tests__/awaitingLink.test.tsx`: the waiting tab lists rows with number,
+- [x] T015 [P] [US1] Vitest `web/src/__tests__/awaitingLink.test.tsx`: the waiting tab lists rows with number,
   name, username, phone, «اسم البرج (رمز البرج)», plan, marketer, date; search sends `q`; «تم الربط» opens the
   confirmation and posts; on `already_linked` shows the server message and refreshes.
 
 ### Implementation
 
-- [ ] T016 [US1] Create `api/app/schemas/admin_links.py`: `LinkRow`, `LinkList` (items, total), `UnlinkIn`
+- [x] T016 [US1] Create `api/app/schemas/admin_links.py`: `LinkRow`, `LinkList` (items, total), `UnlinkIn`
   (reason, link_id; strict) per contracts/api.md.
-- [ ] T017 [US1] Create `api/app/services/link_service.py`: `_lock(db, request_id)` (`FOR UPDATE OF
+- [x] T017 [US1] Create `api/app/services/link_service.py`: `_lock(db, request_id)` (`FOR UPDATE OF
   requests`, `populate_existing`, order of refusals per research R2), `awaiting(db, q, offset, limit)`,
   `link(db, user, request_id)` per research R3, `to_row`; T012, T013 green.
-- [ ] T018 [US1] Create router `api/app/api/admin_links.py` (`require_permission("link")`): `GET
+- [x] T018 [US1] Create router `api/app/api/admin_links.py` (`require_permission("link")`): `GET
   /admin/links/awaiting`, `POST /admin/requests/{id}/link`; include it in `api/app/main.py`; T014 green for
   the awaiting part.
-- [ ] T019 [P] [US1] Create `web/src/lib/links.ts`: types `LinkRow`, `LinkList`; `listAwaiting(q, offset)`,
+- [x] T019 [P] [US1] Create `web/src/lib/links.ts`: types `LinkRow`, `LinkList`; `listAwaiting(q, offset)`,
   `linkRequest(id)` (and `listRecent`, `unlinkRequest` signatures for US3).
-- [ ] T020 [P] [US1] Create `web/src/pages/admin/links/LinkConfirmDialog.tsx`: «تأكيد الربط؟» with the number,
+- [x] T020 [P] [US1] Create `web/src/pages/admin/links/LinkConfirmDialog.tsx`: «تأكيد الربط؟» with the number,
   name and username; «تم الربط» / «إلغاء».
-- [ ] T021 [US1] Create `web/src/pages/admin/links/AwaitingLink.tsx`: tabs «بانتظار الربط» / «المربوطة مؤخراً»
+- [x] T021 [US1] Create `web/src/pages/admin/links/AwaitingLink.tsx`: tabs «بانتظار الربط» / «المربوطة مؤخراً»
   (second tab filled in US3), search box (≥ 2 characters), cards per row, «تحميل المزيد», mutation that
   invalidates both lists; T015 green.
-- [ ] T022 [US1] Replace `AdminAwaitingLink` placeholder: remove it from `web/src/pages/admin/placeholders.tsx`
+- [x] T022 [US1] Replace `AdminAwaitingLink` placeholder: remove it from `web/src/pages/admin/placeholders.tsx`
   and route `/admin/awaiting-link` to `AwaitingLink` in `web/src/router.tsx`.
-- [ ] T023 [P] [US1] Extend `api/tests/integration/test_deletion.py`: deleting a linked request answers
+- [x] T023 [P] [US1] Extend `api/tests/integration/test_deletion.py`: deleting a linked request answers
   `request_not_deletable` and changes nothing (FR-020).
-- [ ] T024 [US1] Run the api and web suites; all green.
+- [x] T024 [US1] Run the api and web suites; all green.
 
 **Checkpoint**: batch 2 commit.
 
