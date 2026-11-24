@@ -1,0 +1,125 @@
+{
+  "_comment": "specs/012 research R8 — what the marketer's search box text is matched against",
+  "cases": [
+    {
+      "q": "1004",
+      "kind": "number",
+      "value": 1004
+    },
+    {
+      "q": "T3C-1004",
+      "kind": "number",
+      "value": 1004
+    },
+    {
+      "q": "#t3c-١٠٠٤",
+      "kind": "number",
+      "value": 1004
+    },
+    {
+      "q": " ۱۰۰۴ ",
+      "kind": "number",
+      "value": 1004
+    },
+    {
+      "q": "07801234567",
+      "kind": "phone",
+      "value": "07801234567"
+    },
+    {
+      "q": "0780 123 4567",
+      "kind": "phone",
+      "value": "07801234567"
+    },
+    {
+      "q": "+964 780-123-4567",
+      "kind": "phone",
+      "value": "07801234567"
+    },
+    {
+      "q": "٠٧٨٠١٢٣٤٥٦٧",
+      "kind": "phone",
+      "value": "07801234567"
+    },
+    {
+      "q": "7801234567",
+      "kind": "phone",
+      "value": "07801234567"
+    },
+    {
+      "q": "تجربة",
+      "kind": "name",
+      "value": "تجربة"
+    },
+    {
+      "q": "  تجربة   اختبار ",
+      "kind": "name",
+      "value": "تجربة اختبار"
+    },
+    {
+      "q": "تـجرَبة",
+      "kind": "name",
+      "value": "تجربة"
+    },
+    {
+      "q": "محّمد",
+      "kind": "name",
+      "value": "محمد"
+    },
+    {
+      "q": "تج",
+      "kind": "name",
+      "value": "تج"
+    },
+    {
+      "q": "ت",
+      "kind": null,
+      "value": null
+    },
+    {
+      "q": "   ",
+      "kind": null,
+      "value": null
+    },
+    {
+      "q": "",
+      "kind": null,
+      "value": null
+    },
+    {
+      "q": "%_",
+      "kind": null,
+      "value": null
+    },
+    {
+      "q": "تجربة%",
+      "kind": null,
+      "value": null
+    },
+    {
+      "q": "ahmed",
+      "kind": null,
+      "value": null
+    },
+    {
+      "q": "0780",
+      "kind": "number",
+      "value": 780
+    },
+    {
+      "q": "T3C-",
+      "kind": null,
+      "value": null
+    },
+    {
+      "q": "07801",
+      "kind": "number",
+      "value": 7801
+    },
+    {
+      "q": "078012345678",
+      "kind": null,
+      "value": null
+    }
+  ]
+}

@@ -15,7 +15,14 @@ import uuid
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from app.core import deletion_reasons, link_message, otp, rejection_reasons, request_status
+from app.core import (
+    deletion_reasons,
+    link_message,
+    otp,
+    rejection_reasons,
+    request_search,
+    request_status,
+)
 from app.core.decision import decide
 from app.core.family_key import family_key
 from app.core.matches import MatchRecord
@@ -391,10 +398,29 @@ def get_own(db: Session, user: User, request_id: int) -> Request:
     return request
 
 
-def list_own(db: Session, user: User, statuses: list[str] | None = None) -> list[RequestListItem]:
+def _search(query, text: str):
+    """Narrow `query` by the search box (specs/012 R8). A deleted request has no name or phone
+    left, so only its number finds it (FR-014)."""
+    if len(text.strip()) < request_search.MIN_LENGTH:
+        raise AppError("validation_error", 422)
+    term = request_search.classify(text)
+    if term is None:
+        return query.where(False)
+    if term.kind == "number":
+        return query.where(Request.number == term.value)
+    if term.kind == "phone":
+        return query.where(Request.phone == term.value)
+    return query.where(Request.full_name.contains(term.value, autoescape=True))
+
+
+def list_own(
+    db: Session, user: User, statuses: list[str] | None = None, q: str | None = None
+) -> list[RequestListItem]:
     query = select(Request).where(Request.marketer_id == user.id)
     if statuses:
         query = query.where(Request.status.in_(statuses))
+    if q is not None:
+        query = _search(query, q)
     rows = db.scalars(query.order_by(Request.submitted_at.desc(), Request.id.desc())).all()
     return [
         RequestListItem(

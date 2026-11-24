@@ -19,11 +19,12 @@ marketer_only = require_roles("marketer")
 @router.get("/requests", response_model=RequestList)
 def list_requests(
     status: list[RequestStatus] | None = Query(default=None),
+    q: str | None = Query(default=None, max_length=100),
     ctx: AuthContext = Depends(marketer_only),
     db: Session = Depends(get_db),
 ) -> RequestList:
-    """Newest first; `status` may repeat."""
-    return RequestList(items=submit_service.list_own(db, ctx.user, status))
+    """Newest first; `status` may repeat. `q` searches by number, phone or name (specs/012 R8)."""
+    return RequestList(items=submit_service.list_own(db, ctx.user, status, q))
 
 
 @router.get("/requests/{request_id}", response_model=RequestOut)

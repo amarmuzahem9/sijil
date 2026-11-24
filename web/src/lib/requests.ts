@@ -112,8 +112,11 @@ export const submitDraft = (draftId: string, version: number) =>
     headers: { 'X-Client-Id': clientId },
   });
 
-export function listRequests(statuses: SubmittedStatus[] = []) {
-  const query = statuses.map((s) => `status=${encodeURIComponent(s)}`).join('&');
+/** `q`: the search box (specs/012 R8); the server reads it as a number, a phone or a name. */
+export function listRequests(statuses: SubmittedStatus[] = [], q?: string) {
+  const parts = statuses.map((s) => `status=${encodeURIComponent(s)}`);
+  if (q !== undefined) parts.push(`q=${encodeURIComponent(q)}`);
+  const query = parts.join('&');
   return apiFetch<{ items: RequestListItem[] }>(`/api/requests${query ? `?${query}` : ''}`);
 }
 

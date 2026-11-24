@@ -117,7 +117,7 @@ test('a clean draft is approved with its number and username; the same phone get
   await expect(page.getByText('تمت الموافقة')).toBeVisible();
   await expect(page.getByText(/^#T3C-1\d{3,}$/)).toBeVisible();
   await expect(page.getByTestId('request-username')).toHaveText(`${TOWER}-${PHONE}`);
-  await expect(page.getByTestId('request-status')).toHaveText('مقبول');
+  await expect(page.getByTestId('request-status')).toHaveText('مقبول (بانتظار الربط)');
   await page.screenshot({ path: testInfo.outputPath('approved.png'), fullPage: true });
 
   // The draft became a request: «مقبولة» lists it, «مسودات» no longer does.

@@ -1,7 +1,7 @@
 /**
  * «بالانتظار» and «مقبولة» in «الطلبات» (specs/008 T027, FR-019): the marketer's submitted
- * requests, newest first, each opening its result page. «تم الربط» and «مرفوضة» fill in with
- * 013 and 010; search arrives with 018. A deleted request (specs/011 R11) keeps its row under its
+ * requests, newest first, each opening its result page. «مرفوضة» since 010, «تم الربط» since 012
+ * (filled by 013). With `q` it lists the search results across statuses (specs/012 US3). A deleted request (specs/011 R11) keeps its row under its
  * status with the grey tag «محذوف», the reason, the number, the tower and the date only.
  */
 import Card from '@mui/material/Card';
@@ -18,10 +18,10 @@ import { DELETED_TAG, listRequests, type SubmittedStatus } from '../../lib/reque
 import { STATUS_COLORS, STATUS_LABELS } from '../../lib/requestStatus';
 import { formatBaghdad } from '../../lib/time';
 
-export function SubmittedTab({ statuses }: { statuses: SubmittedStatus[] }) {
+export function SubmittedTab({ statuses, q }: { statuses: SubmittedStatus[]; q?: string }) {
   const query = useQuery({
-    queryKey: ['requests', 'list', ...statuses],
-    queryFn: () => listRequests(statuses),
+    queryKey: q === undefined ? ['requests', 'list', ...statuses] : ['requests', 'search', q],
+    queryFn: () => listRequests(statuses, q),
   });
   if (query.isPending)
     return (
@@ -35,7 +35,7 @@ export function SubmittedTab({ statuses }: { statuses: SubmittedStatus[] }) {
   if (items.length === 0)
     return (
       <Paper variant="outlined" sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>
-        لا توجد طلبات بعد
+        {q === undefined ? 'لا توجد طلبات بعد' : 'لا توجد نتائج'}
       </Paper>
     );
   return (

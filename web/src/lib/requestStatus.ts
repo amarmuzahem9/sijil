@@ -8,7 +8,8 @@ export type RequestStatus = 'draft' | 'pending_review' | 'approved' | 'rejected'
 export const STATUS_LABELS: Record<RequestStatus, string> = {
   draft: 'مسودة',
   pending_review: 'بانتظار المراجعة',
-  approved: 'مقبول',
+  // «مقبول (بانتظار الربط)» (§7.2, specs/012 FR-010).
+  approved: 'مقبول (بانتظار الربط)',
   rejected: 'مرفوض',
   linked: 'تم الربط',
 };

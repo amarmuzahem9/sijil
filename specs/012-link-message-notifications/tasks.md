@@ -237,25 +237,25 @@ typecheck clean, lint 0 errors. The unused `pages/marketer/placeholders.tsx` is 
 
 ### Tests for User Story 3 (write first, run red)
 
-- [ ] T041 [P] [US3] Fixture `api/tests/fixtures/request_search_cases.json` and unit test
+- [x] T041 [P] [US3] Fixture `api/tests/fixtures/request_search_cases.json` and unit test
   `api/tests/unit/test_request_search.py` for `classify(q)`: number forms («1004», «T3C-1004», «#t3c-١٠٠٤»),
   phone forms («0780 123 4567», «+964 780…», Arabic digits), names with diacritics/tatweel/extra spaces,
   `%`/`_` escaped, < 2 letters → none (research R8).
-- [ ] T042 [P] [US3] Integration test `api/tests/integration/test_request_search_api.py`: own matches across
+- [x] T042 [P] [US3] Integration test `api/tests/integration/test_request_search_api.py`: own matches across
   statuses; never another marketer's; deleted found by number only; `q` of 1 character → 422
   (contracts/api.md).
-- [ ] T043 [P] [US3] Vitest `web/src/__tests__/requestSearch.test.tsx`: typing ≥ 2 characters shows results
+- [x] T043 [P] [US3] Vitest `web/src/__tests__/requestSearch.test.tsx`: typing ≥ 2 characters shows results
   with status chips in place of the tab list; clearing returns to the tab; the «تم الربط» tab requests
   `status=linked`; the label «مقبول (بانتظار الربط)».
 
 ### Implementation for User Story 3
 
-- [ ] T044 [US3] Create `api/app/core/request_search.py` `classify(q)`; T041 green.
-- [ ] T045 [US3] Add `q` to `GET /api/requests` in `api/app/api/requests.py` and to `submit_service.list_own`
+- [x] T044 [US3] Create `api/app/core/request_search.py` `classify(q)`; T041 green.
+- [x] T045 [US3] Add `q` to `GET /api/requests` in `api/app/api/requests.py` and to `submit_service.list_own`
   in `api/app/services/submit_service.py`; T042 green.
-- [ ] T046 [P] [US3] Set `STATUS_LABELS.approved` to «مقبول (بانتظار الربط)» in
+- [x] T046 [P] [US3] Set `STATUS_LABELS.approved` to «مقبول (بانتظار الربط)» in
   `web/src/lib/requestStatus.ts` and fix any test that asserted «مقبول».
-- [ ] T047 [US3] Add `q` to `listRequests` in `web/src/lib/requests.ts`, create
+- [x] T047 [US3] Add `q` to `listRequests` in `web/src/lib/requests.ts`, create
   `web/src/lib/requestSearch.ts` (minimum length), add the search box and the linked tab (via
   `SubmittedTab` with `['linked']`) in `web/src/pages/marketer/Requests.tsx`; T043 green.
 
@@ -267,17 +267,24 @@ typecheck clean, lint 0 errors. The unused `pages/marketer/placeholders.tsx` is 
 
 **Independent Test**: spec.md US5.
 
-- [ ] T048 [P] [US5] In `api/tests/integration/test_notification_service.py`: `add(..., "linked")` and
+- [x] T048 [P] [US5] In `api/tests/integration/test_notification_service.py`: `add(..., "linked")` and
   `add(..., "unlinked", "<code>")` can repeat for one request and list correctly (data-model.md
   `notifications_once`); run red, then green (no code change expected beyond T011 — report if it was
   already green).
-- [ ] T049 [P] [US5] Vitest case in `web/src/__tests__/notifications.test.tsx`: «تم ربط المشترك» and «تم
+- [x] T049 [P] [US5] Vitest case in `web/src/__tests__/notifications.test.tsx`: «تم ربط المشترك» and «تم
   التراجع عن الربط» with its reason.
-- [ ] T050 [US5] Add a comment in `api/app/core/request_status.py` and `notification_service.py` that 013
+- [x] T050 [US5] Add a comment in `api/app/core/request_status.py` and `notification_service.py` that 013
   calls `check` and `add` for linking and its undo, and defines the undo reason codes.
-- [ ] T051 [US5] Run api and web suites green, lint, and commit batch 4.
+- [x] T051 [US5] Run api and web suites green, lint, and commit batch 4.
 
 **Checkpoint**: batch 4 ends. Commit.
+
+Batch 4 report: red first — T041 (no module `request_search`), T042 (10 failed; the status-filter
+case passed already, since `q` was ignored), T043 (no `lib/requestSearch`). Green: T041 24, T042 11,
+T043 12. T048 and T049 were written in batches 1 and 3 (inside T005 and T036) and ran red there;
+T050's notes are in the docstrings of `request_status.py` and `notification_service.py`. The e2e
+check in `submit.spec.ts` now expects «مقبول (بانتظار الربط)» (run in batch 5). Full api 1234
+passed, web 428 passed, typecheck clean, lint 0 errors.
 
 ---
 
