@@ -37,12 +37,14 @@ from app.services import (
 async def lifespan(_: FastAPI):
     # Card readings left running by a previous process become failed/timeout (specs/006 R5).
     if get_settings().app_env != "test":
-        from app.services import legacy_import_service
+        from app.services import legacy_import_service, sas_import_service
         from app.services.card_reading_service import sweep_at_startup
 
         sweep_at_startup()
         # Legacy previews left fetching by a previous process become failed (specs/014 R8).
         legacy_import_service.sweep_at_startup()
+        # SAS previews past their hour are removed (specs/015 R12).
+        sas_import_service.sweep_at_startup()
     yield
 
 

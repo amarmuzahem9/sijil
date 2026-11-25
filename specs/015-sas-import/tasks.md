@@ -126,7 +126,7 @@ code is written**. Report red and green for every test task.
 
 ### Tests for the preview (write first, run red)
 
-- [ ] T014 [P] [US1] Integration tests `api/tests/integration/test_sas_preview.py`:
+- [x] T014 [P] [US1] Integration tests `api/tests/integration/test_sas_preview.py`:
   - access: anyone without `reports` gets 403 on every `/admin/imports/sas` route, and another admin's preview is 404;
   - refusals: a file without `username` → 422 `import_columns_missing` naming it; too large → 413; too many rows and
     unreadable → 422;
@@ -136,16 +136,16 @@ code is written**. Report red and green for every test task.
   - a second upload replaces the first preview;
   - an expired preview → 404 and is swept;
   - `phone_in_sijil` lists only pending, approved and linked live requests (rejected and deleted never count).
-- [ ] T015 [P] [US1] Integration test `api/tests/integration/test_sas_password_never_kept.py` (preview part). Upload the
+- [x] T015 [P] [US1] Integration test `api/tests/integration/test_sas_password_never_kept.py` (preview part). Upload the
   csv and the xlsx, then search the response bodies, the `sas_import_previews` rows (as text) and the captured log
   output (caplog plus the access log) for every `SYNTH-PW-` marker. None may be found (SC-003).
 
 ### Implementation
 
-- [ ] T016 [US1] In `api/app/services/sas_import_service.py`, write `load_existing(db, rows)`. It reads the stored SAS
+- [x] T016 [US1] In `api/app/services/sas_import_service.py`, write `load_existing(db, rows)`. It reads the stored SAS
   rows by `username_key`, the active live Sijil requests whose phone is in either phone set (with label and
   upper-case username), and the legacy phones that count. The `IN` lists are chunked by 1 000.
-- [ ] T017 [US1] In the same module, write `create_preview(db, user, file_name, data)`:
+- [x] T017 [US1] In the same module, write `create_preview(db, user, file_name, data)`:
   - read with the SAS limits and map the headers (`import_columns_missing` names the missing ones);
   - clean the rows and resolve towers by the rule, then by saved mapping, else list the prefix;
   - compute the kind, flags and info, and the `missing_ids`;
@@ -153,14 +153,14 @@ code is written**. Report red and green for every test task.
   - save `sas_import_previews` (data-model.md).
   Also write `get_preview`, `cancel`, `sweep_expired`, and a `summary(preview)` that builds the `SasPreview`
   contract. Log the preview id and counts only (research R11).
-- [ ] T018 [US1] Write `api/app/schemas/sas_import.py`: `SasPreview`, `SasChoicesIn` and `SasImportSummary`, as in
+- [x] T018 [US1] Write `api/app/schemas/sas_import.py`: `SasPreview`, `SasChoicesIn` and `SasImportSummary`, as in
   contracts/api.md.
-- [ ] T019 [US1] Add a second router for `/admin/imports/sas` in `api/app/api/admin_imports.py` with POST, GET and
+- [x] T019 [US1] Add a second router for `/admin/imports/sas` in `api/app/api/admin_imports.py` with POST, GET and
   DELETE previews, guarded by `reports`. Read the upload capped at `SAS_MAX_FILE_BYTES`, register the router in
   `api/app/main.py`, and add the SAS sweep to the startup sweep.
-- [ ] T020 [US1] Make sure the upload route is excluded from body and URL logging, as the 014 import routes are, and
+- [x] T020 [US1] Make sure the upload route is excluded from body and URL logging, as the 014 import routes are, and
   that error messages never echo cell values. Then run T014 and T015 green.
-- [ ] T021 [US1] Batch 2 report. **Batch 2 commit.**
+- [x] T021 [US1] Batch 2 report. **Batch 2 commit.**
 
 ### Tests for choices and confirm (write first, run red)
 
