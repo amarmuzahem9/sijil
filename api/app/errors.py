@@ -102,6 +102,9 @@ MESSAGES: dict[str, str] = {
     "preview_changed": "تغيّرت البيانات منذ المعاينة، راجع الصفوف المعلّمة",
     "choice_not_allowed": "هذا الاختيار غير مسموح لهذا الصف",
     "tower_not_found": "البرج غير موجود",
+    # Backups (specs/016 contracts/api.md)
+    "backup_busy": "يوجد نسخ جارٍ الآن",
+    "backup_service_down": "خدمة النسخ متوقفة",
     "wrong_current_password": "كلمة السر الحالية غير صحيحة",
     "weak_password": "كلمة السر يجب أن تكون 8 أحرف على الأقل",
     "same_password": "كلمة السر الجديدة يجب أن تختلف عن الحالية",

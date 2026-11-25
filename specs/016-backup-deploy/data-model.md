@@ -9,6 +9,7 @@ admin page (R8). Neither holds personal data. Migration `0019_backups`.
 |---|---|---|
 | `key.age` | age identity protected by the owner's passphrase | yes (passphrase) |
 | `images/<32 hex>.jpg.age` | one stored card image, written once | yes |
+| `images/<32 hex>.jpg.age.meta` | its size, `sha256_plain`, `sha256_enc` (so a later snapshot needs no re-read) | no |
 | `snapshots/<id>/db.dump.age` | `pg_dump -Fc` of the whole database | yes |
 | `snapshots/<id>/manifest.json` | see below | no (no personal data) |
 | `snapshots/<id>/DONE` | written last; marks a complete snapshot | no |
@@ -16,7 +17,7 @@ admin page (R8). Neither holds personal data. Migration `0019_backups`.
 
 Snapshot id: `<YYYYMMDD-HHMMSS UTC>-<kind>`, kind ∈ `nightly | manual | pre_deploy | pre_restore`.
 
-**manifest.json**: `id`, `kind`, `started_at`, `finished_at` (UTC ISO), `app_commit`, `alembic_revision`,
+**manifest.json**: `format` (1), `id`, `kind`, `started_at`, `finished_at` (UTC ISO), `app_commit`, `alembic_revision`,
 `counts {requests, drafts, legacy_subscribers, sas_subscribers, users, audit_entries}`,
 `dump {size, sha256_enc}`, `images [{name, size, sha256_plain, sha256_enc}]`, `missing_referenced` (must be 0),
 `total_size` (dump + images new to this snapshot), `requested_by` (user id or null).
@@ -36,6 +37,7 @@ Snapshot id: `<YYYYMMDD-HHMMSS UTC>-<kind>`, kind ∈ `nightly | manual | pre_de
 | `total_size`, `image_count` | bigint null | |
 | `counts` | jsonb null | as in the manifest |
 | `removed_at` | timestamptz null | set when retention removed it (status `removed`) |
+| `created_at` | timestamptz | row creation, for ordering |
 
 Partial unique index: one row with `status IN ('requested','running')`. Failed runs keep a row (from a small
 `history/…-failed.json`), so the page shows failures.
@@ -52,7 +54,8 @@ Partial unique index: one row with `status IN ('requested','running')`. Failed r
 
 ### `backup_status` (single row, id = 1)
 `heartbeat_at`, `free_bytes`, `total_bytes`, `min_free_bytes`, `nightly_at` (text `HH:MM` Baghdad),
-`external_dir` (configured path, read-only display), `backup_dir_bytes`.
+`external_dir` (configured path, read-only display), `backup_dir_bytes`, `key_configured` (false until
+`BACKUP_AGE_RECIPIENT` is set; the service then backs nothing up and the page says so).
 
 ## State transitions — backup run
 

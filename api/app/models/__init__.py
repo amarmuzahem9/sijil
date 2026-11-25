@@ -1,4 +1,5 @@
 from app.models.audit import AuditLog
+from app.models.backup import BackupEvent, BackupRun, BackupStatus
 from app.models.base import Base
 from app.models.catalog import AppSetting, Area, Plan, RewardTier, Tower
 from app.models.draft import CardReading, Draft, DraftImage, ImageAccessLog
@@ -23,6 +24,9 @@ __all__ = [
     "AppSetting",
     "Area",
     "AuditLog",
+    "BackupEvent",
+    "BackupRun",
+    "BackupStatus",
     "Base",
     "CardReading",
     "Draft",

@@ -1,16 +1,24 @@
 """Application settings, read from environment variables (.env). See .env.example."""
 
+import re
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PLACEHOLDER_SECRET = "change-me"  # noqa: S105 - the placeholder value we refuse in staging/production
 
+# An age X25519 public key: "age1" + 58 bech32 characters (specs/016 research R2).
+_AGE_RECIPIENT = re.compile(r"age1[02-9ac-hj-np-z]{58}")
+_HH_MM = re.compile(r"([01]?[0-9]|2[0-3]):([0-5][0-9])")
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=None, extra="ignore", case_sensitive=False)
+    # hide_input_in_errors: a refused setting never echoes its value (secrets, specs/016 T003).
+    model_config = SettingsConfigDict(
+        env_file=None, extra="ignore", case_sensitive=False, hide_input_in_errors=True
+    )
 
     app_env: Literal["development", "test", "staging", "production"] = "production"
 
@@ -63,6 +71,21 @@ class Settings(BaseSettings):
     # is refused in staging/production.
     drive_mode: Literal["google", "fake"] = "google"
 
+    # Backups (specs/016 research R2, R5, R6; contracts/cli.md). Read by the `backup` service; the
+    # app containers never mount `backup_dir`. The recipient is the public key only: the server can
+    # encrypt but never decrypt. `backup_external_dir` is shown read-only on the backup page.
+    backup_dir: str = "/data/backups"
+    backup_age_recipient: str = ""
+    backup_nightly_at: str = "03:00"
+    backup_min_free_gb: int = Field(default=2, gt=0)
+    backup_external_dir: str = ""
+
+    @property
+    def backup_nightly_minutes(self) -> int:
+        """`backup_nightly_at` as minutes after Baghdad midnight."""
+        hours, minutes = self.backup_nightly_at.split(":")
+        return int(hours) * 60 + int(minutes)
+
     @property
     def map_center(self) -> tuple[float, float]:
         """`map_default_center` as (lat, lng); validated at startup by `_check_map_center`."""
@@ -93,6 +116,11 @@ class Settings(BaseSettings):
                 and self.otp_fake_code.isdigit()
             ):
                 raise ValueError("OTP_FAKE_CODE must be exactly 6 digits")
+        if self.backup_age_recipient and not _AGE_RECIPIENT.fullmatch(self.backup_age_recipient):
+            # Never the value: a secret key pasted by mistake must not reach a log.
+            raise ValueError("BACKUP_AGE_RECIPIENT must be an age public key (age1…)")
+        if not (self.backup_nightly_at.isascii() and _HH_MM.fullmatch(self.backup_nightly_at)):
+            raise ValueError('BACKUP_NIGHTLY_AT must be "HH:MM" (Baghdad time)')
         return self
 
     @property

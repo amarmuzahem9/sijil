@@ -47,4 +47,7 @@ select = ["E", "F", "I", "B", "UP", "S"]
 ignore = ["S101", "B008"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S105", "S106"]
+"tests/**" = ["S105", "S106", "S603", "S607"]
+# The backup tools (age, pg_dump, pg_restore) run as fixed argv lists without a shell
+# (specs/016 research R2); no argument comes from a user.
+"app/backup/**" = ["S603", "S607"]

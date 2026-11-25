@@ -45,15 +45,16 @@ code is written**. Report red and green for every test task.
 
 ## Phase 1: Setup
 
-- [ ] T001 Confirm the baseline: `docker compose up -d`, `docker compose exec api pytest` and `cd web; npm test`
+- [x] T001 Confirm the baseline: `docker compose up -d`, `docker compose exec api pytest` and `cd web; npm test`
   (PowerShell) green on the branch before any change. Note the counts in the batch report.
-- [ ] T002 Add `postgresql-client-16` (PGDG apt repository, signed key) and `age` to `api/Dockerfile` (research R1).
+- [x] T002 Add `postgresql-client-16` (PGDG apt repository, signed key) and `age` to `api/Dockerfile` (research R1).
   After rebuilding, `docker compose exec api pg_dump --version` prints 16.x and `age --version` works.
-- [ ] T003 [P] Add settings to `api/app/config.py`: `backup_dir` (default `/data/backups`), `backup_age_recipient`
-  (empty allowed only outside staging/production; must start with `age1` when set), `backup_nightly_at` (`HH:MM`,
+- [x] T003 [P] Add settings to `api/app/config.py`: `backup_dir` (default `/data/backups`), `backup_age_recipient`
+  (an age public key when set; empty is allowed by the settings, and enforced instead by `deploy.sh` and the
+  `backup` service, so the app still starts before `init-key`), `backup_nightly_at` (`HH:MM`,
   default `03:00`), `backup_min_free_gb` (default 2), `backup_external_dir` (display only). Add the
   variables to `.env.example` with comments (contracts/cli.md «.env additions»).
-- [ ] T004 [P] Add error codes with Arabic messages to `api/app/errors.py`: `backup_busy` «يوجد نسخ جارٍ الآن»,
+- [x] T004 [P] Add error codes with Arabic messages to `api/app/errors.py`: `backup_busy` «يوجد نسخ جارٍ الآن»,
   `backup_service_down` «خدمة النسخ متوقفة» (contracts/api.md).
 
 ---
@@ -64,7 +65,7 @@ code is written**. Report red and green for every test task.
 
 ### Tests (write first, run red)
 
-- [ ] T005 [P] Migration test `api/tests/integration/test_migration_0019.py`:
+- [x] T005 [P] Migration test `api/tests/integration/test_migration_0019.py`:
   - tables `backup_runs`, `backup_events`, `backup_status` exist with the columns of data-model.md;
   - data-model.md `backup_runs.status` and `backup_runs.kind` refuse values outside their lists;
   - data-model.md `backup_runs.error_code` refuses an unknown code and accepts NULL;
@@ -73,20 +74,20 @@ code is written**. Report red and green for every test task.
   - data-model.md `backup_events.type` and `backup_events.result` refuse values outside their lists;
   - `backup_status` holds at most one row (`id = 1`);
   - downgrade then upgrade works.
-- [ ] T006 [P] Unit tests `api/tests/unit/test_backup_crypto.py` (throwaway key):
+- [x] T006 [P] Unit tests `api/tests/unit/test_backup_crypto.py` (throwaway key):
   - encrypt to a recipient → the file is not the plaintext and starts with the age header;
   - decrypt with the identity gives the bytes back;
   - decrypt with a wrong identity fails cleanly;
   - `encrypt_file` streams (a 20 MB synthetic file, memory bounded);
   - no function accepts or writes a passphrase or an identity into `backup_dir` except `key.age` creation.
-- [ ] T007 [P] Unit tests `api/tests/unit/test_backup_store.py` (tmp dir):
+- [x] T007 [P] Unit tests `api/tests/unit/test_backup_store.py` (tmp dir):
   - snapshot id format `<YYYYMMDD-HHMMSS>-<kind>` (UTC) and parsing back;
   - `put_image` writes `images/<name>.age` once, and a second call does not rewrite (mtime unchanged);
   - only `<32 hex>.jpg` names are accepted;
   - a snapshot is complete only with `DONE`;
   - `history/` files are written atomically (temp + rename);
   - the layout of research R3.
-- [ ] T008 [P] Unit tests `api/tests/unit/test_backup_manifest.py`:
+- [x] T008 [P] Unit tests `api/tests/unit/test_backup_manifest.py`:
   - manifest build and read give the fields of data-model.md «manifest.json»;
   - validation refuses missing fields;
   - the serialised manifest has no key outside the documented list, and no value from a synthetic `.env`
@@ -94,24 +95,24 @@ code is written**. Report red and green for every test task.
 
 ### Implementation
 
-- [ ] T009 Write `api/migrations/versions/0019_backups.py` for the tables of data-model.md, in particular:
+- [x] T009 Write `api/migrations/versions/0019_backups.py` for the tables of data-model.md, in particular:
   - data-model.md `backup_runs.status`, `backup_runs.kind` and `backup_runs.error_code` (checks);
   - data-model.md `backup_runs.requested_by` (FK users) and `backup_runs.snapshot_id` (unique, nullable);
   - the partial unique index on `backup_runs.status`;
   - data-model.md `backup_events.type` and `backup_events.result` (checks);
   - data-model.md `backup_status.id` (`= 1`).
-- [ ] T010 Add the models `BackupRun`, `BackupEvent` and `BackupStatus` in `api/app/models/backup.py`, and export them
+- [x] T010 Add the models `BackupRun`, `BackupEvent` and `BackupStatus` in `api/app/models/backup.py`, and export them
   from `api/app/models/__init__.py`. Then run T005 green.
-- [ ] T011 [P] Implement `api/app/backup/crypto.py`: `age` through `subprocess`, streaming, no shell. Functions:
+- [x] T011 [P] Implement `api/app/backup/crypto.py`: `age` through `subprocess`, streaming, no shell. Functions:
   - `encrypt_file`, `encrypt_stream` (to the recipient);
   - `decrypt_file`, `decrypt_stream` (with an identity path in tmpfs);
   - `sha256_file`.
   Then run T006 green.
-- [ ] T012 [P] Implement `api/app/backup/store.py`: layout, ids, `put_image`, `DONE`, history writer/reader, listing
+- [x] T012 [P] Implement `api/app/backup/store.py`: layout, ids, `put_image`, `DONE`, history writer/reader, listing
   of snapshots (complete only). Then run T007 green.
-- [ ] T013 [P] Implement `api/app/backup/manifest.py`: dataclass, `to_json`/`from_json`, validation. Then run T008
+- [x] T013 [P] Implement `api/app/backup/manifest.py`: dataclass, `to_json`/`from_json`, validation. Then run T008
   green.
-- [ ] T014 Run the whole api suite green. Batch 1 report: red then green for T005–T008. **Batch 1 commit.**
+- [x] T014 Run the whole api suite green. Batch 1 report: red then green for T005–T008. **Batch 1 commit.**
 
 **Checkpoint**: tables, layout, encryption and manifest are ready.
 
