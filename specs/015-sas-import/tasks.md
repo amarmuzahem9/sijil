@@ -164,7 +164,7 @@ code is written**. Report red and green for every test task.
 
 ### Tests for choices and confirm (write first, run red)
 
-- [ ] T022 [P] [US1] Integration tests `api/tests/integration/test_sas_confirm.py`:
+- [x] T022 [P] [US1] Integration tests `api/tests/integration/test_sas_confirm.py`:
   - choices: `import` on `username_missing` → 422 `choice_not_allowed`; two `import` on one repeated username → 422;
     a prefix with an unknown tower → 422 `tower_not_found`; `tower_id: null` is accepted («بلا برج»);
   - refusals: confirming with a choice or a prefix waiting → 409 `preview_choices_missing` listing both;
@@ -178,9 +178,9 @@ code is written**. Report red and green for every test task.
   - an injected failure mid-way leaves no `sas_*` row (SC-007);
   - `preview_changed` when a Sijil request takes a row's phone between preview and confirm;
   - a SAS confirm waits on the lock while a legacy confirm holds it.
-- [ ] T023 [P] [US1] Extend `test_sas_password_never_kept.py` to the confirm. After the confirm, check every `sas_*`
+- [x] T023 [P] [US1] Extend `test_sas_password_never_kept.py` to the confirm. After the confirm, check every `sas_*`
   table and `audit_log` (as text), the summary and the logs: no marker anywhere.
-- [ ] T024 [P] [US1] Vitest `web/src/__tests__/sasImport.test.tsx` (mocked API):
+- [x] T024 [P] [US1] Vitest `web/src/__tests__/sasImport.test.tsx` (mocked API):
   - an upload shows the counts and the mapping table;
   - a tower select (with «بلا برج») sends `prefixes`;
   - «تخطي للكل» sets «تخطي» on the group's rows, and one row can then be set back to «استيراد»;
@@ -191,9 +191,9 @@ code is written**. Report red and green for every test task.
 
 ### Implementation
 
-- [ ] T025 [US1] In `sas_import_service.py`, write `set_choices` (rows and prefixes, partial updates, validation as
+- [x] T025 [US1] In `sas_import_service.py`, write `set_choices` (rows and prefixes, partial updates, validation as
   in R9).
-- [ ] T026 [US1] Write `confirm`:
+- [x] T026 [US1] Write `confirm`:
   - take the shared lock and re-validate (research R12);
   - insert the `new` rows and update the `update` rows in batches of 1 000, writing one data-model.md
     `sas_subscriber_changes` row (`before`, `after` of the changed fields) per update;
@@ -201,19 +201,19 @@ code is written**. Report red and green for every test task.
   - write `sas_imports`, then the audit line (research R10);
   - delete the preview and commit; on any failure, roll back.
   Leave the missing marking to T049. Add the confirm and choices routes. Then run T022 and T023 green.
-- [ ] T027 [US1] Write `web/src/lib/sasImport.ts`: API calls, flag and info labels in Arabic («بلا يوزر», «يوزر مكرر
+- [x] T027 [US1] Write `web/src/lib/sasImport.ts`: API calls, flag and info labels in Arabic («بلا يوزر», «يوزر مكرر
   في الملف», «الهاتف في طلب سِجلّ», «نفس اليوزر في سِجلّ», «بلا هاتف صالح», «يوزر بلا هاتف», «تاريخ غير مقروء»,
   «هاتف مكرر في الملف», «الهاتف عند مشترك قديم», «غير موجود في آخر ملف», «سيُحدَّث», «جديد», «بلا تغيير»), and error
   messages.
-- [ ] T028 [US1] Write `web/src/pages/admin/import/SasImport.tsx` (research R16). It shows the counts, the mapping
+- [x] T028 [US1] Write `web/src/pages/admin/import/SasImport.tsx` (research R16). It shows the counts, the mapping
   table (prefix, rows, tower select with «بلا برج», «من استيراد سابق»), the flagged groups (paged above 200 rows)
   with «استيراد» / «تخطي» and «تخطي للكل», «تأكيد الاستيراد» with a dialog, and the summary. It must work at phone
   width.
-- [ ] T029 [US1] In `web/src/pages/admin/import/ImportPage.tsx`, the SAS tab renders `SasImport` in place of
+- [x] T029 [US1] In `web/src/pages/admin/import/ImportPage.tsx`, the SAS tab renders `SasImport` in place of
   «قريباً». Add the audit label `'sas.imported': 'استيراد مشتركي SAS'` and its count labels to
   `web/src/lib/labels.ts`. Then run T024 green.
-- [ ] T030 [US1] Run the US1 tests and both whole suites green.
-- [ ] T031 [US1] Batch 3 report. **Batch 3 commit.**
+- [x] T030 [US1] Run the US1 tests and both whole suites green.
+- [x] T031 [US1] Batch 3 report. **Batch 3 commit.**
 
 **Checkpoint**: the SAS file can be imported. MVP.
 

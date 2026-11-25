@@ -87,3 +87,38 @@ def test_no_marker_in_a_refusal(client, db, reports_admin, caplog) -> None:
     assert _found(response.text) == []
     assert _found(caplog.text) == []
     assert _found(_stored_text(db)) == []
+
+
+def _confirm_sample(client, db, user) -> tuple[str, str]:
+    towers = sas.seed_towers(db)
+    headers = headers_for(client, user)
+    created = client.post(
+        URL,
+        files={"file": ("sas.csv", sas.fixture_bytes("sas_sample.csv"), "text/csv")},
+        headers=headers,
+    )
+    preview_id = created.json()["id"]
+    put = client.put(
+        f"{URL}/{preview_id}/choices",
+        json={
+            "choices": [
+                {"index": 8, "choice": "skip"},
+                {"index": 9, "choice": "import"},
+                {"index": 10, "choice": "skip"},
+            ],
+            "prefixes": [{"prefix": "ZZQ07", "tower_id": towers["ALM03"]}],
+        },
+        headers=headers,
+    )
+    confirmed = client.post(f"{URL}/{preview_id}/confirm", headers=headers)
+    assert confirmed.status_code == 201, confirmed.text
+    return put.text, confirmed.text
+
+
+def test_no_marker_after_choices_and_confirm(client, db, reports_admin, caplog) -> None:
+    caplog.set_level(logging.DEBUG)
+    put, confirmed = _confirm_sample(client, db, reports_admin)
+    assert _found(put) == []
+    assert _found(confirmed) == []
+    assert _found(_stored_text(db)) == []
+    assert _found(caplog.text) == []

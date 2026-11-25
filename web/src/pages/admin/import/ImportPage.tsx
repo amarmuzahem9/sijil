@@ -1,8 +1,7 @@
 /**
  * «الاستيراد» (docs/system.md §10 item 9, `reports`): the legacy Google Form subscribers (specs/014)
- * and, later, the SAS file (015).
+ * and the SAS subscribers (specs/015).
  */
-import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
@@ -10,6 +9,7 @@ import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 
 import LegacyImport from './LegacyImport';
+import SasImport from './SasImport';
 
 type ImportTab = 'legacy' | 'sas';
 
@@ -24,16 +24,7 @@ export default function ImportPage() {
         <Tab value="legacy" label="المشتركون القدامى" />
         <Tab value="sas" label="مشتركو SAS" />
       </Tabs>
-      {tab === 'legacy' ? (
-        <LegacyImport />
-      ) : (
-        <Paper
-          variant="outlined"
-          sx={{ p: 4, textAlign: 'center', color: 'text.secondary', borderStyle: 'dashed' }}
-        >
-          <Typography>قريباً</Typography>
-        </Paper>
-      )}
+      {tab === 'legacy' ? <LegacyImport /> : <SasImport />}
     </Stack>
   );
 }

@@ -6,6 +6,7 @@ kept anywhere (research R3). Previews live one hour and belong to their uploader
 ids and counts only: a SAS username holds the phone (research R11).
 """
 
+import copy
 import logging
 import uuid
 from collections import defaultdict
@@ -14,6 +15,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
@@ -24,14 +26,17 @@ from app.errors import AppError
 from app.models import (
     LegacySubscriber,
     Request,
+    SasImport,
     SasImportPreview,
     SasSubscriber,
+    SasSubscriberChange,
     SasTowerMapping,
     Tower,
     User,
 )
 from app.models.request import ACTIVE_STATUSES
-from app.services import legacy_file
+from app.services import audit_service, legacy_file
+from app.services.import_lock import IMPORT_CONFIRM_LOCK
 
 log = logging.getLogger(__name__)
 
@@ -261,7 +266,7 @@ def cancel(db: Session, user: User, preview_id: uuid.UUID) -> None:
 # --- the body ------------------------------------------------------------------------------------
 
 
-def summary(preview: SasImportPreview) -> dict[str, Any]:
+def summary(db: Session, preview: SasImportPreview) -> dict[str, Any]:
     """The `SasPreview` body of contracts/api.md: counts, mapping table, flagged rows only."""
     rows = preview.rows
     flagged = [row for row in rows if row["flags"]]
@@ -287,6 +292,12 @@ def summary(preview: SasImportPreview) -> dict[str, Any]:
         "counts": counts,
         "prefixes": preview.prefixes,
         "waiting_prefixes": sum(1 for entry in preview.prefixes if not entry["chosen"]),
+        # Every tower, stopped ones too: a prefix may map to any of them (research R4). Sent here
+        # because a `reports` admin may hold no `settings` permission.
+        "towers": [
+            {"id": t.id, "code": t.code, "name": t.name, "is_active": t.is_active}
+            for t in db.scalars(select(Tower).order_by(Tower.code))
+        ],
         "flagged": [
             {
                 "index": row["index"],
@@ -302,4 +313,268 @@ def summary(preview: SasImportPreview) -> dict[str, Any]:
             }
             for row in flagged
         ],
+    }
+
+
+# --- choices (research R9; FR-006) ---------------------------------------------------------------
+
+
+def _effective_mappings(db: Session, prefixes: list[dict[str, Any]]) -> dict[str, int | None]:
+    """Saved mappings, overridden by the ones chosen in this preview."""
+    return _mappings(db) | {e["prefix"]: e["tower_id"] for e in prefixes if e["chosen"]}
+
+
+def _apply_towers(
+    rows: list[dict[str, Any]], towers: dict[str, int], mappings: dict[str, int | None]
+) -> None:
+    for row in rows:
+        row["tower_id"], row["tower_source"] = sas_row.resolve_tower(
+            row["prefix"], towers, mappings
+        )
+
+
+def _check_repeated_usernames(rows: list[dict[str, Any]]) -> None:
+    """At most one row per username may be imported: the username is the key (research R9)."""
+    seen: set[str] = set()
+    for row in rows:
+        if row["choice"] != "import" or not row["username_key"]:
+            continue
+        if row["username_key"] in seen:
+            raise AppError("choice_not_allowed", 422)
+        seen.add(row["username_key"])
+
+
+def set_choices(
+    db: Session,
+    user: User,
+    preview_id: uuid.UUID,
+    choices: list[dict[str, Any]],
+    prefixes: list[dict[str, Any]],
+) -> SasImportPreview:
+    """«استيراد» / «تخطي» per flagged row, and a tower (or «بلا برج») per listed prefix. «تخطي
+    للكل» is the same call with skip for every row of a group; any row can be changed afterwards."""
+    preview = get_preview(db, user, preview_id)
+    rows = copy.deepcopy(preview.rows)
+    entries = copy.deepcopy(preview.prefixes)
+    towers = _towers(db)
+    by_prefix = {entry["prefix"]: entry for entry in entries}
+    known = set(towers.values())
+    for item in prefixes:
+        entry = by_prefix.get(item["prefix"])
+        if entry is None:
+            raise AppError("choice_not_allowed", 422)
+        if item["tower_id"] is not None and item["tower_id"] not in known:
+            raise AppError("tower_not_found", 422)
+        entry["tower_id"] = item["tower_id"]
+        entry["chosen"] = True
+    by_index = {row["index"]: row for row in rows}
+    for item in choices:
+        row = by_index.get(item["index"])
+        if row is None or not row["flags"] or item["choice"] not in row["allowed"]:
+            raise AppError("choice_not_allowed", 422)
+        row["choice"] = item["choice"]
+    _apply_towers(rows, towers, _effective_mappings(db, entries))
+    rows = flag(db, rows)
+    _check_repeated_usernames(rows)
+    preview.rows = rows
+    preview.prefixes = entries
+    db.commit()
+    return preview
+
+
+# --- confirmation (research R10, R12; FR-006–FR-010) ---------------------------------------------
+
+
+def _revalidate(
+    db: Session, preview: SasImportPreview
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Towers and flags against what is stored now. A row whose flags changed and that needs a
+    choice loses its choice, and a prefix no longer resolved joins the table; then the
+    confirmation is refused with the updated preview (research R12)."""
+    old = {row["index"]: row["flags"] for row in preview.rows}
+    rows = copy.deepcopy(preview.rows)
+    entries = copy.deepcopy(preview.prefixes)
+    _apply_towers(rows, _towers(db), _effective_mappings(db, entries))
+    listed = {entry["prefix"] for entry in entries}
+    changed = False
+    unmapped = {row["prefix"] for row in rows if row["tower_source"] == "unmapped"}
+    for prefix in sorted(unmapped - listed):
+        entries.append(
+            {
+                "prefix": prefix,
+                "rows": sum(1 for row in rows if row["prefix"] == prefix),
+                "tower_id": None,
+                "from_previous": False,
+                "chosen": False,
+            }
+        )
+        changed = True
+    rows = flag(db, rows)
+    for row in rows:
+        if row["flags"] != old[row["index"]] and row["allowed"]:
+            row["choice"] = None
+            changed = True
+    if changed:
+        preview.rows = rows
+        preview.prefixes = entries
+        db.commit()
+        raise AppError(
+            "preview_changed", 409, extra={"preview": jsonable_encoder(summary(db, preview))}
+        )
+    waiting = [r["index"] for r in rows if r["flags"] and r["allowed"] and not r["choice"]]
+    waiting_prefixes = [entry["prefix"] for entry in entries if not entry["chosen"]]
+    if waiting or waiting_prefixes:
+        raise AppError(
+            "preview_choices_missing",
+            409,
+            extra={"indexes": waiting, "prefixes": waiting_prefixes},
+        )
+    return rows, entries
+
+
+def _importing(row: dict[str, Any]) -> bool:
+    return not row["flags"] or row["choice"] == "import"
+
+
+def _dt(value: str | None) -> datetime | None:
+    return datetime.fromisoformat(value) if value else None
+
+
+def _columns(row: dict[str, Any]) -> dict[str, Any]:
+    """The `sas_subscribers` values of a preview row (data-model.md › sas_subscribers)."""
+    values = {name: row[name] for name in sas_row.COMPARED_FIELDS}
+    for name in ("expires_at", "sas_created_at", "last_online_at"):
+        values[name] = _dt(values[name])
+    return values | {
+        "username_key": row["username_key"],
+        "full_name": row["full_name"],
+        "tower_prefix": row["prefix"],
+    }
+
+
+def _stored_by_id(db: Session, ids: list[int]) -> dict[int, SasSubscriber]:
+    found: dict[int, SasSubscriber] = {}
+    for chunk in _chunks(ids):
+        for subscriber in db.scalars(select(SasSubscriber).where(SasSubscriber.id.in_(chunk))):
+            found[subscriber.id] = subscriber
+    return found
+
+
+def _save_mappings(
+    db: Session, user: User, record: SasImport, entries: list[dict[str, Any]]
+) -> int:
+    """Saves each chosen prefix that is new or whose tower changed; returns how many."""
+    saved = 0
+    for entry in entries:
+        if not entry["chosen"]:
+            continue
+        mapping = db.get(SasTowerMapping, entry["prefix"])
+        if mapping is not None and mapping.tower_id == entry["tower_id"]:
+            continue
+        if mapping is None:
+            mapping = SasTowerMapping(prefix=entry["prefix"])
+            db.add(mapping)
+        mapping.tower_id = entry["tower_id"]
+        mapping.set_by = user.id
+        mapping.set_at = utc_now()
+        mapping.import_id = record.id
+        saved += 1
+    return saved
+
+
+def confirm(db: Session, user: User, preview_id: uuid.UUID) -> dict[str, Any]:
+    """Add the new rows, update the changed ones (each with a change row), save the mappings and
+    one audit entry, in one transaction; on any failure nothing is saved and the preview stays
+    (SC-007). Returns the `SasImportSummary`."""
+    db.execute(select(func.pg_advisory_xact_lock(IMPORT_CONFIRM_LOCK)))
+    preview = get_preview(db, user, preview_id)
+    rows, entries = _revalidate(db, preview)
+
+    importing = [row for row in rows if _importing(row)]
+    skipped = [row for row in rows if row["flags"] and row["choice"] == "skip"]
+    record = SasImport(
+        created_by=user.id,
+        file_name=preview.file_name,
+        rows_total=len(rows),
+        added=0,
+        updated=0,
+        unchanged=0,
+        skipped=len(skipped),
+        missing_marked=0,
+        missing_cleared=0,
+        without_phone=0,
+        prefixes_mapped=0,
+    )
+    try:
+        db.add(record)
+        db.flush()
+        updates = [row["stored_id"] for row in importing if row["kind"] == "update"]
+        stored = _stored_by_id(db, updates)
+        now = utc_now()
+        for done, row in enumerate(importing, start=1):
+            if row["kind"] == "new":
+                db.add(
+                    SasSubscriber(
+                        **_columns(row), first_import_id=record.id, last_import_id=record.id
+                    )
+                )
+                record.added += 1
+            elif row["kind"] == "update":
+                subscriber = stored[row["stored_id"]]
+                before = stored_values(subscriber)
+                for name, value in _columns(row).items():
+                    setattr(subscriber, name, value)
+                subscriber.last_import_id = record.id
+                subscriber.updated_at = now
+                db.add(
+                    SasSubscriberChange(
+                        import_id=record.id,
+                        sas_subscriber_id=subscriber.id,
+                        before={name: before[name] for name in row["changed"]},
+                        after={name: row[name] for name in row["changed"]},
+                    )
+                )
+                record.updated += 1
+            else:
+                record.unchanged += 1
+            record.without_phone += not sas_row.phones(row)
+            if done % CHUNK == 0:
+                db.flush()
+        record.prefixes_mapped = _save_mappings(db, user, record, entries)
+        counts = {
+            "rows": record.rows_total,
+            "added": record.added,
+            "updated": record.updated,
+            "unchanged": record.unchanged,
+            "skipped": record.skipped,
+            "missing_marked": record.missing_marked,
+            "missing_cleared": record.missing_cleared,
+            "without_phone": record.without_phone,
+            "prefixes_mapped": record.prefixes_mapped,
+        }
+        # Counts only: no username, phone or name (a SAS username holds the phone; FR-009).
+        audit_service.record(
+            db,
+            actor_id=user.id,
+            action="sas.imported",
+            entity_type="sas_import",
+            entity_id=record.id,
+            after={"file_name": record.file_name, **counts},
+        )
+        db.delete(preview)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    log.info(
+        "sas import confirmed import=%s added=%d updated=%d skipped=%d",
+        record.id,
+        record.added,
+        record.updated,
+        record.skipped,
+    )
+    return {
+        "import_id": record.id,
+        **counts,
+        "skipped_rows": [{"index": row["index"], "sas_id": row["sas_id"]} for row in skipped],
     }

@@ -35,6 +35,13 @@ class SasPrefix(BaseModel):
     chosen: bool
 
 
+class SasTower(BaseModel):
+    id: int
+    code: str
+    name: str
+    is_active: bool
+
+
 class SasFlaggedRow(BaseModel):
     index: int
     sas_id: str | None
@@ -56,6 +63,7 @@ class SasPreview(BaseModel):
     counts: SasPreviewCounts
     prefixes: list[SasPrefix]
     waiting_prefixes: int
+    towers: list[SasTower]
     flagged: list[SasFlaggedRow]
 
 

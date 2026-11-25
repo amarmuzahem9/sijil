@@ -27,6 +27,7 @@ Only the caller's own preview. Another admin's preview, or an expired one, → `
   "prefixes": [ { "prefix": "ZZQ07", "rows": 35, "tower_id": null, "from_previous": false, "chosen": false },
                 { "prefix": "OLD-1", "rows": 4, "tower_id": 12, "from_previous": true, "chosen": true } ],
   "waiting_prefixes": 1,
+  "towers": [ { "id": 12, "code": "ALM03", "name": "العلم 3", "is_active": true } ],
   "flagged": [
     { "index": 418, "sas_id": "5521", "username": "…", "full_name": "…", "phone": "07…|null",
       "username_phone": "07…|null", "kind": "new|update",
@@ -38,6 +39,8 @@ Only the caller's own preview. Another admin's preview, or an expired one, → `
 ```
 Only flagged rows are listed. Ready rows are counted. `prefixes` lists the prefixes that need a mapping (no rule
 match), pre-filled from `sas_tower_mappings` when saved before. `chosen` is true when a tower or «بلا برج» is set.
+`towers` lists every tower, stopped ones too, for the mapping select. It is sent here because a `reports` admin may
+hold no `settings` permission (added in batch 3).
 
 ### `PUT /api/admin/imports/sas/previews/{id}/choices`
 

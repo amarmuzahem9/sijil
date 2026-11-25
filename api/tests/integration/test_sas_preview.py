@@ -264,3 +264,19 @@ def test_the_preview_expires_after_one_hour(client, db, seeded, reports_admin) -
     preview = _preview(client, reports_admin)
     row = db.get(SasImportPreview, preview["id"])
     assert timedelta(minutes=59) < row.expires_at - row.created_at <= timedelta(hours=1)
+
+
+def test_the_preview_lists_every_tower_for_the_mapping(client, db, seeded, reports_admin) -> None:
+    from app.models import Tower
+
+    stopped = db.get(Tower, seeded["towers"]["SMR01"])
+    stopped.is_active = False
+    db.flush()
+    towers = {t["code"]: t for t in _preview(client, reports_admin)["towers"]}
+    assert towers["SMR01"] == {
+        "id": stopped.id,
+        "code": "SMR01",
+        "name": stopped.name,
+        "is_active": False,
+    }
+    assert towers["ALM03"]["is_active"] is True

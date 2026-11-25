@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import AuthContext, require_permission
 from app.db import get_db
 from app.schemas.legacy_import import ChoicesIn, ImportSummary, Preview
-from app.schemas.sas_import import SasPreview
+from app.schemas.sas_import import SasChoicesIn, SasImportSummary, SasPreview
 from app.services import legacy_file, legacy_import_service, sas_import_service
 
 router = APIRouter(prefix="/admin/imports", tags=["admin-imports"])
@@ -92,7 +92,7 @@ def create_sas_preview(
 ) -> dict:
     data = _read_capped(file, legacy_file.SAS_MAX_FILE_BYTES)
     return sas_import_service.summary(
-        sas_import_service.create_preview(db, ctx.user, file.filename, data)
+        db, sas_import_service.create_preview(db, ctx.user, file.filename, data)
     )
 
 
@@ -102,7 +102,33 @@ def get_sas_preview(
     ctx: AuthContext = Depends(_reports),
     db: Session = Depends(get_db),
 ) -> dict:
-    return sas_import_service.summary(sas_import_service.get_preview(db, ctx.user, preview_id))
+    return sas_import_service.summary(db, sas_import_service.get_preview(db, ctx.user, preview_id))
+
+
+@sas.put("/previews/{preview_id}/choices", response_model=SasPreview)
+def set_sas_choices(
+    preview_id: uuid.UUID,
+    body: SasChoicesIn,
+    ctx: AuthContext = Depends(_reports),
+    db: Session = Depends(get_db),
+) -> dict:
+    preview = sas_import_service.set_choices(
+        db,
+        ctx.user,
+        preview_id,
+        [item.model_dump() for item in body.choices],
+        [item.model_dump() for item in body.prefixes],
+    )
+    return sas_import_service.summary(db, preview)
+
+
+@sas.post("/previews/{preview_id}/confirm", response_model=SasImportSummary, status_code=201)
+def confirm_sas(
+    preview_id: uuid.UUID,
+    ctx: AuthContext = Depends(_reports),
+    db: Session = Depends(get_db),
+) -> dict:
+    return sas_import_service.confirm(db, ctx.user, preview_id)
 
 
 @sas.delete("/previews/{preview_id}", status_code=204)

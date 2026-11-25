@@ -71,6 +71,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'request.unlinked': 'تراجع عن الربط',
   // specs/014
   'legacy.imported': 'استيراد المشتركين القدامى',
+  // specs/015
+  'sas.imported': 'استيراد مشتركي SAS',
 };
 
 export const AUDIT_FIELD_LABELS: Record<string, string> = {
@@ -120,6 +122,14 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   not_counted: 'لا يُحسب في الفحص',
   incomplete: 'غير مكتمل',
   corrected: 'أرقام عائلية مصحّحة',
+  // specs/015 (the SAS import counts; never a username, phone or name)
+  added: 'المضاف',
+  updated: 'المحدَّث',
+  unchanged: 'بلا تغيير',
+  missing_marked: 'وُسم «غير موجود في آخر ملف»',
+  missing_cleared: 'عاد في هذا الملف',
+  without_phone: 'بلا هاتف صالح',
+  prefixes_mapped: 'بادئات رُبطت',
 };
 
 export const STATE_LABELS = { active: 'فعّال', inactive: 'موقوف' } as const;
