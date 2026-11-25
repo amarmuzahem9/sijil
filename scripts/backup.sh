@@ -25,7 +25,7 @@ if [ -n "${SIJIL_COMPOSE:-}" ]; then
     DC=(docker compose $SIJIL_COMPOSE)
 else
     case "$(env_value APP_ENV)" in
-        staging|production) DC=(docker compose -f docker-compose.yml -f docker-compose.staging.yml) ;;
+        staging|production) DC=(docker compose -f docker-compose.yml -f docker-compose.server.yml) ;;
         *) DC=(docker compose) ;;
     esac
 fi

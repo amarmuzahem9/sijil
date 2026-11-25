@@ -1,4 +1,5 @@
-"""Operational commands: `python -m app.cli bootstrap` and `python -m app.cli seed-demo [--e2e]`.
+"""Operational commands: `python -m app.cli bootstrap`, `seed-demo [--e2e]`, `prune-uploads` and
+`go-live [--check]` (specs/016).
 
 Passwords are never printed.
 """
@@ -15,7 +16,7 @@ from app.core.security import hash_password
 from app.db import get_sessionmaker
 from app.models import User
 from app.services import audit_service
-from app.services.auth_service import MIN_PASSWORD_LENGTH
+from app.services.auth_service import MIN_PASSWORD_LENGTH, deactivate_user_sessions
 
 _BOOTSTRAP_LOCK_KEY = 7_001_001
 
@@ -107,6 +108,44 @@ def seed_demo(db: Session, settings: Settings, e2e: bool = False) -> int:
     return 0
 
 
+def _demo_phones() -> list[str]:
+    return [phone for _, phone, _ in DEMO_ACCOUNTS + E2E_ACCOUNTS]
+
+
+def go_live(db: Session) -> int:
+    """Before APP_ENV=production (specs/016 FR-022): deactivate the demo and e2e accounts made
+    by seed-demo, end their sessions, and audit the step. Accounts are never deleted
+    (constitution III). Run once by the operator; running it again changes nothing."""
+    demo = db.scalars(
+        select(User).where(User.phone.in_(_demo_phones()), User.is_active.is_(True))
+    ).all()
+    for user in demo:
+        user.is_active = False
+        deactivate_user_sessions(db, user.id, "deactivated")
+    audit_service.record(
+        db,
+        actor_id=None,
+        action="system.go_live",
+        entity_type="system",
+        entity_id="-",
+        after={"deactivated": len(demo)},
+    )
+    db.commit()
+    print(f"go-live: {len(demo)} demo account(s) deactivated")
+    return 0
+
+
+def go_live_check(db: Session) -> int:
+    """Exit 1 while a demo account is still active (deploy.sh refuses production then)."""
+    active = db.scalars(
+        select(User.phone).where(User.phone.in_(_demo_phones()), User.is_active.is_(True))
+    ).all()
+    if active:
+        print(f"go-live: {len(active)} demo account(s) still active; run go-live first")
+        return 1
+    return 0
+
+
 def prune_uploads(db: Session) -> int:
     """Remove image files no row refers to, older than 1 hour (specs/005 research.md R8)."""
     from app.services import draft_service, image_store
@@ -123,6 +162,8 @@ def main(argv: list[str] | None = None) -> int:
     seed = sub.add_parser("seed-demo", help="create synthetic test marketers (not in production)")
     seed.add_argument("--e2e", action="store_true", help="also create the e2e test accounts")
     sub.add_parser("prune-uploads", help="remove card-image files that no draft refers to")
+    live = sub.add_parser("go-live", help="deactivate the demo accounts before production")
+    live.add_argument("--check", action="store_true", help="exit 1 if a demo account is active")
     args = parser.parse_args(argv)
 
     settings = get_settings()
@@ -131,6 +172,8 @@ def main(argv: list[str] | None = None) -> int:
             return bootstrap(db, settings)
         if args.command == "prune-uploads":
             return prune_uploads(db)
+        if args.command == "go-live":
+            return go_live_check(db) if args.check else go_live(db)
         return seed_demo(db, settings, e2e=args.e2e)
 
 

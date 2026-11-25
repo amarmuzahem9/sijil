@@ -19,9 +19,9 @@
 - حاوية `sijil-web` تنضم لشبكة NPM، فيصل إليها NPM باسمها عبر HTTP فقط، بدون شهادة من Caddy. هي التي تعرض الواجهة وتوجّه `/api` إلى `sijil-api`.
 - حاوية `proxy` (Caddy مع HTTPS) للتطوير المحلي فقط، ولا تعمل على السيرفر.
 - الملفات المستخدمة:
-  - `docker-compose.yml` مع `docker-compose.staging.yml`
+  - `docker-compose.yml` مع `docker-compose.server.yml`
   - `web/Caddyfile`
-  - `scripts/deploy-staging.sh`
+  - `scripts/deploy.sh`
 
 > ⚠️ على السيرفر لا تشغّل `docker compose up` بدون `-f`، لأنه يحمّل وضع التطوير ويحاول فتح 80/443. استعمل السكربت دائماً.
 
@@ -106,7 +106,7 @@ openssl rand -hex 24   # نفّذه مرة لكل سر وانسخ الناتج
 
 ```bash
 cd /opt/sijil
-bash scripts/deploy-staging.sh
+bash scripts/deploy.sh
 ```
 
 **ما يفعله السكربت:**
@@ -121,7 +121,7 @@ bash scripts/deploy-staging.sh
 **تأكد أنه لا يوجد أي منفذ مفتوح لسِجلّ:**
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.staging.yml ps --format '{{.Name}}  {{.Ports}}'
+docker compose -f docker-compose.yml -f docker-compose.server.yml ps --format '{{.Name}}  {{.Ports}}'
 ```
 
 يجب ألا يظهر أي `0.0.0.0:`. وتأكد أن NPM يصل إلى سِجلّ:
@@ -201,7 +201,7 @@ docker exec <npm> curl -s http://sijil-web/api/health
    OCR_URL=http://ocr:8080
    OCR_SOURCE_URL=https://github.com/amarmuzahem9/sijil-ocr   # النسخة العامة من ocr/ (الخطوة 4)
    ```
-2. البناء والتشغيل مع باقي الخدمات (`scripts/deploy-staging.sh` يبني `ocr` أيضاً). أول بناء يأخذ عدة دقائق.
+2. البناء والتشغيل مع باقي الخدمات (`scripts/deploy.sh` يبني `ocr` أيضاً). أول بناء يأخذ عدة دقائق.
 3. الفحوص بعد التشغيل:
    ```bash
    sijil ps ocr                                   # Up (healthy)، بلا منافذ منشورة
@@ -219,8 +219,8 @@ docker exec <npm> curl -s http://sijil-web/api/health
 ## 6) التشغيل الثاني والتأكد
 
 ```bash
-bash scripts/deploy-staging.sh
-# المتوقع في النهاية: deploy-staging: OK — https://sijil.t3cftth.net is up.
+bash scripts/deploy.sh
+# المتوقع في النهاية: deploy: OK — staging (…) is up at https://sijil.t3cftth.net.
 ```
 
 **من جهازك:**
@@ -232,13 +232,13 @@ bash scripts/deploy-staging.sh
 ```bash
 cd /opt/sijil
 git checkout <الفرع المطلوب>   # عند الحاجة
-bash scripts/deploy-staging.sh      # يسحب آخر كود ويعيد البناء، والبيانات تبقى
+bash scripts/deploy.sh      # يسحب آخر كود ويعيد البناء، والبيانات تبقى
 ```
 
 ## 8) أوامر مفيدة
 
 ```bash
-alias sijil='docker compose -f docker-compose.yml -f docker-compose.staging.yml'
+alias sijil='docker compose -f docker-compose.yml -f docker-compose.server.yml'
 sijil ps                 # حالة الحاويات
 sijil logs -f api        # سجل الخادم (لا يحتوي كلمات سر أو tokens)
 sijil restart api        # إعادة تشغيل الخادم

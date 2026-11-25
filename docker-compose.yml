@@ -82,6 +82,9 @@ services:
     env_file: ${SIJIL_ENV_FILE:-.env}
     environment:
       APP_ENV: ${APP_ENV:-production}
+      # BACKUP_DIR in .env is the folder on the SERVER (bound below by the server overlay); inside
+      # the container the backups are always at /data/backups.
+      BACKUP_DIR: /data/backups
     entrypoint: ["python", "-m", "app.backup"]
     command: ["serve"]
     networks:

@@ -1,0 +1,6 @@
+# Used only by scripts/deploy-e2e.sh on a developer machine (feature 016, T062): the real card
+# reader (a 4 GB image that downloads its models) is neither built nor started; the api works
+# without it ("تعذّرت القراءة الآلية، أكمل يدوياً"). Never used on the server.
+services:
+  ocr:
+    profiles: ["ocr-real"]

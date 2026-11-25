@@ -1,9 +1,10 @@
-# Staging overlay for the company server, where Nginx Proxy Manager (NPM) runs in Docker, owns
-# 80/443 and issues the certificates. Used by scripts/deploy-staging.sh:
-#   docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d --build
+# Server overlay (staging and production) for the company server, where Nginx Proxy Manager (NPM)
+# runs in Docker, owns 80/443 and issues the certificates. Used by scripts/deploy.sh:
+#   docker compose -f docker-compose.yml -f docker-compose.server.yml up -d --build
+# (Renamed from docker-compose.staging.yml in feature 016: the same file serves production.)
 #
 # - Project name "sijil" (docker-compose.yml) and fixed container names: sijil-web, sijil-api,
-#   sijil-db.
+#   sijil-db, sijil-ocr, sijil-backup.
 # - No service publishes any host port (80/443 belong to NPM; 3000, 8080, 5433 are taken; the
 #   database is never exposed).
 # - sijil-web serves the app and routes /api to sijil-api over plain HTTP on :80, and joins NPM's
@@ -26,8 +27,18 @@ services:
     container_name: sijil-api
     ports: !reset []
     # The `uploads` volume (sijil_uploads, defined in docker-compose.yml) holds the card images
-    # (feature 005). It stays on the server, is never mounted by `web`, and must be part of every
-    # backup (deploy/staging.md › «نسخ صور البطاقات احتياطياً»). Never run `down -v` here.
+    # (feature 005). It stays on the server, is never mounted by `web`, and is in every backup
+    # (deploy/backup.md). Never run `down -v` here.
+
+  # Backups (feature 016): the encrypted backups live in BACKUP_DIR on the server's disk (owner
+  # uid 10001, mode 700), mounted only here. The weekly copy to the external drive is
+  # `scripts/backup.sh weekly` (deploy/backup.md).
+  backup:
+    container_name: sijil-backup
+    ports: !reset []
+    volumes:
+      - uploads:/data/uploads:ro
+      - ${BACKUP_DIR:?Set BACKUP_DIR in .env to the backup folder on the server}:/data/backups
 
   ocr:
     # Card reader (feature 006). Internal network only, no ports, no internet.
@@ -46,5 +57,5 @@ services:
 networks:
   npm:
     external: true
-    # The name of NPM's Docker network on the server (see deploy/staging.md, step 2).
+    # The name of NPM's Docker network on the server (see deploy/server.md, step 2).
     name: ${NPM_NETWORK:?Set NPM_NETWORK in .env to the Docker network of Nginx Proxy Manager}

@@ -7,7 +7,7 @@ init-key [--passphrase-stdin] create key.age once and print BACKUP_AGE_RECIPIENT
 latest | show SID | check SID | files SID      read a snapshot (no passphrase needed)
 restore-into SID --staging D --uploads D [--passphrase-stdin]   restore (database + images)
 verify-restored SID --uploads D               the drill's comparison (JSON on stdout)
-record drill|restore SID                      write a drill/restore record (+ audit)
+record drill|restore|deploy SID               write a drill/restore/deploy record
 status                                        last backup, copy, drill and the warnings
 external-copy --target D                      the weekly copy to the mounted drive
 
@@ -189,6 +189,24 @@ def _record(store: BackupStore, args: argparse.Namespace) -> int:
         )
         restore.record_drill(store, args.sid, result, at=utc_now(), source=args.source_label)
         return 0
+    if args.type == "deploy":
+        # "-" = none: a first install has no pre-deploy snapshot and no previous commit.
+        pre = None if args.sid == "-" else args.sid
+        store.write_history(
+            "deploy",
+            {
+                "result": args.result,
+                "snapshot_id": pre,
+                "details": {
+                    "mode": args.mode,
+                    "old_commit": None if args.old_commit in (None, "-") else args.old_commit,
+                    "new_commit": args.new_commit,
+                    "pre_deploy": pre,
+                },
+            },
+            at=utc_now(),
+        )
+        return 0
     if args.type == "restore":
         from app.db import get_sessionmaker
         from app.services import audit_service
@@ -288,7 +306,7 @@ def main(argv: list[str] | None = None) -> int:
         p = sub.add_parser(name)
         p.add_argument("--source", help="backup folder (default BACKUP_DIR)")
         if name == "record":
-            p.add_argument("type", choices=["drill", "restore"])
+            p.add_argument("type", choices=["drill", "restore", "deploy"])
         if name != "latest":
             p.add_argument("sid")
         if name in ("restore-into", "verify-restored"):
@@ -299,6 +317,10 @@ def main(argv: list[str] | None = None) -> int:
         if name == "record":
             p.add_argument("--source-label", choices=["server", "external"], default="server")
             p.add_argument("--pre-restore", default=None)
+            p.add_argument("--mode", choices=["staging", "production"])
+            p.add_argument("--old-commit")
+            p.add_argument("--new-commit")
+            p.add_argument("--result", choices=["succeeded", "failed"])
     args = parser.parse_args(argv)
     if args.command == "init-key":
         return _init_key(args.passphrase_stdin)

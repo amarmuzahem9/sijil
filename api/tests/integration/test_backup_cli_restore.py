@@ -175,3 +175,31 @@ def test_record_restore_writes_history_and_audit(setup) -> None:
     with env.sessions() as s:
         assert s.scalar(select(AuditLog).where(AuditLog.action == "backup.restore")) is not None
         assert s.scalar(select(BackupEvent)) is None  # the mirror is the service's job
+
+
+def test_record_deploy(setup) -> None:
+    env, manifest = setup
+    args = ["record", "deploy", manifest.id, "--mode", "production", "--old-commit", "aaa1111"]
+    args += ["--new-commit", "bbb2222", "--result", "failed"]
+    assert cli.main(args) == 0
+    ((name, data),) = [h for h in env.store.read_history() if h[0].endswith("-deploy.json")]
+    assert data == {
+        "result": "failed",
+        "snapshot_id": manifest.id,
+        "details": {
+            "mode": "production",
+            "old_commit": "aaa1111",
+            "new_commit": "bbb2222",
+            "pre_deploy": manifest.id,
+        },
+    }
+
+
+def test_record_deploy_on_a_first_install_has_no_snapshot(setup) -> None:
+    env, _ = setup
+    args = ["record", "deploy", "-", "--mode", "staging", "--old-commit", "-"]
+    args += ["--new-commit", "ccc3333", "--result", "succeeded"]
+    assert cli.main(args) == 0
+    ((_, data),) = [h for h in env.store.read_history() if h[0].endswith("-deploy.json")]
+    assert data["snapshot_id"] is None and data["details"]["pre_deploy"] is None
+    assert data["details"]["old_commit"] is None

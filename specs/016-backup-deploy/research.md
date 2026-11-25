@@ -186,6 +186,11 @@ plus the `backup` bind mount); docs and the `sijil` alias change. Steps:
    pre-deploy snapshot and the rollback steps (`git checkout <old>`, `deploy.sh`, and `restore.sh <snapshot>` only if
    the new version changed the data).
 
+`BACKUP_DIR` in `.env` is the host folder the overlay binds; the `backup` service pins `BACKUP_DIR=/data/backups`
+inside the container (compose `environment` overrides `env_file`). The local check is `scripts/deploy-e2e.sh`
+(throwaway project, a stand-in NPM network, no git pull, no public URL, the card reader left out by
+`docker-compose.deploy-e2e.yml`).
+
 `python -m app.cli go-live`: deactivates the demo accounts (never deletes), audited `system.go_live`; run once by the
 operator before switching `.env` to `APP_ENV=production`.
 

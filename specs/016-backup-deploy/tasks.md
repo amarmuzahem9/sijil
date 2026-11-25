@@ -361,12 +361,12 @@ test env file and `NPM_NETWORK` pointing at a local network created for the test
 
 ### Tests (write first, run red)
 
-- [ ] T061 [P] [US5] Unit test `api/tests/unit/test_cli_go_live.py`:
+- [x] T061 [P] [US5] Unit test `api/tests/unit/test_cli_go_live.py`:
   - `go-live` deactivates the demo accounts created by `seed-demo` (never deletes);
   - writes audit `system.go_live` with `{deactivated: N}`;
   - is idempotent;
   - leaves other accounts untouched.
-- [ ] T062 [P] [US5] Write `scripts/deploy-e2e.sh` (local only, throwaway project and env files). Pre-flight
+- [x] T062 [P] [US5] Write `scripts/deploy-e2e.sh` (local only, throwaway project and env files). Pre-flight
   refusals, with nothing changed:
   - `change-me` left in `.env`;
   - production with `OTP_MODE=fake`, `OCR_MODE=fake`, `DRIVE_MODE=fake` or `OTP_FAKE_CODE` set;
@@ -382,18 +382,21 @@ test env file and `NPM_NETWORK` pointing at a local network created for the test
 
 ### Implementation
 
-- [ ] T063 [US5] Add `go-live` to `api/app/cli.py`. Then run T061 green.
-- [ ] T064 [US5] `git mv docker-compose.staging.yml docker-compose.server.yml`. Then:
+- [x] T063 [US5] Add `go-live` to `api/app/cli.py`. Then run T061 green.
+- [x] T064 [US5] `git mv docker-compose.staging.yml docker-compose.server.yml`. Then:
   - add the `backup` bind `${BACKUP_DIR}:/data/backups` and `container_name: sijil-backup`;
   - update every reference (`scripts/`, `deploy/`, `README.md`, comments in compose files).
-- [ ] T065 [US5] Write `scripts/deploy.sh` (research R11, contracts/cli.md exit codes). Reduce
+- [x] T065 [US5] Write `scripts/deploy.sh` (research R11, contracts/cli.md exit codes). Reduce
   `scripts/deploy-staging.sh` to a wrapper that calls it. Record the deploy with `python -m app.backup record deploy …`.
-- [ ] T066 [US5] Add the `record` subcommand (deploy events) to `api/app/backup/__main__.py`, following data-model.md
+- [x] T066 [US5] Add the `record` subcommand (deploy events) to `api/app/backup/__main__.py`, following data-model.md
   `backup_events.details`.
-- [ ] T067 [US5] Run T062 `scripts/deploy-e2e.sh` green on the developer machine.
-- [ ] T068 [US5] Check that `docker compose -f docker-compose.yml -f docker-compose.server.yml config` publishes no
+- [x] T067 [US5] Run T062 `scripts/deploy-e2e.sh` green on the developer machine.
+- [x] T068 [US5] Check that `docker compose -f docker-compose.yml -f docker-compose.server.yml config` publishes no
   port and that `backup` has no Docker socket mount.
-- [ ] T069 [US5] Run the whole api suite green. Batch 6 report. **Batch 6 commit.**
+- [x] T069 [US5] Run the whole api suite green. Batch 6 report. **Batch 6 commit.** Finding fixed: `BACKUP_DIR` in
+  `.env` is the server folder (bound by the overlay); the `backup` service now sets `BACKUP_DIR=/data/backups` itself,
+  otherwise it would have written its backups inside the container. `deploy-e2e.sh` (25 checks) proves the
+  pre-deploy snapshot lands in the bound folder.
 
 ---
 

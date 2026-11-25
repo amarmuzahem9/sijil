@@ -73,7 +73,12 @@ class BackupStore:
         point belongs to root: only the folders created here are ours."""
         self.root.mkdir(parents=True, exist_ok=True)
         if chmod_root:
-            os.chmod(self.root, 0o700)
+            try:
+                os.chmod(self.root, 0o700)
+            except PermissionError:
+                # A bound folder we do not own (Docker Desktop on a developer machine). On the
+                # server, deploy.sh requires BACKUP_DIR to be uid 10001 with mode 700.
+                pass
         for path in (self.images, self.snapshots, self.history):
             path.mkdir(exist_ok=True)
             os.chmod(path, 0o700)
