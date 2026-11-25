@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-25
 
-**Status**: Clarified
+**Status**: Implemented
 
 **Input**: User description: "الفيزة 016: النشر والنسخ الاحتياطي. ارجع لـ docs/system.md (جدول الفيزات §16 والأقسام
 المتعلقة) ولـ docs/features.md، ولسكربتات النشر الموجودة (scripts/deploy-staging.sh وملفات docker-compose). انتبه إن

@@ -90,6 +90,8 @@ docker compose exec api pytest              # اختبارات الخادم
 docker compose exec web npm test            # اختبارات الواجهة
 scripts/e2e.sh                              # Playwright، وعلى ويندوز: scripts\e2e.ps1
 scripts/test-all.sh                         # كل الفحوصات، وعلى ويندوز: scripts\test-all.ps1
+bash scripts/backup-e2e.sh                  # النسخ والاسترجاع والتجربة والهارد (جهازك فقط)
+bash scripts/deploy-e2e.sh                  # فحوص سكربت النشر (جهازك فقط)
 ```
 
 - اختبارات Playwright تشغّل نسخة منفصلة من التطبيق بقاعدة بيانات فارغة، ثم تحذفها بعد الانتهاء، فلا تتأثر بياناتك المحلية.
@@ -99,7 +101,7 @@ scripts/test-all.sh                         # كل الفحوصات، وعلى �
 
 تجربة الهاتف الحقيقي وتثبيت التطبيق على الشاشة الرئيسية تتم على السيرفر التجريبي `https://sijil.t3cftth.net`، لأن تثبيت التطبيق يحتاج شهادة HTTPS حقيقية. لا تتم عبر الشبكة المحلية.
 
-طريقة النشر التجريبي موثّقة في [deploy/staging.md](deploy/staging.md). على السيرفر يمسك Nginx Proxy Manager المنفذين 80 و443 ويصدر الشهادة، ويوجّه الطلبات إلى حاوية `sijil-web` عبر شبكة Docker، ولا يفتح سِجلّ أي منفذ.
+طريقة النشر (التجريبي والفعلي) موثّقة في [deploy/server.md](deploy/server.md)، والنسخ الاحتياطي والاسترجاع في [deploy/backup.md](deploy/backup.md). على السيرفر يمسك Nginx Proxy Manager المنفذين 80 و443 ويصدر الشهادة، ويوجّه الطلبات إلى حاوية `sijil-web` عبر شبكة Docker، ولا يفتح سِجلّ أي منفذ.
 
 على الكمبيوتر يمكن محاكاة الهاتف من أدوات المطوّر: اضغط F12 ثم Ctrl+Shift+M واختر جهازاً.
 

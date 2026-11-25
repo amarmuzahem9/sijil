@@ -21,4 +21,11 @@ docker compose exec -T web npm test
 step "Playwright e2e (isolated stack)"
 scripts/e2e.sh
 
+# Feature 016, local machine only (both refuse to run on the server).
+step "backup → restore → drill → weekly copy (isolated stack)"
+bash scripts/backup-e2e.sh
+
+step "deploy script checks (isolated stack)"
+bash scripts/deploy-e2e.sh
+
 printf '\nAll checks passed.\n'

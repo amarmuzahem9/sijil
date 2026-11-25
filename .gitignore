@@ -32,3 +32,11 @@ Thumbs.db
 .idea/
 test-cards/
 *.tsbuildinfo
+
+# Backups (feature 016): encrypted backups, keys and decrypted files never belong in git
+*.age
+*.age.meta
+*.dump
+identity.txt
+sijil-backups/
+backups/

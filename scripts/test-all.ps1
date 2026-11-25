@@ -22,4 +22,11 @@ Write-Host "`n=== Playwright e2e (isolated stack) ==="
 & (Join-Path $PSScriptRoot 'e2e.ps1')
 if ($LASTEXITCODE -ne 0) { Write-Host 'FAILED: e2e'; exit 1 }
 
+# Feature 016, local machine only (both refuse to run on the server). Git Bash runs them.
+foreach ($check in @('backup-e2e.sh', 'deploy-e2e.sh')) {
+    Write-Host "`n=== $check (isolated stack) ==="
+    & bash (Join-Path $PSScriptRoot $check)
+    if ($LASTEXITCODE -ne 0) { Write-Host "FAILED: $check"; exit 1 }
+}
+
 Write-Host "`nAll checks passed."

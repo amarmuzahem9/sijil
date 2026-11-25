@@ -402,29 +402,32 @@ test env file and `NPM_NETWORK` pointing at a local network created for the test
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T070 [P] Write `deploy/backup.md` (Arabic), as FR-023 requires:
+- [x] T070 [P] Write `deploy/backup.md` (Arabic), as FR-023 requires:
   - init-key, and where to keep the passphrase;
   - nightly backups, the manual backup, weekly with the drive, the drill;
   - restore from the server and from the drive, and restore on a new server (`.env` by hand);
   - opening a backup by hand with `age`;
   - every warning and what to do;
   - what the backups do not hold (`.env`, NPM).
-- [ ] T071 [P] Rename `deploy/staging.md` to `deploy/server.md` and update it:
+- [x] T071 [P] Rename `deploy/staging.md` to `deploy/server.md` and update it:
   - the compose file name and the alias;
   - the `BACKUP_*` variables, and the one-time `BACKUP_DIR` setup (owner 10001, mode 700);
   - go-live step 9 (`go-live`, then `APP_ENV=production`);
   - remove the old manual backup commands and the «الفيزة 015» note.
-- [ ] T072 [P] Update `README.md` and `scripts/test-all.sh` (add `backup-e2e.sh` and `deploy-e2e.sh`, local only).
-- [ ] T073 Security pass:
+- [x] T072 [P] Update `README.md` and `scripts/test-all.sh` (add `backup-e2e.sh` and `deploy-e2e.sh`, local only).
+- [x] T073 Security pass:
   - `git grep` for any key, passphrase or `age-secret-key` → none;
   - `.gitignore` covers local backup folders and dev keys;
   - log lines of every backup command carry no card field.
-- [ ] T074 Run `scripts/test-all.sh` green, and `docker compose up` locally.
-- [ ] T075 Write `specs/016-backup-deploy/manual-test-ar.md` (Arabic manual test steps from quickstart.md, local
+- [x] T074 Run `scripts/test-all.sh` green, and `docker compose up` locally.
+- [x] T075 Write `specs/016-backup-deploy/manual-test-ar.md` (Arabic manual test steps from quickstart.md, local
   machine only), with a section «بعد الدمج على السيرفر»: 7 nights of backups (SC-001) and the restore time (SC-003).
-- [ ] T076 Re-read `docs/system.md` §15 and §10 item 10 against the result. Update `docs/features.md` if an idea was
+- [x] T076 Re-read `docs/system.md` §15 and §10 item 10 against the result (→ version 1.22: nightly retry, the two
+  extra warnings, the production refusal with active demo accounts and go-live). Update `docs/features.md` if an idea was
   postponed.
-- [ ] T077 Mark the tasks done and set the spec status to Implemented. **Batch 7 commit.**
+- [x] T077 Mark the tasks done and set the spec status to Implemented. **Batch 7 commit.** Also: the pixel-7 flake of
+  `subscriber-form-acceptance` in a full Playwright run came from `backup.spec.ts` (batch 4) creating an admin with
+  07700000161, the phone of that spec's pixel-7 marketer; it now uses 07700000981.
 
 ---
 

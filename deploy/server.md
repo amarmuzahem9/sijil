@@ -1,6 +1,8 @@
-# النشر التجريبي (staging) على سيرفر الشركة — خلف Nginx Proxy Manager
+# نشر سِجلّ على سيرفر الشركة (staging ثم production) — خلف Nginx Proxy Manager
 
 هذا الدليل لتشغيل سِجلّ على `https://sijil.t3cftth.net` في سيرفر عليه **Nginx Proxy Manager (NPM)** داخل Docker.
+نفس الخطوات للتجريبي (`APP_ENV=staging`) وللفعلي (`APP_ENV=production`)، والفرق في الخطوة 9.
+النسخ الاحتياطي والاسترجاع والهارد الخارجي في دليل منفصل: [backup.md](backup.md).
 
 ## كيف يعمل
 
@@ -11,11 +13,12 @@
                        sijil-web (الواجهة، HTTP على 80 داخلياً فقط)
                          └── /api/*  ──▶ sijil-api (FastAPI)
                                            sijil-db (PostgreSQL) — داخلي فقط
+                                           sijil-backup (النسخ الاحتياطي) — داخلي فقط
 ```
 
 - **NPM وحده** يمسك المنفذين 80 و443 ويصدر الشهادة.
 - **سِجلّ لا يفتح أي منفذ على السيرفر.** لا 80 ولا 443، ولا المنافذ المستخدمة 3000 و8080 و5433، ولا منفذ قاعدة البيانات.
-- مشروع compose اسمه `sijil`، والحاويات باسم `sijil-web` و`sijil-api` و`sijil-db`.
+- مشروع compose اسمه `sijil`، والحاويات باسم `sijil-web` و`sijil-api` و`sijil-db` و`sijil-ocr` و`sijil-backup`.
 - حاوية `sijil-web` تنضم لشبكة NPM، فيصل إليها NPM باسمها عبر HTTP فقط، بدون شهادة من Caddy. هي التي تعرض الواجهة وتوجّه `/api` إلى `sijil-api`.
 - حاوية `proxy` (Caddy مع HTTPS) للتطوير المحلي فقط، ولا تعمل على السيرفر.
 - الملفات المستخدمة:
@@ -73,7 +76,7 @@ networks:
 sudo mkdir -p /opt/sijil && sudo chown "$USER" /opt/sijil
 git clone <رابط مستودع git> /opt/sijil
 cd /opt/sijil
-git checkout 001-project-skeleton-auth
+git checkout main
 cp .env.example .env
 chmod 600 .env
 ```
@@ -97,10 +100,17 @@ openssl rand -hex 24   # نفّذه مرة لكل سر وانسخ الناتج
 | `SUPERADMIN_PHONE` / `SUPERADMIN_NAME` | رقم واسم الأدمن الرئيسي الحقيقي |
 | `SUPERADMIN_PASSWORD` | كلمة سر مؤقتة، تُطلب تغييرها عند أول دخول |
 | `DEMO_MARKETER_PASSWORD` | كلمة سر المسوّق التجريبي `07700000001` |
+| `BACKUP_DIR` | مجلد النسخ على السيرفر، مثلاً `/var/backups/sijil` ([backup.md](backup.md)، الخطوة 1) |
+| `BACKUP_AGE_RECIPIENT` | المفتاح العام الذي يطبعه `scripts/backup.sh init-key` ([backup.md](backup.md)، الخطوة 2) |
+| `BACKUP_EXTERNAL_DIR` | مسار تركيب الهارد الخارجي، مثلاً `/media/sijil-external` |
+| `BACKUP_NIGHTLY_AT` | `03:00` (بتوقيت بغداد) |
 
 ملاحظات:
 - `SITE_ADDRESS` و`HTTP_PORT` و`HTTPS_PORT` لا تُستخدم في staging.
-- ملف `.env` يبقى على السيرفر فقط، ولا يُرفع إلى git أبداً.
+- ملف `.env` يبقى على السيرفر فقط، ولا يُرفع إلى git أبداً، ولا يدخل أي نسخة احتياطية. احفظ نسخة
+  من قيمه (أو طريقة توليدها) خارج السيرفر.
+- **قبل التشغيل الأول** جهّز مجلد النسخ ومفتاحها ([backup.md](backup.md)، الخطوتان 1 و2)؛ السكربت يرفض
+  النشر بدونهما.
 
 ## 4) التشغيل الأول
 
@@ -248,35 +258,38 @@ sijil exec api python -m app.cli prune-uploads   # حذف ملفات صور يت
 
 **لا تستعمل `down -v` على السيرفر**، لأنه يحذف قاعدة البيانات وصور البطاقات.
 
-### نسخ صور البطاقات احتياطياً (الفيزة 005)
+### النسخ الاحتياطي
 
-صور البطاقات محفوظة في volume باسم `sijil_uploads`، داخل حاوية `api` فقط، ولا تُعرض برابط عام. **يجب أن تدخل في كل نسخة احتياطية** مع قاعدة البيانات. النسخ الليلي التلقائي يأتي في الفيزة 015، وحتى ذلك الحين هذه الأوامر اليدوية:
+قاعدة البيانات وكل صور البطاقات (ومنها صور القدامى) تُنسخ مشفّرة كل ليلة تلقائياً، ونسخة أسبوعية إلى الهارد
+الخارجي، مع تجربة استرجاع. كل شيء في [backup.md](backup.md). صفحة «النسخ الاحتياطي» في التطبيق تعرض حالتها.
 
-```bash
-mkdir -p ~/sijil-backups
-# نسخة من الصور (ملف tar مضغوط، بتاريخ اليوم)
-docker run --rm -v sijil_uploads:/data:ro -v ~/sijil-backups:/backup alpine   tar czf /backup/uploads-$(date +%F).tar.gz -C /data .
-# نسخة من قاعدة البيانات في نفس الوقت
-sijil exec -T db pg_dump -U sijil -Fc sijil > ~/sijil-backups/db-$(date +%F).dump
-```
+## 9) الانتقال من التجريبي إلى الفعلي (production)
 
-الاستعادة (بعد إيقاف `api`):
+مرة واحدة، قبل التجربة الميدانية ببيانات حقيقية:
 
-```bash
-sijil stop api
-docker run --rm -v sijil_uploads:/data -v ~/sijil-backups:/backup alpine   sh -c 'rm -rf /data/* && tar xzf /backup/uploads-YYYY-MM-DD.tar.gz -C /data && chown -R 10001:10001 /data'
-sijil start api
-```
-
-احفظ ملفات `~/sijil-backups` خارج السيرفر أيضاً (الهارد الخارجي)، لأنها تحتوي صور بطاقات حقيقية. لا ترسلها لأي طرف خارجي.
-
-## 9) قبل الإطلاق الفعلي (الفيزة 014)
-
-1. أوقف الحسابات التجريبية. لا تحذفها، فالحذف ممنوع حسب الدستور:
+1. تأكد أن آخر نسخة ليلية ناجحة (`scripts/backup.sh status`)، وأن الهارد الخارجي جاهز.
+2. أوقف الحسابات التجريبية. لا تُحذف (الدستور)، وتنتهي جلساتها، ويُسجَّل ذلك في سجل العمليات:
    ```bash
-   sijil exec db psql -U sijil -c "UPDATE users SET is_active=false WHERE phone LIKE '077000000%';"
+   sijil exec api python -m app.cli go-live
+   sijil exec api python -m app.cli go-live --check   # لا يطبع شيئاً إذا لم يبقَ حساب تجريبي فعّال
    ```
-2. غيّر في `.env` إلى `APP_ENV=production` (بعدها يرفض `seed-demo` العمل)، ثم شغّل السكربت. السكربت الحالي خاص بـ staging، وسيُحدَّث في الفيزة 014 مع النسخ الاحتياطي.
+3. في `.env`: `APP_ENV=production`، وتأكد أن `OCR_MODE` و`OTP_MODE` و`DRIVE_MODE` ليست `fake`، وأن
+   `OTP_FAKE_CODE` فارغ، وأن `OTPIQ_API_KEY` مفتاح `sk_live_...`.
+4. `bash scripts/deploy.sh`. في الفعلي لا يُنشئ حسابات تجريبية، ويرفض النشر إن بقي حساب تجريبي فعّال أو وضع
+   `fake`.
+
+## 10) إذا فشل النشر
+
+السكربت يأخذ نسخة «قبل النشر» قبل أي تحديث. إذا لم تبدأ النسخة الجديدة ينتهي برمز 8 ويطبع:
+
+1. `git checkout <النسخة السابقة>` ثم `bash scripts/deploy.sh`؛
+2. فقط إذا غيّرت النسخة الجديدة البيانات: `scripts/restore.sh <نسخة قبل النشر>` ([backup.md](backup.md)).
+
+| رمز الخروج | المعنى |
+|---|---|
+| 1 | رُفض قبل أي تغيير (اقرأ السطر الأخير) |
+| 2 | التطبيق يعمل لكن الرابط العام لا يصل (Proxy Host في NPM) |
+| 8 | النسخة الجديدة لم تبدأ (خطوات الرجوع مطبوعة) |
 
 ## حل المشاكل
 
@@ -289,3 +302,7 @@ sijil start api
 | الـ API لا يبدأ: `Refusing to start in staging` | سر أقصر من 32 حرفاً أو `COOKIE_SECURE=false`. شاهد `sijil logs api` |
 | الدخول ينجح ثم يخرج فوراً | الموقع مفتوح بـ `http://` وليس `https://`. فعّل Force SSL في NPM |
 | التطبيق لا يتحدّث على الهاتف | أطفئ Cache Assets في NPM، ثم أغلق التطبيق وافتحه |
+| السكربت: `BACKUP_DIR must belong to uid 10001` | `sudo chown 10001:10001 <BACKUP_DIR> && sudo chmod 700 <BACKUP_DIR>` |
+| السكربت: `no backup key` | شغّل `scripts/backup.sh init-key` وضع `BACKUP_AGE_RECIPIENT` في `.env` ([backup.md](backup.md)) |
+| السكربت: `demo accounts are still active` | الخطوة 9: `go-live` قبل `APP_ENV=production` |
+| السكربت: `the pre-deploy backup failed` | `sijil logs backup`، ومساحة القرص (`df -h`)؛ لم يتغيّر شيء |
