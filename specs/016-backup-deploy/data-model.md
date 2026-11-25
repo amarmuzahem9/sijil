@@ -31,7 +31,7 @@ Snapshot id: `<YYYYMMDD-HHMMSS UTC>-<kind>`, kind ∈ `nightly | manual | pre_de
 | `snapshot_id` | text null, unique | the snapshot folder id; null until the run starts. The mirror (R8) matches files on this column |
 | `kind` | text | `nightly|manual|pre_deploy|pre_restore` |
 | `status` | text | `requested|running|succeeded|failed|removed` |
-| `error_code` | text null | `disk_low|missing_images|dump_failed|encrypt_failed|verify_failed|busy|internal` |
+| `error_code` | text null | `disk_low|missing_images|dump_failed|encrypt_failed|verify_failed|busy|no_key|internal` |
 | `requested_by` | bigint null FK users | manual only |
 | `started_at`, `finished_at` | timestamptz null | UTC |
 | `total_size`, `image_count` | bigint null | |

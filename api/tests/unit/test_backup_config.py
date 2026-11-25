@@ -10,7 +10,16 @@ BASE = {"database_url": "postgresql://x/y", "jwt_secret": "s" * 40, "cookie_secu
 RECIPIENT = "age1" + "q" * 58
 
 
-def test_defaults() -> None:
+def test_defaults(monkeypatch) -> None:
+    # The container's own .env may set them (a local key); the defaults are what we check here.
+    for name in (
+        "BACKUP_DIR",
+        "BACKUP_AGE_RECIPIENT",
+        "BACKUP_NIGHTLY_AT",
+        "BACKUP_MIN_FREE_GB",
+        "BACKUP_EXTERNAL_DIR",
+    ):
+        monkeypatch.delenv(name, raising=False)
     s = Settings(**BASE, app_env="test")
     assert s.backup_dir == "/data/backups"
     assert s.backup_age_recipient == ""

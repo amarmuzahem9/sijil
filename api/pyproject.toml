@@ -49,5 +49,7 @@ ignore = ["S101", "B008"]
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S105", "S106", "S603", "S607"]
 # The backup tools (age, pg_dump, pg_restore) run as fixed argv lists without a shell
-# (specs/016 research R2); no argument comes from a user.
-"app/backup/**" = ["S603", "S607"]
+# (specs/016 research R2); no argument comes from a user. S108: the plaintext identity goes to a
+# mkdtemp folder (random name, mode 700) under tmpfs /dev/shm, and the healthcheck file holds
+# nothing. S606: keyfile execs `age` in a pseudo-terminal child, without a shell.
+"app/backup/**" = ["S603", "S607", "S108", "S606"]

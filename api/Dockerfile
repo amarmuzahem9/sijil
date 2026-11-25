@@ -33,8 +33,10 @@ open('/tmp/requirements.txt','w').write('\n'.join(deps))" \
 
 # /data/uploads: private card-image storage (specs/005 research.md R7). A new named volume
 # mounted there inherits this owner, so the app user can write to it.
+# /data/backups: the backup folder (specs/016), mounted only by the `backup` service.
 RUN useradd --create-home --uid 10001 app \
-    && mkdir -p /data/uploads && chown app:app /data/uploads && chmod 700 /data/uploads
+    && mkdir -p /data/uploads /data/backups \
+    && chown app:app /data/uploads /data/backups && chmod 700 /data/uploads /data/backups
 
 COPY --chown=app:app . .
 RUN chmod +x /app/entrypoint.sh

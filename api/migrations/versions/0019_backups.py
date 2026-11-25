@@ -22,7 +22,7 @@ _KINDS = "('nightly', 'manual', 'pre_deploy', 'pre_restore')"
 _STATUSES = "('requested', 'running', 'succeeded', 'failed', 'removed')"
 _ERRORS = (
     "('disk_low', 'missing_images', 'dump_failed', 'encrypt_failed', 'verify_failed', "
-    "'busy', 'internal')"
+    "'busy', 'no_key', 'internal')"
 )
 
 

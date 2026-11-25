@@ -127,7 +127,7 @@ snapshots past 30 days and see only those removed.
 
 ### Tests (write first, run red)
 
-- [ ] T015 [P] [US1] Integration test `api/tests/integration/test_backup_snapshot.py` (test DB, tmp `uploads`, tmp
+- [x] T015 [P] [US1] Integration test `api/tests/integration/test_backup_snapshot.py` (test DB, tmp `uploads`, tmp
   `backup_dir`, throwaway key):
   - a snapshot holds `db.dump.age`, a `manifest.json` with the counts of the seeded data (requests, drafts, legacy,
     SAS, users, audit), `DONE`, and an object for every file in `uploads`, including legacy images;
@@ -135,44 +135,44 @@ snapshots past 30 days and see only those removed.
   - each decrypted object matches its `sha256_plain`;
   - a second snapshot writes no new object for unchanged images;
   - `missing_referenced` is 0.
-- [ ] T016 [P] [US1] Integration test `api/tests/integration/test_backup_consistency.py` (research R4):
+- [x] T016 [P] [US1] Integration test `api/tests/integration/test_backup_consistency.py` (research R4):
   - an image uploaded between pass 1 and the database snapshot is stored by pass 2;
   - a file referenced at the snapshot moment and deleted before pass 2 makes the run `failed` with
     `missing_images`, and the run is retried once;
   - an erasure (011) committed before the snapshot is not referenced, and its file is not required.
-- [ ] T017 [P] [US1] Unit tests `api/tests/unit/test_backup_retention.py`, cases inline:
+- [x] T017 [P] [US1] Unit tests `api/tests/unit/test_backup_retention.py`, cases inline:
   - snapshots older than 30 days by start time are selected, of every kind;
   - the newest successful snapshot is never selected, whatever its age;
   - an incomplete folder older than 1 day is selected; a younger one is not;
   - nothing is selected after a failed run;
   - GC removes only objects referenced by no kept manifest.
-- [ ] T018 [P] [US1] Unit tests `api/tests/unit/test_backup_disk.py`:
+- [x] T018 [P] [US1] Unit tests `api/tests/unit/test_backup_disk.py`:
   - the estimate = new images + last dump size;
   - refuse with `disk_low` when free space after it would be under `backup_min_free_gb`;
   - accept otherwise.
-- [ ] T019 [P] [US1] Unit tests `api/tests/unit/test_backup_schedule.py` (clock fixture):
+- [x] T019 [P] [US1] Unit tests `api/tests/unit/test_backup_schedule.py` (clock fixture):
   - due when the Baghdad time has passed `backup_nightly_at` and no nightly snapshot exists for that Baghdad day;
   - not due twice the same Baghdad day;
   - catches up after a restart later the same day;
   - the day boundary is Baghdad midnight, not UTC.
-- [ ] T020 [P] [US1] Integration test `api/tests/integration/test_backup_serve.py`:
+- [x] T020 [P] [US1] Integration test `api/tests/integration/test_backup_serve.py`:
   - one loop iteration writes `backup_status` (heartbeat, free bytes);
   - a `requested` manual run is taken and ends `succeeded`;
   - a second operation while the advisory lock `160_016` is held refuses `busy`;
   - on start, a `running` row with no live lock becomes `failed/internal`.
-- [ ] T021 [P] [US1] Integration test `api/tests/integration/test_backup_mirror.py` (research R8):
+- [x] T021 [P] [US1] Integration test `api/tests/integration/test_backup_mirror.py` (research R8):
   - the mirror tables are rebuilt from the files: snapshots → `backup_runs` matched on data-model.md
     `backup_runs.snapshot_id` (a manual request keeps its `id`; status `removed` for a vanished folder),
     `history/*.json` → `backup_events`;
   - deleting all mirror rows then syncing gives the same rows back.
-- [ ] T022 [P] [US1] Test `api/tests/integration/test_backup_no_secrets.py`:
+- [x] T022 [P] [US1] Test `api/tests/integration/test_backup_no_secrets.py`:
   - with a synthetic `.env` whose values are unique markers, take a snapshot and decrypt every file;
   - no marker appears in any file under `backup_dir` (plaintext and decrypted);
   - no log line of the run contains a marker or a card field.
 
 ### Implementation
 
-- [ ] T023 [US1] Implement `api/app/backup/snapshot.py` (research R4):
+- [x] T023 [US1] Implement `api/app/backup/snapshot.py` (research R4):
   - pass 1;
   - exported `REPEATABLE READ` snapshot, then `pg_dump --snapshot` piped into `age`;
   - in the same transaction, the referenced names from `draft_images.file_name`, `request_images.file_name`,
@@ -180,27 +180,28 @@ snapshots past 30 days and see only those removed.
   - pass 2, verification of `sha256_enc` after writing (FR-015a), manifest, `DONE`;
   - the retry once on `missing_images`.
   Then run T015, T016 and T022 green.
-- [ ] T024 [US1] Implement `api/app/backup/retention.py` (research R6: selection, GC, disk estimate and guard). Then
+- [x] T024 [US1] Implement `api/app/backup/retention.py` (research R6: selection, GC, disk estimate and guard). Then
   run T017 and T018 green.
-- [ ] T025 [US1] Implement `api/app/backup/mirror.py` (research R8, data-model.md tables). Failed runs are written
+- [x] T025 [US1] Implement `api/app/backup/mirror.py` (research R8, data-model.md tables). Failed runs are written
   to `history/<time>-failed.json`. Then run T021 green.
-- [ ] T026 [US1] Implement `api/app/backup/serve.py` and `api/app/backup/__main__.py` (`serve`, `now --kind`,
-  `list`). Cover the loop and the schedule of research R5, the advisory lock `BACKUP_LOCK = 160_016`, and the
+- [x] T026 [US1] Implement `api/app/backup/serve.py` and `api/app/backup/__main__.py` (`serve`, `now --kind`,
+  `list`, `init-key`), with `api/tests/integration/test_backup_cli.py` (exit codes) and the key file
+  `api/app/backup/keyfile.py` with `api/tests/integration/test_backup_keyfile.py`, both run red first. Cover the loop and the schedule of research R5, the advisory lock `BACKUP_LOCK = 160_016`, and the
   heartbeat and free space written into data-model.md `backup_status` fields. Logs carry ids, sizes and counts only.
   Then run T019 and T020 green.
-- [ ] T027 [US1] Add the `backup` service to `docker-compose.yml`:
+- [x] T027 [US1] Add the `backup` service to `docker-compose.yml`:
   - same build as `api`, command `python -m app.backup serve`, `restart: unless-stopped`;
   - `uploads:/data/uploads:ro` and `backups:/data/backups`, on the default network only;
   - no port, no Docker socket;
   - healthcheck on the heartbeat.
   Add the named volume `backups`. Make the `api` image create `/data/backups` owned by 10001, mode 700.
-- [ ] T028 [US1] In `docker-compose.override.yml`, make development work without a configured key: `serve` logs
+- [x] T028 [US1] In `docker-compose.override.yml`, make development work without a configured key: `serve` logs
   «لم يُضبط مفتاح النسخ» and only writes the heartbeat. Add a dev throwaway key to `scripts/backup.sh init-key --dev`
   (written under the `backups` volume, the passphrase printed once).
-- [ ] T029 [US1] Run `docker compose up -d --build` locally, set `BACKUP_NIGHTLY_AT` two minutes ahead, and see a
+- [x] T029 [US1] Run `docker compose up -d --build` locally, set `BACKUP_NIGHTLY_AT` two minutes ahead, and see a
   nightly run in `python -m app.backup list` (quickstart manual check 1). For SC-001, T019 also runs 7 simulated
   Baghdad days: one nightly each day.
-- [ ] T030 [US1] Run the whole api suite green. Batch 2 report: red then green for T015–T022. **Batch 2 commit.**
+- [x] T030 [US1] Run the whole api suite green. Batch 2 report: red then green for T015–T022. **Batch 2 commit.**
 
 **Checkpoint**: backups exist every night locally; MVP reached.
 

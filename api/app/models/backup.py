@@ -34,6 +34,7 @@ RUN_ERRORS = (
     "encrypt_failed",
     "verify_failed",
     "busy",
+    "no_key",
     "internal",
 )
 EVENT_TYPES = ("drill", "external_copy", "restore", "deploy")

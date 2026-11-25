@@ -27,7 +27,10 @@ it with a passphrase (`age -p`, which offers a generated 10-word passphrase), sa
 directory and on the external drive, and print the public recipient (`age1…`), which goes into `.env` as
 `BACKUP_AGE_RECIPIENT`. The recipient is public: the server can **encrypt** every backup unattended but cannot
 **decrypt** any (FR-010a). Decrypting (restore, drill) asks for the passphrase on the terminal; the decrypted identity
-lives only in memory/tmpfs of the one-off container. Every file in a backup is an age file except the plaintext
+lives only in memory/tmpfs of the one-off container. `age` reads the passphrase from the terminal
+only; for local development and the automated end-to-end checks `app/backup/keyfile.py` answers the same
+prompts through a pseudo-terminal (stdlib `pty`), never through a file, an argument or an environment
+variable. Every file in a backup is an age file except the plaintext
 manifest (R4), which holds no personal data.
 
 **Rationale**: Owner decision Q1-A. The passphrase is never on the server, in `.env`, in git or in a backup;
@@ -89,7 +92,8 @@ counts are aggregates.
 **Decision**: `backup serve` is a loop (restart `unless-stopped`): every 15 s it (a) writes a heartbeat and the free
 disk space into `backup_status`, (b) starts a requested manual backup if any, (c) starts the nightly backup when the
 Baghdad clock passes `BACKUP_NIGHTLY_AT` (default `03:00`) and no nightly snapshot exists for that Baghdad day
-(catches up after a restart), (d) re-syncs the database mirror from the files (R8). One operation at a time: a
+(catches up after a restart; a failed nightly is retried an hour later, at most 3 attempts per
+Baghdad day, so a full disk does not loop), (d) re-syncs the database mirror from the files (R8). One operation at a time: a
 PostgreSQL session advisory lock `BACKUP_LOCK = 160_016`, taken by `serve` and by every one-off command; a second
 operation refuses with `backup_busy`. The manual button inserts a `backup_runs` row `requested`; a partial unique
 index allows only one row in `requested|running`.

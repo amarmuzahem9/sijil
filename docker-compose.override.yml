@@ -16,6 +16,14 @@ services:
       - ./api:/app
     command: ["--reload"]
 
+  backup:
+    environment:
+      APP_ENV: development
+    # Live code, like api. Without BACKUP_AGE_RECIPIENT the service only writes its heartbeat and
+    # says «لم يُضبط مفتاح النسخ»; `scripts/backup.sh init-key --dev` makes a local test key.
+    volumes:
+      - ./api:/app
+
   web:
     build:
       target: dev

@@ -72,6 +72,40 @@ services:
       retries: 8
       start_period: 60s
 
+  # Backups (feature 016, constitution VII 1.4.0): the api image and code with another command.
+  # The only service that mounts the backup folder; api and web never do. Images read-only, no
+  # published port, no Docker socket. Nightly at BACKUP_NIGHTLY_AT (Baghdad); see deploy/backup.md.
+  backup:
+    build:
+      context: ./api
+    restart: unless-stopped
+    env_file: ${SIJIL_ENV_FILE:-.env}
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+    entrypoint: ["python", "-m", "app.backup"]
+    command: ["serve"]
+    networks:
+      - default
+    volumes:
+      - uploads:/data/uploads:ro
+      - backups:/data/backups
+    depends_on:
+      db:
+        condition: service_healthy
+      # api runs the migrations at start.
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import os,sys,time; sys.exit(time.time() - os.path.getmtime('/tmp/backup-heartbeat') > 120)"
+      interval: 30s
+      timeout: 5s
+      retries: 4
+      start_period: 60s
+
   web:
     build:
       context: ./web
@@ -104,5 +138,7 @@ networks:
 volumes:
   pgdata:
   uploads:
+  # Encrypted backups (feature 016). On the server the staging overlay binds BACKUP_DIR.
+  backups:
   caddy_data:
   caddy_config:
