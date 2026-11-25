@@ -11,7 +11,9 @@ from app.config import get_settings
 
 @lru_cache
 def get_engine() -> Engine:
-    return create_engine(get_settings().database_url, pool_pre_ping=True)
+    # A database error's text reaches the logs through the server's traceback: never with its
+    # values (names, phones, SAS usernames; Principle II, specs/015 T054).
+    return create_engine(get_settings().database_url, pool_pre_ping=True, hide_parameters=True)
 
 
 @lru_cache

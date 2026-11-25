@@ -649,3 +649,37 @@ def test_the_legacy_import_never_logs_personal_data(
         image.file_name,
     ):
         assert secret not in everything, secret
+
+
+def test_sql_errors_never_carry_their_values_into_the_logs(engine) -> None:
+    """A database error raised while saving a SAS import may hold usernames and phones, from
+    SQLAlchemy's echo of the parameters and from PostgreSQL's own detail. The engine hides the
+    parameters, and a logged error keeps only its type (specs/015 T054; Principle II)."""
+    import pytest
+    from sqlalchemy import text
+    from sqlalchemy.exc import DBAPIError
+
+    from app.db import get_engine
+
+    app_engine = get_engine()
+    assert app_engine.hide_parameters is True
+    value = "ALM03-07801234567"
+    with app_engine.connect() as conn, pytest.raises(DBAPIError) as error:
+        conn.execute(text("SELECT CAST(:value AS integer)"), {"value": value})
+    assert "[SQL parameters hidden due to hide_parameters=True]" in str(error.value)
+
+    try:
+        raise error.value
+    except DBAPIError:
+        record = logging.getLogger("uvicorn.error").makeRecord(
+            "uvicorn.error",
+            logging.ERROR,
+            __file__,
+            0,
+            "Exception in ASGI application",
+            (),
+            __import__("sys").exc_info(),
+        )
+    line = _formatted([record])
+    assert value not in line
+    assert json.loads(line)["exc"] == type(error.value).__name__

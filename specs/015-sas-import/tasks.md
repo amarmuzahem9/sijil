@@ -351,22 +351,22 @@ reuses mappings.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T052 [P] Playwright `e2e/tests/sas-import.spec.ts`:
+- [x] T052 [P] Playwright `e2e/tests/sas-import.spec.ts`:
   - the `reports` admin uploads the synthetic file, maps the prefix, uses «تخطي للكل», and confirms;
   - the marketer gets case 1 on a SAS phone and on a username phone;
   - the return is accepted with the SAS username;
   - the review admin sees «مشترك SAS» with the expiry;
   - the re-import shows the update and missing counts.
-- [ ] T053 [P] Performance check `api/tests/integration/test_sas_volume.py` (marked `slow`). With a generated
+- [x] T053 [P] Performance check `api/tests/integration/test_sas_volume.py` (marked `slow`). With a generated
   synthetic file of 20 000 rows, the preview and the confirm each finish in under 30 s on the test database (plan
   Performance Goals), and a second confirm of the same file writes no change rows.
-- [ ] T054 Grep the new code for log calls and audit payloads, and check that none passes a username, phone, name,
+- [x] T054 Grep the new code for log calls and audit payloads, and check that none passes a username, phone, name,
   file cell or the file name to `log.*` (research R11).
-- [ ] T055 [P] Write `specs/015-sas-import/manual-test-ar.md`: the manual steps in Arabic, from quickstart.md, using
+- [x] T055 [P] Write `specs/015-sas-import/manual-test-ar.md`: the manual steps in Arabic, from quickstart.md, using
   the synthetic files only.
-- [ ] T056 Run every suite (api, web, e2e). Run the app with `docker compose up` and walk through quickstart.md.
-- [ ] T057 Update `docs/system.md` only if the implementation found a rule gap, and stop to ask the owner first.
-- [ ] T058 Mark the tasks done and set the spec status to Implemented. **Batch 6 commit.**
+- [x] T056 Run every suite (api, web, e2e). Run the app with `docker compose up` and walk through quickstart.md.
+- [x] T057 Update `docs/system.md` only if the implementation found a rule gap, and stop to ask the owner first.
+- [x] T058 Mark the tasks done and set the spec status to Implemented. **Batch 6 commit.**
 
 ---
 

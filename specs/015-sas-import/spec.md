@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-25
 
-**Status**: Clarified
+**Status**: Implemented
 
 **Input**: User description: "الفيزة 015: استيراد مشتركي SAS. ارجع لـ docs/system.md (جدول الفيزات §16 والأقسام
 المتعلقة) ولـ docs/features.md، واستعمل نفس نمط استيراد 014 (المعاينة، «تخطي للكل»، الحفظ الكامل أو لا شي، السجلات بلا
