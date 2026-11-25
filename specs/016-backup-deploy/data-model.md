@@ -26,7 +26,8 @@ Snapshot id: `<YYYYMMDD-HHMMSS UTC>-<kind>`, kind ∈ `nightly | manual | pre_de
 ### `backup_runs`
 | Column | Type | Rules |
 |---|---|---|
-| `id` | text PK | snapshot id; for a manual request before it starts: `req-<uuid>` replaced on start |
+| `id` | text PK | never changes: `req-<uuid>` for a manual request, otherwise the snapshot id |
+| `snapshot_id` | text null, unique | the snapshot folder id; null until the run starts. The mirror (R8) matches files on this column |
 | `kind` | text | `nightly|manual|pre_deploy|pre_restore` |
 | `status` | text | `requested|running|succeeded|failed|removed` |
 | `error_code` | text null | `disk_low|missing_images|dump_failed|encrypt_failed|verify_failed|busy|internal` |
@@ -55,7 +56,7 @@ Partial unique index: one row with `status IN ('requested','running')`. Failed r
 
 ## State transitions — backup run
 
-`requested → running → succeeded | failed`; `running → failed` also on crash (on start `serve` marks any `running`
+`requested → running → succeeded | failed` (`snapshot_id` set on `running`); `running → failed` also on crash (on start `serve` marks any `running`
 row without a live lock as `failed/internal`); `succeeded → removed` by retention. A `failed` row never removes
 anything.
 

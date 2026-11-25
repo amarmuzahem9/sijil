@@ -1,5 +1,16 @@
 <!--
-Sync Impact Report (2026-11-24, amendment 6)
+Sync Impact Report (2026-11-25, amendment 7)
+- Version change: 1.3.1 → 1.4.0 (MINOR: Principle VII materially expanded)
+- Modified principles: VII. Fixed Technology Stack — the runtime services now include `backup`
+  (the api image and code run with another command; no published port, no Docker socket; the only
+  service that mounts the backup folder), and the isolated restore-drill project (no network, no
+  shared volume with the live stack, removed after each drill) (docs/system.md §15 v1.21,
+  feature 016).
+- Added/removed sections: none
+- Templates: not modified
+- Follow-up TODOs: none
+- Approved by the project owner in the feature 016 analysis review (D1).
+Previous report (2026-11-24, amendment 6)
 - Version change: 1.3.0 → 1.3.1 (PATCH: clarification)
 - Modified principles: IV. Recorded Values Are Immutable — points to the Principle III erasure:
   on a deleted pending or rejected request the original reading, the historical username and the
@@ -190,8 +201,13 @@ field.
   a UI library with RTL support.
 - Backend: Python 3.12 + FastAPI + SQLAlchemy 2 + Alembic (migrations) + Pydantic.
 - Database: PostgreSQL 16.
-- Runtime: Docker Compose with services `web`, `api`, `db`, `proxy` and `ocr`. All
+- Runtime: Docker Compose with services `web`, `api`, `db`, `proxy`, `ocr` and `backup`. All
   configuration MUST come from environment variables (`.env`).
+- Backups run in the separate `backup` service, built from the `api` image and code with another
+  command. It publishes no port and has no Docker socket, and it is the only service that mounts
+  the backup folder; `api` and `web` MUST NOT mount it. A restore drill MAY start a separate,
+  throwaway Compose project with no network route out and no volume shared with the live stack,
+  removed after each drill (docs/system.md §15, feature 016).
 - Card reading (OCR) runs in the separate `ocr` service (ID_Iraqi_Project, AGPL-3.0). Its code
   lives in `ocr/` and MUST NOT be imported into or mixed with `api/` code; `api` reaches it only
   over the internal Docker network, and the service MUST have no internet access. Its source,
@@ -266,4 +282,4 @@ reliable proof they hold.
   violation MUST be resolved, or explicitly justified and approved, before merge.
 - Runtime guidance for agents lives in `CLAUDE.md`.
 
-**Version**: 1.3.1 | **Ratified**: 2026-11-21 | **Last Amended**: 2026-11-24
+**Version**: 1.4.0 | **Ratified**: 2026-11-21 | **Last Amended**: 2026-11-25

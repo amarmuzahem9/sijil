@@ -13,7 +13,7 @@ UTC ISO; the web shows them in Baghdad time. No response carries personal data.
     "external_dir": "/media/sijil-external"
   },
   "running": {"id": "…", "kind": "manual", "started_at": "…"} ,
-  "runs": [{"id": "…", "kind": "nightly", "status": "succeeded", "error_code": null,
+  "runs": [{"id": "…", "snapshot_id": "…", "kind": "nightly", "status": "succeeded", "error_code": null,
             "started_at": "…", "finished_at": "…", "total_size": 0, "image_count": 0,
             "counts": {"requests": 0, "legacy_subscribers": 0, "sas_subscribers": 0, "users": 0}}],
   "last_external": {"at": "…", "result": "succeeded", "snapshot_id": "…"},

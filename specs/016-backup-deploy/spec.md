@@ -271,7 +271,7 @@ deploy before anything changes, and a failed health check is reported with the r
   when one is restored or drilled, and the owner keeps it written down in a safe place. Without it no card image or
   personal data can be read from a backup. The documentation MUST state that losing the passphrase makes the backups
   unusable. Backup files on the server MUST also be readable only by the server's administrator account, never by the
-  app's web container.
+  app containers (`api`, `web`).
 - **FR-010a**: Because the passphrase is not on the server, the unattended nightly backup MUST be able to encrypt
   without being able to decrypt (only the holder of the passphrase can open a backup). Taking a backup MUST never
   require the passphrase to be stored on the server.
@@ -340,11 +340,13 @@ deploy before anything changes, and a failed health check is reported with the r
 
 ### Measurable Outcomes
 
-- **SC-001**: For 7 consecutive days on staging, a nightly backup succeeds every night with no action from anyone.
+- **SC-001**: For 7 consecutive days, a nightly backup succeeds every night with no action from anyone. During the
+  feature this is shown on the developer machine (simulated clock); the owner confirms it on the server after merge.
 - **SC-002**: A restore of any kept backup returns 100% of the requests, legacy and SAS subscribers and audit entries,
   and 100% of the referenced images open in the app; verified by the drill on every run.
-- **SC-003**: A full restore on the staging server (data at field-trial size) completes in under 30 minutes from the
-  operator's command to a healthy app.
+- **SC-003**: A full restore (data at field-trial size) completes in under 30 minutes from the operator's command to a
+  healthy app. Measured on the developer machine during the feature; the owner re-measures it on the server after
+  merge (no restore runs on the real server during development, owner rule 2026-11-25).
 - **SC-004**: Users notice no failure during a nightly backup: submissions and photo uploads keep succeeding while it
   runs.
 - **SC-005**: A failed backup, overdue external copy or failed drill is visible to the main admin on the home page within

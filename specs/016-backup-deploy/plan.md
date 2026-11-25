@@ -61,7 +61,7 @@ Docker socket in any container; no published port; the app containers never moun
 | IV Immutable values | A restore returns values to a past state. That is an operator recovery action, warned and audited, not an edit. ✅ |
 | V Mobile-first, Arabic | Page and messages in Arabic. The page is main-admin desktop, but works on phone width. ✅ |
 | VI Simplicity | One service, the same image, `age` and `pg_dump`. No restic/borg/cron. Writing our own deduplication (R3) is justified by the encrypt-only rule. ✅ |
-| VII Fixed stack | Compose services are now `db`, `api`, `ocr`, `web`, `backup` (+ local `proxy`). `backup` is the api code with another command, not a new technology. ⚠️ Constitution «Additional Constraints» already requires backups. No amendment needed, noted in Complexity Tracking. |
+| VII Fixed stack | Compose services are now `db`, `api`, `ocr`, `web`, `backup` (+ local `proxy`). `backup` is the api code with another command. Constitution amended to **1.4.0** (analysis D1, owner approved 2026-11-25): `backup` and the throwaway drill project are named in Principle VII. ✅ |
 | VIII Tested rules | Retention, consistency, disk guard, permissions and warnings are covered by tests written red first; full cycle in `backup-e2e.sh`. ✅ |
 | IX Server-side authorization | Main admin only, enforced in the API. ✅ |
 | X Time | UTC stored; nightly day and display in Baghdad. ✅ |
