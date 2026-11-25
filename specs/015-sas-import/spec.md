@@ -90,8 +90,9 @@ confirmation, and that after confirmation the counts in the summary match the ro
    towers exist in the settings) and they are not flagged.
 5. **Given** usernames whose prefix matches no tower, **When** the preview shows, **Then** each distinct prefix
    appears once in the mapping table with its row count, and the admin picks a tower for it or «بلا برج».
-6. **Given** a row whose phone fails §8.1, or is empty, **When** the preview shows, **Then** it is counted under
-   «بلا هاتف صالح»; if imported, it is saved without a phone and takes no part in the phone check.
+6. **Given** a row whose phone column fails §8.1, or is empty, and whose username holds no phone either, **When**
+   the preview shows, **Then** it is counted under «بلا هاتف صالح»; if imported, it is saved without a phone and
+   takes no part in the phone check (a valid phone in the username still counts, FR-012).
 7. **Given** a row whose phone is held by a pending, accepted or linked Sijil request with a different username,
    **When** the preview shows, **Then** it appears under «الهاتف في طلب سِجلّ» with the request number, and the
    admin chooses «استيراد» or «تخطي».

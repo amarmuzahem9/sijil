@@ -15,6 +15,9 @@ from app.errors import AppError
 
 MAX_FILE_BYTES = 5 * 1024 * 1024
 MAX_ROWS = 2000
+# The SAS export is larger (specs/015 research R2).
+SAS_MAX_FILE_BYTES = 15 * 1024 * 1024
+SAS_MAX_ROWS = 50_000
 _ZIP = b"PK\x03\x04"
 
 
@@ -51,11 +54,21 @@ def _csv_rows(data: bytes) -> list[list[Any]]:
         raise AppError("import_file_unreadable", 422) from exc
 
 
-def read_table(data: bytes) -> tuple[list[Any], list[list[Any]]]:
+def too_large(max_bytes: int) -> AppError:
+    return AppError(
+        "import_file_too_large",
+        413,
+        message=f"حجم الملف أكبر من {max_bytes // (1024 * 1024)} ميغابايت",
+    )
+
+
+def read_table(
+    data: bytes, *, max_bytes: int = MAX_FILE_BYTES, max_rows: int = MAX_ROWS
+) -> tuple[list[Any], list[list[Any]]]:
     """(headers, rows). Raises `import_file_too_large`, `import_file_unreadable`,
-    `import_too_many_rows`."""
-    if len(data) > MAX_FILE_BYTES:
-        raise AppError("import_file_too_large", 413)
+    `import_too_many_rows`; the messages name the given limits."""
+    if len(data) > max_bytes:
+        raise too_large(max_bytes)
     raw = _xlsx_rows(data) if data.startswith(_ZIP) else _csv_rows(data)
     rows = [
         [None if _blank(cell) else cell for cell in row]
@@ -65,8 +78,8 @@ def read_table(data: bytes) -> tuple[list[Any], list[list[Any]]]:
     if not rows:
         raise AppError("import_file_unreadable", 422)
     headers, body = rows[0], rows[1:]
-    if len(body) > MAX_ROWS:
-        raise AppError("import_too_many_rows", 422)
+    if len(body) > max_rows:
+        raise AppError("import_too_many_rows", 422, message=f"الملف فيه أكثر من {max_rows:,} صف")
     width = len(headers)
     body = [(row + [None] * width)[:width] if len(row) < width else row for row in body]
     return headers, body

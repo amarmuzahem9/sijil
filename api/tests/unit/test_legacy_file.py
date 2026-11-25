@@ -89,3 +89,31 @@ def test_too_large_refused() -> None:
         legacy_file.read_table(b"a" * (legacy_file.MAX_FILE_BYTES + 1))
     assert err.value.code == "import_file_too_large"
     assert err.value.status == 413
+
+
+# --- limits given by the caller (specs/015 research R2) -----------------------------------------
+
+
+def test_given_limits_are_honoured() -> None:
+    rows = [ROWS[0]] * 5  # `_csv` writes the header row
+    with pytest.raises(AppError) as error:
+        legacy_file.read_table(_csv(rows), max_rows=4)
+    assert error.value.code == "import_too_many_rows"
+    assert "4" in error.value.message
+    headers, body = legacy_file.read_table(_csv(rows), max_rows=5)
+    assert len(body) == 5
+    with pytest.raises(AppError) as error:
+        legacy_file.read_table(_csv(rows), max_bytes=10)
+    assert error.value.code == "import_file_too_large"
+
+
+def test_sas_limits_and_unchanged_defaults() -> None:
+    assert legacy_file.MAX_FILE_BYTES == 5 * 1024 * 1024
+    assert legacy_file.MAX_ROWS == 2000
+    assert legacy_file.SAS_MAX_FILE_BYTES == 15 * 1024 * 1024
+    assert legacy_file.SAS_MAX_ROWS == 50_000
+    rows = [ROWS[0]] * 2001
+    headers, body = legacy_file.read_table(
+        _csv(rows), max_bytes=legacy_file.SAS_MAX_FILE_BYTES, max_rows=legacy_file.SAS_MAX_ROWS
+    )
+    assert len(body) == 2001

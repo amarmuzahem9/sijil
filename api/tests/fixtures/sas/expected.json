@@ -1,0 +1,86 @@
+{
+  "_note": "sas_sample.csv on a database holding a pending request with phone 07810000014, an approved request with username ALM03-07810000015 (phone 07810000015), a rejected request with phone 07810000018, and the towers ALM03, KZF06, RBD01S, SMR01. Row numbers are file rows (header = 1).",
+  "counts": {
+    "rows": 18,
+    "new": 18,
+    "update": 0,
+    "unchanged": 0,
+    "missing_from_file": 0,
+    "flagged": 4,
+    "waiting_choice": 4,
+    "same_username_in_sijil": 1,
+    "no_valid_phone": 1,
+    "username_no_phone": 1,
+    "date_unreadable": 1,
+    "phone_dup_file": 4,
+    "phone_in_legacy": 0
+  },
+  "prefixes": [
+    {
+      "prefix": "ZZQ07",
+      "rows": 2,
+      "tower_id": null,
+      "from_previous": false,
+      "chosen": false
+    }
+  ],
+  "flagged": {
+    "8": [
+      {
+        "code": "username_missing"
+      }
+    ],
+    "9": [
+      {
+        "code": "username_dup_file",
+        "rows": [
+          10
+        ]
+      }
+    ],
+    "10": [
+      {
+        "code": "username_dup_file",
+        "rows": [
+          9
+        ]
+      }
+    ],
+    "14": [
+      {
+        "code": "phone_in_sijil",
+        "requests": [
+          "<pending>"
+        ]
+      }
+    ]
+  },
+  "towers": {
+    "2": "ALM03",
+    "3": "KZF06",
+    "4": "RBD01S",
+    "5": "SMR01",
+    "12": null
+  },
+  "passwords": [
+    "SYNTH-PW-101",
+    "SYNTH-PW-102",
+    "SYNTH-PW-103",
+    "SYNTH-PW-104",
+    "SYNTH-PW-105",
+    "SYNTH-PW-106",
+    "SYNTH-PW-107",
+    "SYNTH-PW-108",
+    "SYNTH-PW-109",
+    "SYNTH-PW-110",
+    "SYNTH-PW-111",
+    "SYNTH-PW-112",
+    "SYNTH-PW-113",
+    "SYNTH-PW-114",
+    "SYNTH-PW-115",
+    "SYNTH-PW-116",
+    "SYNTH-PW-117",
+    "SYNTH-PW-118",
+    "SYNTH-PW-119"
+  ]
+}

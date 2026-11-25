@@ -7,6 +7,13 @@ from app.models.notification import Notification
 from app.models.otp import OtpChallenge
 from app.models.request import Request, RequestImage, RequestNumberPin, RequestReason
 from app.models.request_link import RequestLink
+from app.models.sas import (
+    SasImport,
+    SasImportPreview,
+    SasSubscriber,
+    SasSubscriberChange,
+    SasTowerMapping,
+)
 from app.models.session import UserSession
 from app.models.user import ADMIN_PERMISSIONS, ROLES, User
 
@@ -25,6 +32,11 @@ __all__ = [
     "LegacyImport",
     "LegacyImportPreview",
     "LegacySubscriber",
+    "SasImport",
+    "SasImportPreview",
+    "SasSubscriber",
+    "SasSubscriberChange",
+    "SasTowerMapping",
     "Notification",
     "OtpChallenge",
     "Plan",

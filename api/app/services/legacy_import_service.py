@@ -40,6 +40,7 @@ from app.models import (
 from app.models.request import ACTIVE_STATUSES
 from app.services import audit_service, image_store, legacy_file
 from app.services.drive_fetcher import Fetcher, FetchResult, get_fetcher
+from app.services.import_lock import IMPORT_CONFIRM_LOCK
 
 log = logging.getLogger("sijil.legacy_import")
 
@@ -468,8 +469,6 @@ def set_choices(
 
 # --- confirmation (research R10, R11; FR-006, FR-009, FR-010, FR-020) ----------------------------
 
-# One confirmation at a time, across workers (transaction-level advisory lock).
-_CONFIRM_LOCK = 140_014
 _ALREADY = [{"code": "already_imported"}]
 
 
@@ -533,7 +532,7 @@ def _subscriber(import_id: int, row: dict[str, Any], incomplete: bool) -> Legacy
 def confirm(db: Session, user: User, preview_id: uuid.UUID) -> dict[str, Any]:
     """Save the chosen rows, their images and one audit entry in one transaction; on any failure
     nothing is saved and the preview stays (SC-006). Returns the `ImportSummary`."""
-    db.execute(select(func.pg_advisory_xact_lock(_CONFIRM_LOCK)))
+    db.execute(select(func.pg_advisory_xact_lock(IMPORT_CONFIRM_LOCK)))
     preview = _ready_preview(db, user, preview_id)
     rows = _revalidate(db, preview)
 

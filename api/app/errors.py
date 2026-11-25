@@ -101,6 +101,7 @@ MESSAGES: dict[str, str] = {
     "preview_choices_missing": "بقيت صفوف بلا اختيار",
     "preview_changed": "تغيّرت البيانات منذ المعاينة، راجع الصفوف المعلّمة",
     "choice_not_allowed": "هذا الاختيار غير مسموح لهذا الصف",
+    "tower_not_found": "البرج غير موجود",
     "wrong_current_password": "كلمة السر الحالية غير صحيحة",
     "weak_password": "كلمة السر يجب أن تكون 8 أحرف على الأقل",
     "same_password": "كلمة السر الجديدة يجب أن تختلف عن الحالية",

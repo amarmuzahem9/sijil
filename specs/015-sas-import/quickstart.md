@@ -27,7 +27,7 @@ How to check 015 end to end.
 
 ```bash
 docker compose exec api pytest tests/unit -k "sas"
-docker compose exec api pytest tests/integration -k "sas or match_sources or linked_records or migration_0018 or marketer_privacy or admin_home or linked_counter or settings"
+docker compose exec api pytest tests/integration -k "sas or match_sources or linked_records or migration_0018 or marketer_privacy or admin_home or linked_counter or settings_areas_towers"
 cd web && npm test -- sasImport linkedRecordCard
 cd e2e && npx playwright test sas-import.spec.ts
 ```
