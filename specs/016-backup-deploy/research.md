@@ -141,7 +141,9 @@ real list, including the restore itself.
 ## R9 — Restore drill: an isolated throwaway stack
 
 **Decision**: `scripts/backup.sh drill [snapshot-id]` (also called at the end of `weekly`). It starts a separate compose
-project `sijil-drill` (`docker-compose.drill.yml`): `db` (tmpfs data), `api` (the live image), and a one-off
+project `<project>-drill` (`docker-compose.drill.yml`); the encrypted files of the snapshot are streamed in (`tar`
+over a pipe, after `files` verified them), so no volume is shared with the live stack; the drill also checks that
+its api cannot reach the internet, and `down -v --profile tools` removes every drill volume: `db` (tmpfs data), `api` (the live image), and a one-off
 restorer, all on one `internal: true` network (no internet, no published port, no shared volume with the live stack).
 It writes a throwaway env file in tmpfs (random secrets, `APP_ENV=staging`, real modes, no OTPIQ key). It restores
 the snapshot as in R7 steps 2 and 4–5, waits for `api` health (migrations ran), then runs `python -m app.backup

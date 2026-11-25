@@ -1,0 +1,71 @@
+# Restore drill (feature 016, research R9; constitution VII 1.4.0). Started only by
+# `scripts/backup.sh drill`, as its own throwaway project (`<project>-drill`), and removed with
+# `down -v` after every drill.
+#
+# - One internal network with no route out: nothing here can reach the internet (no OTP, no
+#   notification, no Google) and nothing publishes a port.
+# - No volume shared with the live stack: the encrypted snapshot is streamed in (tar over a
+#   pipe) into the drill's own `src` volume; the database lives on tmpfs.
+# - Real card images are decrypted only inside this isolated copy and deleted with it; only the
+#   pass/fail counts are kept (CLAUDE.md rule for real images).
+name: sijil-drill
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: sijil
+      POSTGRES_USER: sijil
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?the drill env file sets it}
+    tmpfs:
+      - /var/lib/postgresql/data
+    networks:
+      - drill
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sijil -d sijil"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+
+  api:
+    image: ${SIJIL_API_IMAGE:?set by scripts/backup.sh}
+    env_file: ${SIJIL_DRILL_ENV:?set by scripts/backup.sh}
+    networks:
+      - drill
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=3)"
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 10s
+
+  # One-off commands only (`run --rm restorer …`); never started by `up`.
+  restorer:
+    image: ${SIJIL_BACKUP_IMAGE:?set by scripts/backup.sh}
+    entrypoint: ["python", "-m", "app.backup"]
+    env_file: ${SIJIL_DRILL_ENV:?set by scripts/backup.sh}
+    profiles: ["tools"]
+    networks:
+      - drill
+    volumes:
+      - src:/data/src
+      - staging:/data/restore-staging
+      - uploads:/data/uploads
+
+networks:
+  drill:
+    internal: true
+
+volumes:
+  src:
+  staging:
+  uploads:

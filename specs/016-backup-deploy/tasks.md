@@ -215,17 +215,17 @@ snapshots past 30 days and see only those removed.
 
 ### Tests (write first, run red)
 
-- [ ] T031 [P] [US2] Integration test `api/tests/integration/test_backup_restore.py`:
+- [x] T031 [P] [US2] Integration test `api/tests/integration/test_backup_restore.py`:
   - verify refuses a snapshot whose `sha256_enc` does not match, before touching anything;
   - refuses a manifest whose Alembic revision is not in `api/migrations/versions`;
   - stage decrypts every image into a staging dir and checks `sha256_plain`;
   - the database restore into a scratch database gives the manifest counts.
-- [ ] T032 [P] [US2] Integration test `api/tests/integration/test_backup_verify_restored.py`:
+- [x] T032 [P] [US2] Integration test `api/tests/integration/test_backup_verify_restored.py`:
   - `verify-restored` passes on a faithful restore;
   - fails when a count differs, when a referenced image is missing, or when an image hash differs;
   - writes a `history/…-drill.json` with data-model.md `backup_events.result` `passed|failed` and the compared
     counts only.
-- [ ] T033 [P] [US2] Write `scripts/backup-e2e.sh` (throwaway project `sijil-bk-e2e`, synthetic data, throwaway key
+- [x] T033 [P] [US2] Write `scripts/backup-e2e.sh` (throwaway project `sijil-bk-e2e`, synthetic data, throwaway key
   and passphrase from stdin). It refuses to run on the server (`/opt/sijil` or `SIJIL_SERVER=1`). It asserts quickstart «Automated»:
   - backup → add a request and erase another → `restore.sh --yes-for-test` → counts and image hashes equal the
     snapshot;
@@ -237,14 +237,14 @@ snapshots past 30 days and see only those removed.
 
 ### Implementation
 
-- [ ] T034 [US2] Implement `api/app/backup/restore.py`: `verify`, `stage_images`, `restore_database` (drop/create +
+- [x] T034 [US2] Implement `api/app/backup/restore.py`: `verify`, `stage_images`, `restore_database` (drop/create +
   `pg_restore`), `verify_restored`. Cover research R7 and R9, and the restore and drill events in data-model.md
   `backup_events.details`. Then run T031 and T032 green.
-- [ ] T035 [US2] Write `docker-compose.drill.yml` (research R9):
+- [x] T035 [US2] Write `docker-compose.drill.yml` (research R9):
   - project `sijil-drill`: `db` on tmpfs, `api` from the live image, and a restorer;
   - one `internal: true` network, no ports, no shared volume with the live stack;
   - env file from a tmpfs path.
-- [ ] T036 [US2] Write `scripts/restore.sh` (contracts/cli.md):
+- [x] T036 [US2] Write `scripts/restore.sh` (contracts/cli.md):
   - shows the snapshot, the loss warning (including «حذف مشترك»), and confirmation by typing the date;
   - takes `pre_restore`, then asks for the passphrase (identity only in tmpfs);
   - verifies, stages into a temporary volume, stops `api` and `backup`, restores, swaps `uploads` (owner 10001);
@@ -252,17 +252,18 @@ snapshots past 30 days and see only those removed.
   - supports `--from-external`.
   No server guard in `restore.sh` itself (it must work in a real disaster; the typed date protects it). The guard
   against the real server lives in `scripts/backup-e2e.sh` (analysis U2).
-- [ ] T037 [US2] Write `scripts/backup.sh` with `init-key`, `now`, `list`, `status` and `drill [id] [--external]`.
+- [x] T037 [US2] Write `scripts/backup.sh` with `init-key`, `now`, `list` and `drill [id] [--external]` (`status` moves
+  to T052, with the warnings it shows).
   The drill brings up `docker-compose.drill.yml`, restores, runs `verify-restored`, records, and always runs
   `down -v` (trap).
-- [ ] T038 [US2] Audit line `backup.restore` (actor none, entity snapshot id, after `{pre_restore}`), written by the
+- [x] T038 [US2] Audit line `backup.restore` (actor none, entity snapshot id, after `{pre_restore}`), written by the
   restorer once the app is healthy (data-model.md «Audit»).
-- [ ] T039 [US2] Run T033 `scripts/backup-e2e.sh` green on the developer machine.
-- [ ] T040 [US2] Measure a full local restore with ~1 GB of synthetic images (SC-003, < 30 min) and note the time in
-  the batch report. The owner re-measures it on the server after merge (analysis I1).
-- [ ] T041 [US2] Check that the drill container has no network route out (`wget` to a public host fails inside it) and
+- [x] T039 [US2] Run T033 `scripts/backup-e2e.sh` green on the developer machine.
+- [x] T040 [US2] Measure a full local restore with ~1 GB of synthetic images (SC-003, < 30 min) and note the time in
+  the batch report. Result 2026-11-25: 72 s, including the `pre_restore` backup (`SIJIL_E2E_BULK_MB=1000`). The owner re-measures it on the server after merge (analysis I1).
+- [x] T041 [US2] Check that the drill container has no network route out (`wget` to a public host fails inside it) and
   that its volumes are gone after `down -v`.
-- [ ] T042 [US2] Run the whole api suite green. Batch 3 report: red then green for T031–T033. **Batch 3 commit.**
+- [x] T042 [US2] Run the whole api suite green. Batch 3 report: red then green for T031–T033. **Batch 3 commit.**
 
 ---
 
