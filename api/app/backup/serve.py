@@ -195,10 +195,14 @@ class BackupService:
     # --- Loop -----------------------------------------------------------------------------
 
     def recover(self) -> None:
-        """On start: a run left `running` by a crash becomes failed (no live lock holds it)."""
+        """On start: a run left `running` by a crash becomes failed (no live lock holds it).
+        A `running` row whose snapshot is complete is the restored database's own backup:
+        the mirror marks it succeeded instead."""
         try:
             with self.lock(), self.sessions() as db:
                 for row in db.scalars(select(BackupRun).where(BackupRun.status == "running")):
+                    if row.snapshot_id and self.store.is_complete(row.snapshot_id):
+                        continue
                     row.status = "failed"
                     row.error_code = "internal"
                     row.snapshot_id = None

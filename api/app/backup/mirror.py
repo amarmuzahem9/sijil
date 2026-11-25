@@ -40,13 +40,16 @@ def _sync_snapshots(db: Session, store: BackupStore) -> None:
     rows = {r.snapshot_id: r for r in db.scalars(select(BackupRun)) if r.snapshot_id}
     for sid in complete:
         manifest = read_manifest(store, sid)
-        row = rows.get(sid)
+        # A row of that very id may exist without the snapshot_id (a restored database holds
+        # its own backup's row, possibly marked failed after the restart): reuse it.
+        row = rows.get(sid) or db.get(BackupRun, sid)
         if row is None:
             row = BackupRun(id=sid, snapshot_id=sid, kind=manifest.kind, status="succeeded")
             row.requested_by = _user_or_none(db, manifest.requested_by)
             db.add(row)
         elif manifest.requested_by is not None and row.requested_by is None:
             row.requested_by = _user_or_none(db, manifest.requested_by)
+        row.snapshot_id = sid
         row.status = "succeeded"
         row.error_code = None
         row.removed_at = None

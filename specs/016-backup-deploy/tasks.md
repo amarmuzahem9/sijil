@@ -326,13 +326,13 @@ snapshots past 30 days and see only those removed.
 
 ### Tests (write first, run red)
 
-- [ ] T055 [P] [US4] Integration test `api/tests/integration/test_backup_external.py`:
+- [x] T055 [P] [US4] Integration test `api/tests/integration/test_backup_external.py`:
   - copy of the latest successful snapshot + missing objects + `key.age` to a target dir;
   - objects already on the target are reused, and nothing on the target is removed or overwritten;
   - verification re-reads `sha256_enc`;
   - refuse when the free space is too small, before writing;
   - writes `history/…-external.json` (data-model.md `backup_events.type` `external_copy`).
-- [ ] T056 [P] [US4] Extend `scripts/backup-e2e.sh`:
+- [x] T056 [P] [US4] Extend `scripts/backup-e2e.sh`:
   - `weekly` refuses a path that is not a mount point or has no `.sijil-external` marker, and writes nothing;
   - with a loop-mounted temp file system and `init-external` it succeeds, runs the drill on the copy and prints
     «يمكن فصل الهارد الآن»;
@@ -340,12 +340,15 @@ snapshots past 30 days and see only those removed.
 
 ### Implementation
 
-- [ ] T057 [US4] Implement `api/app/backup/external.py` and the subcommand `external-copy`. Then run T055 green.
-- [ ] T058 [US4] Add `init-external` and `weekly` to `scripts/backup.sh` (research R10): `mountpoint -q`, marker,
+- [x] T057 [US4] Implement `api/app/backup/external.py` and the subcommand `external-copy`. Then run T055 green.
+- [x] T058 [US4] Add `init-external` and `weekly` to `scripts/backup.sh` (research R10): `mountpoint -q`, marker,
   `docker compose run --rm -v "$BACKUP_EXTERNAL_DIR":/external backup external-copy`, then `drill --external`, then
   `sync`.
-- [ ] T059 [US4] Run T056 green.
-- [ ] T060 [US4] Run the whole api suite green. Batch 5 report. **Batch 5 commit.**
+- [x] T059 [US4] Run T056 green.
+- [x] T060 [US4] Run the whole api suite green. Batch 5 report. **Batch 5 commit.** Two findings fixed with tests run
+  red first: the drive's mount point belongs to root, so `ensure_layout(chmod_root=False)` there; and after a restore
+  the restored database holds its own backup's row as `running`, which `recover()` now leaves to the mirror (it used
+  to mark it failed, and the mirror then hit the primary key).
 
 ---
 

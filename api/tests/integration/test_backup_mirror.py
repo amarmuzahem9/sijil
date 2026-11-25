@@ -149,3 +149,23 @@ def test_requested_by_of_an_unknown_user_is_dropped(backup_env, frozen_clock) ->
         s.commit()
         row = s.scalar(select(BackupRun).where(BackupRun.snapshot_id == manifest.id))
     assert row.requested_by is None
+
+
+def test_a_row_with_the_same_id_is_reused_not_inserted_again(backup_env, frozen_clock) -> None:
+    # After a restore, the restored database holds the row of that very backup (it was taken
+    # while the backup ran); it may have lost its snapshot_id. Sync must reuse it.
+    env = backup_env
+    seed(env)
+    manifest = take_snapshot(_cfg(env), "manual")
+    with env.sessions() as s:
+        s.add(BackupRun(id=manifest.id, kind="manual", status="failed", error_code="internal"))
+        s.commit()
+        mirror.sync(s, env.store)
+        s.commit()
+        (row,) = list(s.scalars(select(BackupRun)))
+    assert (row.id, row.snapshot_id, row.status, row.error_code) == (
+        manifest.id,
+        manifest.id,
+        "succeeded",
+        None,
+    )

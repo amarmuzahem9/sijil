@@ -127,3 +127,13 @@ def test_write_json_atomic_replaces(bs) -> None:
     assert json.loads(target.read_text()) == {"a": 2}
     assert (target.stat().st_mode & 0o777) == 0o600
     assert os.listdir(target.parent) == ["m.json"]
+
+
+def test_layout_can_leave_the_root_alone(tmp_path) -> None:
+    # The external drive's mount point belongs to root: only the folders we create are ours.
+    root = tmp_path / "drive"
+    root.mkdir()
+    os.chmod(root, 0o755)  # noqa: S103 - a mount point as root leaves it
+    BackupStore(root).ensure_layout(chmod_root=False)
+    assert (root.stat().st_mode & 0o777) == 0o755
+    assert (root / "images").stat().st_mode & 0o777 == 0o700

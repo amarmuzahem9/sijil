@@ -54,7 +54,7 @@ if [ "$FROM_STDIN" = 1 ]; then IFS= read -r PASS; fi
 # Where the snapshot is read from: the server's backup folder, or the external drive.
 SRC=()
 if [ "$EXTERNAL" = 1 ]; then
-    EXT="$(env_value BACKUP_EXTERNAL_DIR)"
+    EXT="${BACKUP_EXTERNAL_DIR:-$(env_value BACKUP_EXTERNAL_DIR)}"
     [ -n "$EXT" ] || fail "BACKUP_EXTERNAL_DIR is not set in .env"
     [ -f "$EXT/.sijil-external" ] || fail "the external drive is not mounted at $EXT"
     SRC=(-v "$EXT:/external:ro")

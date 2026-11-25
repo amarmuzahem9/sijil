@@ -148,3 +148,20 @@ def test_retention_runs_after_success(backup_env, frozen_clock) -> None:
     assert old.exists()
     _service(env).iteration(AFTER)
     assert env.store.list_snapshots(complete_only=False) == [_runs(env)[0].snapshot_id]
+
+
+def test_a_restored_running_row_of_a_complete_snapshot_ends_succeeded(backup_env) -> None:
+    # The restored database holds its own backup's row as "running" (specs/016 T057 finding).
+    env = backup_env
+    seed(env)
+    service = _service(env)
+    run = service.run("manual", now=BEFORE)
+    with env.sessions() as s:
+        row = s.get(BackupRun, run.id)
+        row.status = "running"
+        row.finished_at = None
+        s.commit()
+    service.recover()
+    service.iteration(BEFORE + timedelta(minutes=1))
+    (row,) = _runs(env)
+    assert (row.status, row.snapshot_id, row.error_code) == ("succeeded", run.snapshot_id, None)

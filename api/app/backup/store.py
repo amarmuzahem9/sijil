@@ -68,9 +68,14 @@ class BackupStore:
         self.history = self.root / "history"
         self.key_path = self.root / "key.age"
 
-    def ensure_layout(self) -> None:
-        for path in (self.root, self.images, self.snapshots, self.history):
-            path.mkdir(parents=True, exist_ok=True)
+    def ensure_layout(self, *, chmod_root: bool = True) -> None:
+        """Create the folders (mode 700). `chmod_root=False` for the external drive, whose mount
+        point belongs to root: only the folders created here are ours."""
+        self.root.mkdir(parents=True, exist_ok=True)
+        if chmod_root:
+            os.chmod(self.root, 0o700)
+        for path in (self.images, self.snapshots, self.history):
+            path.mkdir(exist_ok=True)
             os.chmod(path, 0o700)
 
     # --- JSON -----------------------------------------------------------------------------

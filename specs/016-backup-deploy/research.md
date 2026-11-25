@@ -163,7 +163,10 @@ re-read after writing (FR-015a).
 mistake. It copies the latest successful snapshot and its missing image objects plus `key.age` into the same layout
 on the drive (objects already there are reused, nothing on the drive is removed or overwritten), checks free space
 first, re-reads and verifies `sha256_enc` of every copied file, records `history/…-external.json`, then runs the drill
-on the copy (asks the passphrase), syncs, and prints «يمكن فصل الهارد الآن».
+on the copy (asks the passphrase), syncs, and prints «يمكن فصل الهارد الآن». The drive's mount point belongs to root: only the folders Sijil creates
+on it are chmod 700; `key.age` on the drive must equal the server's (a different key is refused, never overwritten).
+The local e2e uses a temp folder for the drive (`SIJIL_E2E=1 SIJIL_E2E_NO_MOUNTPOINT=1` only); on the server the
+mount point check always applies.
 
 **Rationale**: Owner decisions Q2-B and Q3-A; FR-007. Deduplication on the drive too keeps its growth to new images +
 one dump a week.

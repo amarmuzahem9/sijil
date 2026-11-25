@@ -111,6 +111,56 @@ else
     bad "drill failed on a good snapshot"
 fi
 
+echo "== 4b. weekly copy to a stand-in drive (a temp folder; no mount point on this machine)"
+DRIVE="$WORK/drive"
+WEEKLY=(env BACKUP_EXTERNAL_DIR="$DRIVE" SIJIL_E2E=1 SIJIL_E2E_NO_MOUNTPOINT=1 bash scripts/backup.sh)
+if BACKUP_EXTERNAL_DIR="$DRIVE" bash scripts/backup.sh weekly --passphrase-stdin </dev/null; then
+    bad "weekly ran on a folder that is not a mounted drive"
+else
+    pass "weekly refused a folder that is not a mount point"
+fi
+mkdir -p "$DRIVE"
+if printf '%s\n' "$PASS" | "${WEEKLY[@]}" weekly --passphrase-stdin; then
+    bad "weekly ran without the drive marker"
+else
+    pass "weekly refused a drive without the marker"
+fi
+[ -z "$(ls -A "$DRIVE")" ] && pass "nothing written on an unmarked drive" || bad "files written on an unmarked drive"
+"${WEEKLY[@]}" init-external >/dev/null && [ -f "$DRIVE/.sijil-external" ] \
+    && pass "init-external wrote the marker" || bad "init-external failed"
+if printf '%s\n' "$PASS" | "${WEEKLY[@]}" weekly --passphrase-stdin | tee "$WORK/weekly.txt" | tail -n 3; then
+    pass "weekly copy and drill on the copy"
+else
+    bad "weekly failed"
+fi
+grep -q "يمكن فصل الهارد الآن" "$WORK/weekly.txt" && pass "told the operator the drive can be unplugged" \
+    || bad "no «يمكن فصل الهارد الآن»"
+[ -n "$(ls "$DRIVE/snapshots")" ] && [ -f "$DRIVE/key.age" ] && pass "snapshot and key.age on the drive" \
+    || bad "the drive holds no snapshot or no key.age"
+# Every file already on the drive, with its modification time: none may change or go.
+find "$DRIVE" -type f -printf '%P %T@\n' | sort > "$WORK/drive-before.txt"
+snaps_before="$(ls "$DRIVE/snapshots" | wc -l)"
+bash scripts/backup.sh now >/dev/null
+if printf '%s\n' "$PASS" | "${WEEKLY[@]}" weekly --passphrase-stdin >/dev/null; then
+    find "$DRIVE" -type f -printf '%P %T@\n' | sort > "$WORK/drive-after.txt"
+    [ -z "$(comm -23 "$WORK/drive-before.txt" "$WORK/drive-after.txt")" ] \
+        && pass "a second weekly removed or rewrote nothing on the drive" \
+        || bad "a second weekly changed files already on the drive"
+    [ "$(ls "$DRIVE/snapshots" | wc -l)" = "$((snaps_before + 1))" ] \
+        && pass "a second weekly added the new snapshot" || bad "a second weekly added no snapshot"
+else
+    bad "the second weekly failed"
+fi
+recorded=0
+for _ in $(seq 1 15); do  # the service mirrors the records within 15 s
+    n="$("${DC[@]}" exec -T db psql -U sijil -d sijil -At -c \
+        "SELECT count(*) FROM backup_events WHERE type = 'external_copy' AND result = 'succeeded'" \
+        </dev/null | tr -d '\r')"
+    [ "$n" = 2 ] && { recorded=1; break; }
+    sleep 2
+done
+[ "$recorded" = 1 ] && pass "both copies shown on the backup page" || bad "the copies are not on the backup page"
+
 echo "== 5. a damaged object"
 "${DC[@]}" exec -T backup python - "$SID" <<'PY'
 import sys

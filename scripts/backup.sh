@@ -8,8 +8,10 @@
 #   list                      the snapshots on this machine
 #   drill [SNAPSHOT_ID]       restore drill in an isolated throwaway stack (asks the passphrase)
 #   status                    last backup, external copy, drill, and the warnings
+#   init-external             once per drive: check it is mounted and write its marker
+#   weekly                    copy to the plugged-in drive, then a drill on the copy
 #
-# Restore: scripts/restore.sh. The weekly external copy comes with batch 5 of feature 016.
+# Restore: scripts/restore.sh. The drive is mounted by hand at BACKUP_EXTERNAL_DIR (.env).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 # Git Bash on Windows rewrites /data/... arguments into Windows paths; Linux ignores this.
@@ -29,6 +31,27 @@ else
 fi
 P="${COMPOSE_PROJECT_NAME:-sijil}"
 
+# The external drive: its mount point comes from .env (the e2e check passes it in the environment).
+external_dir() { echo "${BACKUP_EXTERNAL_DIR:-$(env_value BACKUP_EXTERNAL_DIR)}"; }
+
+# Refuse anything but the plugged-in drive, so nothing is ever written to the server's own disk
+# by mistake. Exit 5 = the drive is not ready.
+check_drive() {
+    local ext="$1" need_marker="$2"
+    [ -n "$ext" ] || fail "BACKUP_EXTERNAL_DIR is not set in .env" 5
+    [ -d "$ext" ] || fail "the drive is not mounted: $ext does not exist" 5
+    if [ "${SIJIL_E2E:-}" = 1 ] && [ "${SIJIL_E2E_NO_MOUNTPOINT:-}" = 1 ]; then
+        : # backup-e2e.sh only: a temp folder stands in for the drive
+    elif ! command -v mountpoint >/dev/null 2>&1; then
+        fail "cannot check that $ext is a mounted drive (no mountpoint command)" 5
+    elif ! mountpoint -q "$ext"; then
+        fail "$ext is not a mounted drive; plug the drive in and mount it first" 5
+    fi
+    if [ "$need_marker" = 1 ] && [ ! -f "$ext/.sijil-external" ]; then
+        fail "this drive was not prepared for Sijil (run: scripts/backup.sh init-external)" 5
+    fi
+}
+
 drill() {
     local sid="" from_stdin=0 external=0 arg
     for arg in "$@"; do
@@ -42,8 +65,8 @@ drill() {
     local src=() source=() label=server
     if [ "$external" = 1 ]; then
         local ext
-        ext="$(env_value BACKUP_EXTERNAL_DIR)"
-        [ -f "$ext/.sijil-external" ] || fail "the external drive is not mounted at '$ext'" 5
+        ext="$(external_dir)"
+        check_drive "$ext" 1
         src=(-v "$ext:/external:ro")
         source=(--source /external)
         label=external
@@ -165,11 +188,38 @@ case "$cmd" in
     drill)
         drill "$@"
         ;;
+    init-external)
+        ext="$(external_dir)"
+        check_drive "$ext" 0
+        if [ -f "$ext/.sijil-external" ]; then
+            echo "الهارد مهيّأ من قبل: $ext"
+        else
+            printf '%s\n' "Sijil external backup drive — do not delete this file." > "$ext/.sijil-external"
+            echo "تم تهيئة الهارد: $ext"
+        fi
+        ;;
+    weekly)
+        from_stdin=0; [ "${1:-}" = "--passphrase-stdin" ] && from_stdin=1
+        # Read the passphrase first: `docker compose run/exec -T` would read our stdin.
+        pass=""; [ "$from_stdin" = 1 ] && IFS= read -r pass
+        ext="$(external_dir)"
+        check_drive "$ext" 1
+        "${DC[@]}" run --rm -T --no-deps -v "$ext:/external" backup external-copy --target /external \
+            </dev/null || exit 5
+        # The drill restores from the copy on the drive, so the copy itself is proven.
+        if [ "$from_stdin" = 1 ]; then
+            printf '%s\n' "$pass" | drill --external --passphrase-stdin || exit 6
+        else
+            drill --external || exit 6
+        fi
+        sync
+        echo "يمكن فصل الهارد الآن."
+        ;;
     status)
         "${DC[@]}" exec -T backup python -m app.backup status
         ;;
     *)
-        sed -n '2,13p' "$0" >&2
+        sed -n '2,15p' "$0" >&2
         exit 2
         ;;
 esac

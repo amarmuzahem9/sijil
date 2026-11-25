@@ -9,6 +9,7 @@ restore-into SID --staging D --uploads D [--passphrase-stdin]   restore (databas
 verify-restored SID --uploads D               the drill's comparison (JSON on stdout)
 record drill|restore SID                      write a drill/restore record (+ audit)
 status                                        last backup, copy, drill and the warnings
+external-copy --target D                      the weekly copy to the mounted drive
 
 Exit codes: 0 ok, 3 busy, 4 disk_low, 6 drill failed, 7 restore refused, 1 other.
 Output carries ids, times, sizes and
@@ -32,6 +33,7 @@ from app.core.timeutil import BAGHDAD, utc_now
 
 EXIT_BUSY = 3
 EXIT_DISK_LOW = 4
+EXIT_EXTERNAL = 5
 EXIT_DRILL_FAILED = 6
 EXIT_REFUSED = 7
 
@@ -252,6 +254,24 @@ def _status() -> int:
     return 1 if warnings else 0
 
 
+def _external_copy(target: str) -> int:
+    from app.backup import external
+
+    try:
+        result = external.copy(_store(None), Path(target), at=utc_now())
+    except external.ExternalCopyFailed as exc:
+        print(f"فشل النسخ إلى الهارد: {exc.code}", file=sys.stderr)
+        return EXIT_EXTERNAL
+    if result.already_there:
+        print(f"النسخة {result.snapshot_id} موجودة على الهارد من قبل، وتم التحقق منها")
+    else:
+        print(
+            f"تم نسخ {result.snapshot_id} إلى الهارد: {result.objects_new} صورة جديدة، "
+            f"{result.bytes_copied / 1024 / 1024:.1f} MB، وتم التحقق منها"
+        )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.backup")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -260,6 +280,8 @@ def main(argv: list[str] | None = None) -> int:
     now.add_argument("--kind", choices=["manual", "pre_deploy", "pre_restore"], default="manual")
     sub.add_parser("list")
     sub.add_parser("status")
+    ext = sub.add_parser("external-copy")
+    ext.add_argument("--target", required=True)
     init = sub.add_parser("init-key")
     init.add_argument("--passphrase-stdin", action="store_true")
     for name in ("latest", "show", "check", "files", "restore-into", "verify-restored", "record"):
@@ -282,6 +304,8 @@ def main(argv: list[str] | None = None) -> int:
         return _init_key(args.passphrase_stdin)
     if args.command == "status":
         return _status()
+    if args.command == "external-copy":
+        return _external_copy(args.target)
     if args.command in ("latest", "show", "check", "files", "restore-into", "verify-restored"):
         store = _store(args.source)
         if args.command == "latest":
