@@ -30,6 +30,7 @@ from app.logging_config import setup_logging
 from app.services import (
     legacy_source,  # noqa: F401  (registers legacy subscribers, specs/014)
     match_service,  # noqa: F401  (registers the check source and catalog usage checks)
+    sas_source,  # noqa: F401  (registers SAS subscribers, specs/015)
 )
 
 

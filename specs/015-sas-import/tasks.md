@@ -228,12 +228,12 @@ username; nothing reaches the marketer.
 
 ### Tests (write first, run red)
 
-- [ ] T032 [P] [US2] Integration tests `api/tests/integration/test_sas_source.py`:
+- [x] T032 [P] [US2] Integration tests `api/tests/integration/test_sas_source.py`:
   - `find_matches` returns a `sas` record for the phone column and for the username phone, one record when both
     are equal, and none for a skipped row or for a NULL key;
   - the record never sets `national_id`, `family` or `pending`;
   - a row with `missing_since` set still matches.
-- [ ] T033 [P] [US2] Integration tests in `api/tests/integration/test_sas_check_flow.py`:
+- [x] T033 [P] [US2] Integration tests in `api/tests/integration/test_sas_check_flow.py`:
   - the OTP precheck refuses a SAS phone (`phone_used`);
   - a submit with a SAS phone as a new request is refused and the draft stays;
   - a return by a SAS phone writes `matched_source = 'sas'`; when accepted it keeps the SAS username as written;
@@ -244,12 +244,12 @@ username; nothing reaches the marketer.
 
 ### Implementation
 
-- [ ] T034 [US2] Write `api/app/services/sas_source.py`, registering `sas` through `match_service.register_source`
+- [x] T034 [US2] Write `api/app/services/sas_source.py`, registering `sas` through `match_service.register_source`
   (research R8). Import it in `api/app/main.py`. Then run T032 green.
-- [ ] T035 [US2] In `api/app/services/submit_service.py`, `_username` falls back to the SAS username: newest
+- [x] T035 [US2] In `api/app/services/submit_service.py`, `_username` falls back to the SAS username: newest
   `last_import_id`, then highest id (research R14). Update its docstring.
-- [ ] T036 [US2] Run T033 green.
-- [ ] T037 [US2] Run the whole api suite green. **Batch 4 commit.**
+- [x] T036 [US2] Run T033 green.
+- [x] T037 [US2] Run the whole api suite green. **Batch 4 commit.**
 
 ---
 

@@ -29,7 +29,7 @@ from app.core.matches import MatchRecord
 from app.core.national_id import normalize_national_id
 from app.core.timeutil import utc_now
 from app.errors import AppError
-from app.models import Draft, Request, RequestImage, RequestReason, User
+from app.models import Draft, Request, RequestImage, RequestReason, SasSubscriber, User
 from app.models.draft import NAME_FIELDS
 from app.schemas.requests import RequestListItem, RequestOut
 from app.services import audit_service, draft_service, match_service, otp_service
@@ -277,14 +277,25 @@ def submit(db: Session, user: User, draft_id: uuid.UUID, version: int) -> tuple[
 
 
 def _username(db: Session, draft: Draft, phone: str, target: list[MatchRecord]) -> str:
-    """§8.2, or for a return the historical username of the newest target record that has one
-    (specs/009 FR-015, research R7). Only Sijil records carry a username in 009."""
+    """§8.2, or for a return the historical username (§6.3 item 4): the newest Sijil target that
+    has one (specs/009 FR-015, research R7); else the SAS target written by the newest import, then
+    the highest id, as written in SAS (specs/015 FR-013, research R14). Legacy records have none."""
     ids = [int(r.ref_id) for r in target if r.source == "sijil"]
     if ids:
         historical = db.scalars(
             select(Request.username)
             .where(Request.id.in_(ids))
             .order_by(Request.submitted_at.desc(), Request.id.desc())
+            .limit(1)
+        ).first()
+        if historical:
+            return historical
+    sas_ids = [int(r.ref_id) for r in target if r.source == "sas"]
+    if sas_ids:
+        historical = db.scalars(
+            select(SasSubscriber.username)
+            .where(SasSubscriber.id.in_(sas_ids))
+            .order_by(SasSubscriber.last_import_id.desc(), SasSubscriber.id.desc())
             .limit(1)
         ).first()
         if historical:

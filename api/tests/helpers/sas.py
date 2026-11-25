@@ -67,3 +67,44 @@ def seed_towers(db: Session, codes: tuple[str, ...] = TOWER_CODES) -> dict[str, 
             db.flush()
             found[code] = tower.id
     return found
+
+
+_COUNTS = (
+    "rows_total",
+    "added",
+    "updated",
+    "unchanged",
+    "skipped",
+    "missing_marked",
+    "missing_cleared",
+    "without_phone",
+    "prefixes_mapped",
+)
+
+
+def sas_subscriber(db: Session, admin, **values: Any):
+    """One imported SAS subscriber, in its own import. `username` sets the key; the username
+    phone follows the username unless given, as a real import would."""
+    from app.core import sas_row
+    from app.models import SasImport, SasSubscriber
+
+    record = SasImport(created_by=admin.id, file_name="sas_test.csv", **dict.fromkeys(_COUNTS, 0))
+    db.add(record)
+    db.flush()
+    username = values.pop("username", "ZZT01-07700000000")
+    prefix, username_phone = sas_row.split_username(username)
+    row = {
+        "username": username,
+        "username_key": sas_row.username_key(username),
+        "username_phone": username_phone,
+        "tower_prefix": prefix,
+        "full_name": "مشترك SAS تجريبي",
+        "first_name": "مشترك",
+        "last_name": "SAS تجريبي",
+        "first_import_id": record.id,
+        "last_import_id": record.id,
+    } | values
+    subscriber = SasSubscriber(**row)
+    db.add(subscriber)
+    db.flush()
+    return subscriber
