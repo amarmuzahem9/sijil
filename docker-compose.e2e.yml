@@ -18,6 +18,13 @@ services:
       # Generated legacy card images (specs/014 research R7): never Google Drive, never real cards.
       DRIVE_MODE: fake
 
+  # Backups (feature 016): a throwaway key made by scripts/e2e.sh for this stack only — never
+  # the developer's key from .env. Synthetic data only.
+  backup:
+    environment:
+      APP_ENV: test
+      BACKUP_AGE_RECIPIENT: ${E2E_BACKUP_RECIPIENT:-}
+
   # The real reader is not built or started in e2e (4 GB image; the fake reader is used).
   ocr:
     profiles: ["ocr-real"]

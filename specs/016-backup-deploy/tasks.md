@@ -275,7 +275,7 @@ snapshots past 30 days and see only those removed.
 
 ### Tests (write first, run red)
 
-- [ ] T043 [P] [US3] API test `api/tests/integration/test_admin_backup_api.py` (contracts/api.md):
+- [x] T043 [P] [US3] API test `api/tests/integration/test_admin_backup_api.py` (contracts/api.md):
   - `GET /api/admin/backup` shape;
   - `runs` excludes `removed` and is newest first;
   - `POST /api/admin/backup/run` → 202, a `requested` row and the audit `backup.manual_requested`;
@@ -283,35 +283,38 @@ snapshots past 30 days and see only those removed.
   - 503 `backup_service_down` with an old heartbeat;
   - 403 for an added admin with every permission and for a marketer;
   - no personal data in the body.
-- [ ] T044 [P] [US3] Unit tests `api/tests/unit/test_backup_warnings.py` (clock fixture), one case per code of
+- [x] T044 [P] [US3] Unit tests `api/tests/unit/test_backup_warnings.py` (clock fixture), one case per code of
   contracts/api.md «Warning codes»: `last_failed`, `no_recent_backup` (36 h), `external_overdue` (8 days),
   `drill_failed_or_overdue` (8 days), `disk_low`, `service_down` (10 min). No warning on a healthy state.
-- [ ] T045 [P] [US3] API test `api/tests/integration/test_admin_home_backup.py`: `GET /api/admin/home` carries
+- [x] T045 [P] [US3] API test `api/tests/integration/test_admin_home_backup.py`: `GET /api/admin/home` carries
   `backup_warnings` for the main admin, and `[]` for other admins.
-- [ ] T046 [P] [US3] Vitest `web/src/__tests__/backupPage.test.tsx`:
+- [x] T046 [P] [US3] Vitest `web/src/__tests__/backupPage.test.tsx`:
   - the page shows the last backup (Baghdad time), the kept runs, the last external copy, the last drill, the
     deploys, free space and the configured external path;
   - the button starts a run and shows «جارٍ النسخ…» then the result;
   - 409 shows «يوجد نسخ جارٍ الآن»;
   - warnings are listed with their Arabic texts.
-- [ ] T047 [P] [US3] Vitest `web/src/__tests__/homeBackupWarning.test.tsx`: the home banner «فشل آخر نسخ احتياطي»
+- [x] T047 [P] [US3] Vitest `web/src/__tests__/homeBackupWarning.test.tsx`: the home banner «فشل آخر نسخ احتياطي»
   (and the other texts) links to `/admin/backup`; it is absent when the list is empty.
 
 ### Implementation
 
-- [ ] T048 [US3] Implement `api/app/services/backup_warnings.py` (research R12, from data-model.md `backup_runs`,
+- [x] T048 [US3] Implement `api/app/services/backup_warnings.py` (research R12, from data-model.md `backup_runs`,
   `backup_events` and `backup_status.heartbeat_at`). Then run T044 green.
-- [ ] T049 [US3] Implement `api/app/api/admin_backup.py` with the schemas in `api/app/schemas/backup.py`, main admin
+- [x] T049 [US3] Implement `api/app/api/admin_backup.py` with the schemas in `api/app/schemas/backup.py`, main admin
   only, and register the router in `api/app/main.py`. Then run T043 green.
-- [ ] T050 [US3] Add `backup_warnings` to `HomeOut` in `api/app/schemas/admin_requests.py` and to `api/app/api/admin.py`
+- [x] T050 [US3] Add `backup_warnings` to `HomeOut` in `api/app/schemas/admin_requests.py` and to `api/app/api/admin.py`
   `home`. Then run T045 green.
-- [ ] T051 [US3] Write `web/src/pages/admin/Backup.tsx` (MUI, Arabic, RTL, phone-width), replace `AdminBackup` in
+- [x] T051 [US3] Write `web/src/pages/admin/Backup.tsx` (MUI, Arabic, RTL, phone-width), replace `AdminBackup` in
   `web/src/pages/admin/placeholders.tsx` and `web/src/router.tsx`, and poll every 5 s while a run is active. Then run
   T046 green.
-- [ ] T052 [US3] Add the warning banner to `web/src/pages/admin/Home.tsx`. Then run T047 green.
-- [ ] T053 [US3] Playwright `e2e/tests/backup.spec.ts`: the main admin opens the page and presses «نسخة يدوية الآن»
+- [x] T052 [US3] Add the warning banner to `web/src/pages/admin/Home.tsx`. Then run T047 green. Also
+  `python -m app.backup status` / `scripts/backup.sh status` (moved from T037), with
+  `api/tests/integration/test_backup_cli_status.py` run red first.
+- [x] T053 [US3] Playwright `e2e/tests/backup.spec.ts` (written after the page, so not run red first; `scripts/e2e.sh`
+  now starts `backup` with its own throwaway key): the main admin opens the page and presses «نسخة يدوية الآن»
   (fake-free e2e stack with a throwaway key); an added admin does not see the menu item.
-- [ ] T054 [US3] Run both suites green. Batch 4 report: red then green for T043–T047. **Batch 4 commit.**
+- [x] T054 [US3] Run both suites green. Batch 4 report: red then green for T043–T047. **Batch 4 commit.**
 
 ---
 

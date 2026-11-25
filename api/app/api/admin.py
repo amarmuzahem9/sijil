@@ -4,9 +4,10 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.api.deps import AuthContext, require_roles
+from app.core.timeutil import utc_now
 from app.db import get_db
 from app.schemas.admin_requests import HomeOut
-from app.services import admin_home
+from app.services import admin_home, backup_warnings
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -19,6 +20,10 @@ def ping(_: AuthContext = Depends(any_admin)) -> dict[str, bool]:
 
 
 @router.get("/home", response_model=HomeOut)
-def home(_: AuthContext = Depends(any_admin), db: Session = Depends(get_db)) -> HomeOut:
-    """Today and this month in Baghdad time, for every admin (research R10). Counts only."""
-    return admin_home.counts(db)
+def home(ctx: AuthContext = Depends(any_admin), db: Session = Depends(get_db)) -> HomeOut:
+    """Today and this month in Baghdad time, for every admin (research R10). Counts only.
+    The main admin also gets the backup warnings (specs/016 FR-017)."""
+    out = admin_home.counts(db)
+    if ctx.user.role == "super_admin":
+        out.backup_warnings = backup_warnings.compute(db, utc_now())
+    return out

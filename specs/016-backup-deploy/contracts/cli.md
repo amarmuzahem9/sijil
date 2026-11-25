@@ -13,7 +13,7 @@ personal data, secrets or the passphrase.
 | `list [--external]` | Snapshots: id, Baghdad time, kind, status, size, counts. | no |
 | `weekly` | External copy (R10) then drill on it; ends with «يمكن فصل الهارد الآن». Exit 5 drive not mounted / no marker / full. | yes (drill) |
 | `drill [id] [--external]` | Restore drill in the isolated stack (R9). Exit 6 failed. | yes |
-| `status` | Last backup, last external copy, last drill, warnings. | no |
+| `status` | Last backup, last external copy, last drill, warnings. Exit 1 when there is a warning. | no |
 
 ## scripts/restore.sh `[id] [--from-external]`
 

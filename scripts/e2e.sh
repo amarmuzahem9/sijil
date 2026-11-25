@@ -11,5 +11,11 @@ trap cleanup EXIT
 
 cleanup
 "${DC[@]}" up -d --build --wait db api web proxy
+# A throwaway backup key for this stack (feature 016): its passphrase is random and forgotten.
+E2E_BACKUP_RECIPIENT="$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n' \
+    | "${DC[@]}" run --rm -T --no-deps backup init-key --passphrase-stdin \
+    | sed -n 's/^BACKUP_AGE_RECIPIENT=//p' | tr -d '\r')"
+export E2E_BACKUP_RECIPIENT
+"${DC[@]}" up -d --wait backup
 "${DC[@]}" exec -T api python -m app.cli seed-demo --e2e
 "${DC[@]}" --profile e2e run --rm --build e2e "$@"

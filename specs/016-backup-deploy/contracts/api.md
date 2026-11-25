@@ -10,7 +10,7 @@ UTC ISO; the web shows them in Baghdad time. No response carries personal data.
   "status": {
     "service_ok": true, "heartbeat_at": "…", "nightly_at": "03:00",
     "free_bytes": 0, "total_bytes": 0, "min_free_bytes": 0, "backup_dir_bytes": 0,
-    "external_dir": "/media/sijil-external"
+    "external_dir": "/media/sijil-external", "key_configured": true
   },
   "running": {"id": "…", "kind": "manual", "started_at": "…"} ,
   "runs": [{"id": "…", "snapshot_id": "…", "kind": "nightly", "status": "succeeded", "error_code": null,
@@ -42,5 +42,6 @@ Adds `"backup_warnings": [code]` — present for the main admin, always `[]` for
 | `no_recent_backup` | لا توجد نسخة ناجحة منذ أكثر من 36 ساعة |
 | `external_overdue` | النسخة الأسبوعية على الهارد الخارجي متأخرة |
 | `drill_failed_or_overdue` | تجربة الاسترجاع فشلت أو متأخرة |
-| `disk_low` | مساحة السيرفر قليلة |
+| `disk_low` | مساحة السيرفر قليلة (الفارغ أقل من ضعف هامش BACKUP_MIN_FREE_GB، قبل أن يُرفض النسخ) |
 | `service_down` | خدمة النسخ متوقفة |
+| `no_key` | لم يُضبط مفتاح النسخ (BACKUP_AGE_RECIPIENT فارغ: لا نسخ أبداً) |

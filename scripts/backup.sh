@@ -7,6 +7,7 @@
 #   now                       one manual backup now
 #   list                      the snapshots on this machine
 #   drill [SNAPSHOT_ID]       restore drill in an isolated throwaway stack (asks the passphrase)
+#   status                    last backup, external copy, drill, and the warnings
 #
 # Restore: scripts/restore.sh. The weekly external copy comes with batch 5 of feature 016.
 set -euo pipefail
@@ -164,8 +165,11 @@ case "$cmd" in
     drill)
         drill "$@"
         ;;
+    status)
+        "${DC[@]}" exec -T backup python -m app.backup status
+        ;;
     *)
-        sed -n '2,12p' "$0" >&2
+        sed -n '2,13p' "$0" >&2
         exit 2
         ;;
 esac

@@ -1,17 +1,22 @@
 /**
  * «الرئيسية» for every admin (docs/system.md v1.13 §10 item 1, specs/010 US5: FR-021): today's and
  * this month's counts in Baghdad time. Each count goes by the time of its own step; «بالانتظار» is
- * the current number. Counts only.
+ * the current number. Counts only. The main admin also sees the backup warnings (specs/016
+ * FR-017), with a link to «النسخ الاحتياطي».
  */
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
+import MuiLink from '@mui/material/Link';
 import Paper from '@mui/material/Paper';
 import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useQuery } from '@tanstack/react-query';
 import { useId } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 
 import { getHome, type HomeCounts } from '../../lib/adminRequests';
+import { WARNING_TEXTS, type BackupWarning } from '../../lib/backup';
 import { formatNumber } from '../../lib/money';
 
 const TILES: [keyof HomeCounts, string][] = [
@@ -59,6 +64,21 @@ function Row({ title, counts }: { title: string; counts: HomeCounts }) {
   );
 }
 
+function BackupWarnings({ codes }: { codes: BackupWarning[] }) {
+  return (
+    <Alert severity="error">
+      <Stack spacing={0.5}>
+        {codes.map((code) => (
+          <span key={code}>{WARNING_TEXTS[code] ?? code}</span>
+        ))}
+        <MuiLink component={RouterLink} to="/admin/backup">
+          صفحة النسخ الاحتياطي
+        </MuiLink>
+      </Stack>
+    </Alert>
+  );
+}
+
 export default function AdminHome() {
   const query = useQuery({ queryKey: ['admin', 'home'], queryFn: getHome });
   return (
@@ -73,6 +93,9 @@ export default function AdminHome() {
       </div>
       {query.isPending && <Skeleton variant="rounded" height={200} />}
       {query.isError && <Paper sx={{ p: 2 }}>{query.error.message}</Paper>}
+      {query.data?.backup_warnings && query.data.backup_warnings.length > 0 && (
+        <BackupWarnings codes={query.data.backup_warnings} />
+      )}
       {query.data && (
         <>
           <Row title="اليوم" counts={query.data.today} />

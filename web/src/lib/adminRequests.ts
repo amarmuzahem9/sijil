@@ -2,6 +2,7 @@
  * Admin review (specs/010 contracts/api.md): «طلبات بالانتظار», the request file and its images.
  * Only the main admin and admins with `review` get answers; the server checks (Principle IX).
  */
+import type { BackupWarning } from './backup';
 import { apiFetch, apiFetchBlob } from './api';
 import type { RequestType } from './requests';
 import type { DeletionReason } from './labels';
@@ -224,4 +225,10 @@ export interface HomeCounts {
 }
 
 /** The admin home counts, Baghdad days and months (specs/010 research R10). Any admin. */
-export const getHome = () => apiFetch<{ today: HomeCounts; month: HomeCounts }>('/api/admin/home');
+export const getHome = () =>
+  apiFetch<{
+    today: HomeCounts;
+    month: HomeCounts;
+    /** Main admin only; [] for other admins (specs/016 FR-017). */
+    backup_warnings?: BackupWarning[];
+  }>('/api/admin/home');

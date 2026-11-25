@@ -8,6 +8,7 @@ latest | show SID | check SID | files SID      read a snapshot (no passphrase ne
 restore-into SID --staging D --uploads D [--passphrase-stdin]   restore (database + images)
 verify-restored SID --uploads D               the drill's comparison (JSON on stdout)
 record drill|restore SID                      write a drill/restore record (+ audit)
+status                                        last backup, copy, drill and the warnings
 
 Exit codes: 0 ok, 3 busy, 4 disk_low, 6 drill failed, 7 restore refused, 1 other.
 Output carries ids, times, sizes and
@@ -210,6 +211,47 @@ def _record(store: BackupStore, args: argparse.Namespace) -> int:
     return 2
 
 
+def _status() -> int:
+    """What the backup page shows, for the operator. Exit 1 when there is a warning."""
+    from sqlalchemy import select
+
+    from app.db import get_sessionmaker
+    from app.models import BackupEvent, BackupRun
+    from app.services import backup_warnings
+
+    def local(at) -> str:
+        return f"{at.astimezone(BAGHDAD):%Y-%m-%d %H:%M}" if at else "—"
+
+    with get_sessionmaker()() as db:
+        last = db.scalar(
+            select(BackupRun)
+            .where(BackupRun.status.in_(("succeeded", "failed")))
+            .order_by(BackupRun.finished_at.desc().nulls_last())
+        )
+        events = {
+            t: db.scalar(
+                select(BackupEvent).where(BackupEvent.type == t).order_by(BackupEvent.at.desc())
+            )
+            for t in ("external_copy", "drill")
+        }
+        warnings = backup_warnings.compute(db, utc_now())
+    if last is None:
+        print("آخر نسخة: لا يوجد")
+    else:
+        state = "ناجحة" if last.status == "succeeded" else f"فشلت ({last.error_code})"
+        print(f"آخر نسخة: {last.snapshot_id or last.id}  {local(last.finished_at)}  {state}")
+    ext, drill = events["external_copy"], events["drill"]
+    print(f"آخر نسخة على الهارد: {local(ext.at) if ext else 'لا يوجد'}")
+    if drill is None:
+        print("تجربة الاسترجاع: لم تُجرَّب بعد")
+    else:
+        result = "نجحت" if drill.result == "passed" else "فشلت"
+        print(f"تجربة الاسترجاع: {result}  {local(drill.at)}")
+    for code in warnings:
+        print(f"تحذير: {backup_warnings.TEXTS[code]}")
+    return 1 if warnings else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.backup")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -217,6 +259,7 @@ def main(argv: list[str] | None = None) -> int:
     now = sub.add_parser("now")
     now.add_argument("--kind", choices=["manual", "pre_deploy", "pre_restore"], default="manual")
     sub.add_parser("list")
+    sub.add_parser("status")
     init = sub.add_parser("init-key")
     init.add_argument("--passphrase-stdin", action="store_true")
     for name in ("latest", "show", "check", "files", "restore-into", "verify-restored", "record"):
@@ -237,6 +280,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.command == "init-key":
         return _init_key(args.passphrase_stdin)
+    if args.command == "status":
+        return _status()
     if args.command in ("latest", "show", "check", "files", "restore-into", "verify-restored"):
         store = _store(args.source)
         if args.command == "latest":

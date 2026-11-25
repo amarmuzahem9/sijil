@@ -238,3 +238,5 @@ class HomeCounts(BaseModel):
 class HomeOut(BaseModel):
     today: HomeCounts
     month: HomeCounts
+    # Main admin only; [] for other admins (specs/016 FR-017).
+    backup_warnings: list[str] = []
