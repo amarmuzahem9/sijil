@@ -482,6 +482,37 @@ def _save_mappings(
     return saved
 
 
+def _mark_missing(
+    db: Session, record: SasImport, rows: list[dict[str, Any]], importing: list[dict[str, Any]]
+) -> None:
+    """«غير موجود في آخر ملف» (FR-022): a stored row whose username is not in this file is marked
+    once (the first import that misses it) and keeps counting in the check; a marked row that this
+    import holds again is cleared. Re-computed here, so a row another import added meanwhile is
+    judged too. A skipped row is in the file: it is neither marked nor cleared."""
+    in_file = {row["username_key"] for row in rows if row["username_key"]}
+    now = utc_now()
+    for subscriber_id, key in db.execute(
+        select(SasSubscriber.id, SasSubscriber.username_key).where(
+            SasSubscriber.missing_since.is_(None)
+        )
+    ).all():
+        if key not in in_file:
+            subscriber = db.get(SasSubscriber, subscriber_id)
+            subscriber.missing_since = now
+            subscriber.missing_import_id = record.id
+            record.missing_marked += 1
+    held = {row["stored_id"] for row in importing if row["stored_id"] is not None}
+    for chunk in _chunks(held):
+        for subscriber in db.scalars(
+            select(SasSubscriber).where(
+                SasSubscriber.id.in_(chunk), SasSubscriber.missing_since.is_not(None)
+            )
+        ):
+            subscriber.missing_since = None
+            subscriber.missing_import_id = None
+            record.missing_cleared += 1
+
+
 def confirm(db: Session, user: User, preview_id: uuid.UUID) -> dict[str, Any]:
     """Add the new rows, update the changed ones (each with a change row), save the mappings and
     one audit entry, in one transaction; on any failure nothing is saved and the preview stays
@@ -540,6 +571,8 @@ def confirm(db: Session, user: User, preview_id: uuid.UUID) -> dict[str, Any]:
             record.without_phone += not sas_row.phones(row)
             if done % CHUNK == 0:
                 db.flush()
+        db.flush()
+        _mark_missing(db, record, rows, importing)
         record.prefixes_mapped = _save_mappings(db, user, record, entries)
         counts = {
             "rows": record.rows_total,

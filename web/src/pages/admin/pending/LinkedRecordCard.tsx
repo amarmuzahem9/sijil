@@ -2,6 +2,7 @@
  * One record a pending request is linked to (docs/system.md §6.4, specs/010 FR-004): source, why it
  * is linked, and the record's details. Shown to review admins only; never to the marketer.
  * A deleted request shows «سجل محذوف (#T3C-…)» and nothing else (specs/011 R10).
+ * A SAS subscriber shows its username, tower and expiry «حسب آخر استيراد» (specs/015 R13).
  */
 import Card from '@mui/material/Card';
 import Chip from '@mui/material/Chip';
@@ -13,6 +14,7 @@ import { ReadOnlyField, ReadOnlyFields } from '../../../components/ReadOnlyField
 import type { ImageKind, LinkedRecord, ReviewReason } from '../../../lib/adminRequests';
 import { REASON_STATE_LABELS, SOURCE_LABELS, linkBasisLabel } from '../../../lib/labels';
 import { STATUS_COLORS, STATUS_LABELS, type RequestStatus } from '../../../lib/requestStatus';
+import { baghdadToday } from '../../../lib/draftValidation';
 import { formatBaghdad } from '../../../lib/time';
 import { RequestImage } from './RequestImage';
 
@@ -57,12 +59,46 @@ function LegacyFields({ record }: { record: LinkedRecord }) {
   );
 }
 
+/** A SAS subscriber (specs/015 US3): username, phones, tower or «بلا برج», SAS dates and the
+ * package. The expiry is information «حسب آخر استيراد» (system.md §12.2). No images. */
+function SasFields({ record }: { record: LinkedRecord }) {
+  const expiry = record.expiry
+    ? `${record.expiry}${record.expiry_as_of ? ` (حسب آخر استيراد ${record.expiry_as_of})` : ''}`
+    : null;
+  return (
+    <ReadOnlyFields>
+      <ReadOnlyField label="اليوزر" value={record.username} ltr />
+      <ReadOnlyField label="الاسم" value={record.full_name} />
+      <ReadOnlyField label="الهاتف" value={record.phone} ltr />
+      {record.username_phone && (
+        <ReadOnlyField label="هاتف اليوزر" value={record.username_phone} ltr />
+      )}
+      <ReadOnlyField
+        label="البرج"
+        value={record.tower_code ? `${record.tower_name} (${record.tower_code})` : 'بلا برج'}
+      />
+      <ReadOnlyField
+        label="تاريخ الإنشاء في SAS"
+        value={record.registered_at ? formatBaghdad(record.registered_at) : null}
+      />
+      <ReadOnlyField label="تاريخ الانتهاء" value={expiry} />
+      <ReadOnlyField
+        label="آخر اتصال"
+        value={record.last_online ? formatBaghdad(record.last_online) : null}
+      />
+      <ReadOnlyField label="الباقة في SAS" value={record.group_name} />
+    </ReadOnlyFields>
+  );
+}
+
 export function LinkedRecordCard({ reason }: { reason: ReviewReason }) {
   const record = reason.record;
   if (!record) return null;
   const stateLabel = REASON_STATE_LABELS[reason.state];
   const legacy = record.source === 'legacy';
-  const status = legacy ? null : (record.status as RequestStatus | null);
+  const sas = record.source === 'sas';
+  const status = legacy || sas ? null : (record.status as RequestStatus | null);
+  const expired = sas && !!record.expiry && record.expiry < baghdadToday();
   return (
     <Card variant="outlined" sx={{ p: 1.5, opacity: reason.state === 'not_applicable' ? 0.7 : 1 }}>
       <Stack spacing={2}>
@@ -85,6 +121,14 @@ export function LinkedRecordCard({ reason }: { reason: ReviewReason }) {
           {legacy && record.available && record.incomplete && (
             <Chip size="small" color="warning" label="غير مكتمل" />
           )}
+          {expired && record.available && <Chip size="small" color="error" label="منتهي" />}
+          {sas && record.available && record.missing_from_file && (
+            <Chip
+              size="small"
+              color="warning"
+              label={`غير موجود في آخر ملف (منذ ${record.missing_from_file})`}
+            />
+          )}
           {stateLabel && <Chip size="small" label={stateLabel} />}
           {reason.added_at_review && <Chip size="small" label="أُضيف بعد التثبيت" />}
         </Stack>
@@ -98,6 +142,8 @@ export function LinkedRecordCard({ reason }: { reason: ReviewReason }) {
           </Typography>
         ) : legacy ? (
           <LegacyFields record={record} />
+        ) : sas ? (
+          <SasFields record={record} />
         ) : (
           <>
             <ReadOnlyFields>

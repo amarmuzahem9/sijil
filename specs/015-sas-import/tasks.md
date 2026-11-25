@@ -261,7 +261,7 @@ username; nothing reaches the marketer.
 
 ### Tests (write first, run red)
 
-- [ ] T038 [P] [US3] Integration tests `api/tests/integration/test_sas_linked_record.py`:
+- [x] T038 [P] [US3] Integration tests `api/tests/integration/test_sas_linked_record.py`:
   - the review file of a pending return linked to a SAS row has `source = "sas"` and the fields of contracts/api.md;
   - `expiry_as_of` is the date of the last import that wrote the row;
   - `username_phone` appears only when it differs;
@@ -269,17 +269,17 @@ username; nothing reaches the marketer.
   - the tower name is the current one;
   - there are no notes, `parent_name`, national ID, family number or images;
   - the `sas` resolver returns `available=False` for an unknown ref.
-- [ ] T039 [P] [US3] Extend `web/src/__tests__/linkedRecordCard.test.tsx` for a `sas` record: «مشترك SAS», username,
+- [x] T039 [P] [US3] Extend `web/src/__tests__/linkedRecordCard.test.tsx` for a `sas` record: «مشترك SAS», username,
   phone and username phone, «اسم البرج (رمز البرج)» or «بلا برج», «تاريخ الانتهاء … (حسب آخر استيراد …)»,
   «منتهي» for a past expiry, «غير موجود في آخر ملف», and no image area.
 
 ### Implementation
 
-- [ ] T040 [US3] In `api/app/services/linked_records.py`, add `expiry_as_of`, `last_online`, `group_name`,
+- [x] T040 [US3] In `api/app/services/linked_records.py`, add `expiry_as_of`, `last_online`, `group_name`,
   `username_phone` and `missing_from_file` to `LinkedRecord`, and add the same fields to `LinkedRecordOut` in
   `api/app/schemas/admin_requests.py`.
-- [ ] T041 [US3] Register the `sas` resolver in `api/app/services/sas_source.py` (research R13). Then run T038 green.
-- [ ] T042 [US3] Add `SOURCE_LABELS.sas = 'مشترك SAS'` to `web/src/lib/labels.ts`, and the SAS fields to
+- [x] T041 [US3] Register the `sas` resolver in `api/app/services/sas_source.py` (research R13). Then run T038 green.
+- [x] T042 [US3] Add `SOURCE_LABELS.sas = 'مشترك SAS'` to `web/src/lib/labels.ts`, and the SAS fields to
   `web/src/pages/admin/pending/LinkedRecordCard.tsx`. Then run T039 green.
 
 ---
@@ -293,7 +293,7 @@ in use are protected.
 
 ### Tests (write first, run red)
 
-- [ ] T043 [P] [US4] Integration tests `api/tests/integration/test_sas_isolation.py`. Seed approved, linked, unlinked,
+- [x] T043 [P] [US4] Integration tests `api/tests/integration/test_sas_isolation.py`. Seed approved, linked, unlinked,
   rejected and deleted requests, then import a SAS file holding some of their usernames and phones. Check that:
   - every `requests`, `request_links` and `notifications` row is unchanged;
   - the admin home numbers, «بانتظار الربط», «المربوطة مؤخراً» and the marketer home counter with «و M بلا عمولة»
@@ -303,14 +303,14 @@ in use are protected.
   - there is no delete route for SAS rows (404/405);
   - «فتح طلب برقمه» with a SAS id → 404;
   - the marketer request search with a SAS username, phone or name finds nothing (FR-020).
-- [ ] T044 [P] [US4] Integration test in `api/tests/integration/test_settings_areas_towers.py` (extend): deleting a tower,
+- [x] T044 [P] [US4] Integration test in `api/tests/integration/test_settings_areas_towers.py` (extend): deleting a tower,
   or editing its code, while a SAS subscriber or a mapping uses it → 409 `item_in_use` (research R15).
 
 ### Implementation
 
-- [ ] T045 [US4] Register the tower usage check (SAS subscribers or mappings) through
+- [x] T045 [US4] Register the tower usage check (SAS subscribers or mappings) through
   `settings_service.register_usage_check("tower", …)` in `api/app/services/sas_source.py`. Then run T044 green.
-- [ ] T046 [US4] Run T043. It should pass with no code change, because the tables are separate; fix anything that
+- [x] T046 [US4] Run T043. It should pass with no code change, because the tables are separate; fix anything that
   leaks.
 
 ---
@@ -324,7 +324,7 @@ reuses mappings.
 
 ### Tests (write first, run red)
 
-- [ ] T047 [P] [US5] Integration tests `api/tests/integration/test_sas_reimport.py`:
+- [x] T047 [P] [US5] Integration tests `api/tests/integration/test_sas_reimport.py`:
   - after importing `sas_sample.csv`, the preview of `sas_sample_2.csv` counts 1 new, 1 update, the rest unchanged,
     and 1 missing from file, and does not ask for the prefix mapped the first time;
   - the confirm updates the changed row (`last_import_id`, one `sas_subscriber_changes` row with only the changed
@@ -335,17 +335,17 @@ reuses mappings.
   - «تخطي» on an update row leaves the stored row as it is and does not mark it missing;
   - the old phone of the updated row no longer matches and the new one does (US2 scenario 6);
   - the missing row still matches.
-- [ ] T048 [P] [US5] Extend `sasImport.test.tsx`: the counts show «سيُحدَّث» and «غير موجود في آخر ملف», and a
+- [x] T048 [P] [US5] Extend `sasImport.test.tsx`: the counts show «سيُحدَّث» and «غير موجود في آخر ملف», and a
   pre-filled mapping shows «من استيراد سابق» and can be changed.
 
 ### Implementation
 
-- [ ] T049 [US5] In `confirm` (`sas_import_service.py`), set data-model.md `sas_subscribers.missing_since` and
+- [x] T049 [US5] In `confirm` (`sas_import_service.py`), set data-model.md `sas_subscribers.missing_since` and
   `sas_subscribers.missing_import_id` for the preview's `missing_ids` (re-checked at confirm) when they are NULL, and
   clear them on rows the file holds. Count `missing_marked` and `missing_cleared` in `sas_imports` and in the audit.
   Then run T047 green.
-- [ ] T050 [US5] Adjust `SasImport.tsx` for the re-import counts. Then run T048 green.
-- [ ] T051 Run the US3–US5 tests and both whole suites green. **Batch 5 commit.**
+- [x] T050 [US5] Adjust `SasImport.tsx` for the re-import counts. Then run T048 green.
+- [x] T051 Run the US3–US5 tests and both whole suites green. **Batch 5 commit.**
 
 ---
 

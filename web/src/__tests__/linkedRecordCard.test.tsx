@@ -134,3 +134,68 @@ describe('LinkedRecordCard for a legacy subscriber (specs/014 US3, T043)', () =>
     await waitFor(() => expect(requestImageUrl).toHaveBeenCalledWith('img-sijil', 'request'));
   });
 });
+
+describe('LinkedRecordCard for a SAS subscriber (specs/015 US3, T039)', () => {
+  const sas = (partial: Partial<LinkedRecord> = {}) =>
+    record({
+      source: 'sas',
+      ref: '981',
+      available: true,
+      username: 'ALM03-07811115555',
+      full_name: 'مشترك SAS للمراجعة',
+      phone: '07811115555',
+      username_phone: null,
+      tower_code: 'ALM03',
+      tower_name: 'العلم 3',
+      registered_at: '2025-01-10T07:00:00Z',
+      expiry: '2099-12-01',
+      expiry_as_of: '2026-11-25',
+      last_online: '2026-11-20T05:00:00Z',
+      group_name: 'PLUS',
+      missing_from_file: null,
+      ...partial,
+    });
+
+  const field = (label: string) => (screen.getByLabelText(label) as HTMLTextAreaElement).value;
+
+  it('shows «مشترك SAS» with its username, tower, dates and expiry «حسب آخر استيراد»', () => {
+    show(sas());
+    expect(screen.getByText('مشترك SAS')).toBeTruthy();
+    expect(field('اليوزر')).toBe('ALM03-07811115555');
+    expect(field('الاسم')).toBe('مشترك SAS للمراجعة');
+    expect(field('الهاتف')).toBe('07811115555');
+    expect(screen.queryByLabelText('هاتف اليوزر')).toBeNull();
+    expect(field('البرج')).toBe('العلم 3 (ALM03)');
+    expect(field('تاريخ الإنشاء في SAS')).toBe(formatBaghdad('2025-01-10T07:00:00Z'));
+    expect(field('تاريخ الانتهاء')).toBe('2099-12-01 (حسب آخر استيراد 2026-11-25)');
+    expect(field('آخر اتصال')).toBe(formatBaghdad('2026-11-20T05:00:00Z'));
+    expect(field('الباقة في SAS')).toBe('PLUS');
+    expect(screen.queryByText('منتهي')).toBeNull();
+    expect(screen.queryByText(/غير موجود في آخر ملف/)).toBeNull();
+    expect(screen.queryByRole('img')).toBeNull();
+    expect(screen.queryByLabelText('الرقم القديم')).toBeNull();
+  });
+
+  it('marks a past expiry «منتهي», a missing row, a second phone and «بلا برج»', () => {
+    show(
+      sas({
+        expiry: '2020-01-01',
+        missing_from_file: '2026-11-27',
+        phone: '07722226666',
+        username_phone: '07811115555',
+        tower_code: null,
+        tower_name: null,
+      }),
+    );
+    expect(screen.getByText('منتهي')).toBeTruthy();
+    expect(screen.getByText('غير موجود في آخر ملف (منذ 2026-11-27)')).toBeTruthy();
+    expect(field('هاتف اليوزر')).toBe('07811115555');
+    expect(field('البرج')).toBe('بلا برج');
+  });
+
+  it('keeps «سجل غير متوفر» for an unknown SAS ref', () => {
+    show(record({ source: 'sas', available: false }));
+    expect(screen.getByText('سجل غير متوفر')).toBeTruthy();
+    expect(screen.getByText('مشترك SAS')).toBeTruthy();
+  });
+});

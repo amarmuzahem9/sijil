@@ -256,3 +256,33 @@ def test_tower_and_area_used_by_a_request_cannot_be_deleted(client, db, h, make_
     assert (r.status_code, r.json()["code"]) == (409, "item_in_use")
     listed = {t["id"]: t for t in client.get(f"{BASE}/towers", headers=h).json()["items"]}
     assert listed[tower["id"]]["in_use"] is True
+
+
+# --- feature 015: a SAS subscriber or a prefix mapping uses its tower (research R15) -------------
+
+
+@pytest.mark.parametrize("user_of_the_tower", ["subscriber", "mapping"])
+def test_a_tower_used_by_sas_is_locked(client, db, h, make_user, user_of_the_tower) -> None:
+    from app.models import SasTowerMapping
+    from tests.helpers.sas import sas_subscriber
+
+    area = _area(client, h, name="منطقة SAS")
+    tower = _tower(client, h, area["id"], code="SAS01", name="برج SAS")
+    admin = make_user("super_admin")
+    sub = sas_subscriber(db, admin, username="OTHER-07701112222")
+    if user_of_the_tower == "subscriber":
+        sub.tower_id = tower["id"]
+    else:
+        db.add(
+            SasTowerMapping(
+                prefix="OLD-9", tower_id=tower["id"], set_by=admin.id, import_id=sub.last_import_id
+            )
+        )
+    db.flush()
+    listed = {t["id"]: t for t in client.get(f"{BASE}/towers", headers=h).json()["items"]}
+    assert listed[tower["id"]]["in_use"] is True
+    r = client.patch(f"{BASE}/towers/{tower['id']}", json={"code": "SAS02"}, headers=h)
+    assert (r.status_code, r.json()["code"]) == (409, "code_locked")
+    r = client.delete(f"{BASE}/towers/{tower['id']}", headers=h)
+    assert (r.status_code, r.json()["code"]) == (409, "item_in_use")
+    assert db.get(Tower, tower["id"]) is not None

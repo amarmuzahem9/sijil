@@ -45,7 +45,7 @@ export interface LinkedRecord {
   registered_at: string | null;
   status: string | null;
   image_ids: string[];
-  /** SAS «حسب آخر استيراد» (015); null until then. */
+  /** A SAS subscriber's expiry, a Baghdad date «حسب آخر استيراد» (specs/015 R13). */
   expiry: string | null;
   /** A deleted Sijil request: «سجل محذوف (#T3C-…)» (specs/011 R10). */
   deleted: boolean;
@@ -54,6 +54,13 @@ export interface LinkedRecord {
   legacy_number?: string | null;
   incomplete?: boolean | null;
   extra?: Record<string, string | null> | null;
+  /** A SAS subscriber (specs/015 R13): the import date, last online, package, the phone
+   * inside the username when it differs, and «غير موجود في آخر ملف» since a date. */
+  expiry_as_of?: string | null;
+  last_online?: string | null;
+  group_name?: string | null;
+  username_phone?: string | null;
+  missing_from_file?: string | null;
 }
 
 export interface ReviewReason {

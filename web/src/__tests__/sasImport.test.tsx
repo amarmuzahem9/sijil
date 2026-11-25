@@ -311,3 +311,38 @@ describe('SasImport', () => {
     expect(screen.getAllByTestId(/^row-/)).toHaveLength(250);
   });
 });
+
+describe('SasImport on a re-import (specs/015 US5, T048)', () => {
+  it('shows the update and missing counts, and a mapping from a previous import', async () => {
+    await openPreview(
+      preview({
+        counts: { ...COUNTS, new: 2, update: 2, unchanged: 14, missing_from_file: 1 },
+        prefixes: [{ prefix: 'ZZQ07', rows: 2, tower_id: 1, from_previous: true, chosen: true }],
+        waiting_prefixes: 0,
+      }),
+    );
+    expect(screen.getByText('سيُحدَّث: 2')).toBeTruthy();
+    expect(screen.getByText('بلا تغيير: 14')).toBeTruthy();
+    expect(screen.getByText('غير موجود في آخر ملف: 1')).toBeTruthy();
+    const table = screen.getByTestId('prefix-ZZQ07');
+    expect(within(table).getByText('من استيراد سابق')).toBeTruthy();
+    const select = within(table).getByLabelText('برج ZZQ07') as HTMLSelectElement;
+    expect(select.value).toBe('1');
+    setSasChoices.mockResolvedValue(preview());
+    fireEvent.change(select, { target: { value: '2' } });
+    await waitFor(() =>
+      expect(setSasChoices).toHaveBeenCalledWith('p-1', [], [{ prefix: 'ZZQ07', tower_id: 2 }]),
+    );
+  });
+
+  it('shows the missing counts in the summary', async () => {
+    await openPreview(decided());
+    confirmSasImport.mockResolvedValue({ ...SUMMARY, missing_marked: 1, missing_cleared: 2 });
+    fireEvent.click(confirmButton());
+    fireEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: 'استيراد' }),
+    );
+    expect(await screen.findByText('وُسم «غير موجود في آخر ملف»: 1')).toBeTruthy();
+    expect(screen.getByText('عاد في هذا الملف: 2')).toBeTruthy();
+  });
+});

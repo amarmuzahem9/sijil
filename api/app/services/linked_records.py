@@ -45,6 +45,14 @@ class LinkedRecord:
     legacy_number: str | None = None
     incomplete: bool | None = None
     extra: dict[str, str | None] | None = None
+    # specs/015 R13: a SAS subscriber's «حسب آخر استيراد» date, last online, package (group), the
+    # phone inside its username when it differs from the phone column, and «غير موجود في آخر
+    # ملف» since a date. None for others.
+    expiry_as_of: date | None = None
+    last_online: datetime | None = None
+    group_name: str | None = None
+    username_phone: str | None = None
+    missing_from_file: date | None = None
 
 
 Resolver = Callable[[Session, list[MatchRef]], dict[MatchRef, LinkedRecord]]

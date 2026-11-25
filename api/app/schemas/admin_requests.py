@@ -71,6 +71,12 @@ class LinkedRecordOut(BaseModel):
     legacy_number: str | None = None
     incomplete: bool | None = None
     extra: dict[str, str | None] | None = None
+    # specs/015 R13: only on a SAS subscriber. Never notes or parent_name.
+    expiry_as_of: date | None = None
+    last_online: datetime | None = None
+    group_name: str | None = None
+    username_phone: str | None = None
+    missing_from_file: date | None = None
 
 
 class ReasonOut(BaseModel):
