@@ -258,3 +258,36 @@ describe('legacy import (specs/014 T032)', () => {
     expect(AUDIT_FIELD_LABELS.corrected).toBe('أرقام عائلية مصحّحة');
   });
 });
+
+describe('«تم الدفع» (specs/017 T013)', () => {
+  it('labels the payment, its target and its figures in Arabic', async () => {
+    const { actionLabel, entryTargetLabel, formatAuditValue } = await import('../lib/auditFormat');
+    const { AUDIT_FIELD_LABELS } = await import('../lib/labels');
+    const e = entry({
+      action: 'commission.paid',
+      entity_type: 'commission_payment',
+      entity_id: '7:2026-10',
+      after: {
+        marketer_id: 7,
+        month: '2026-10',
+        count: 30,
+        tier_min_count: 30,
+        rate: 7000,
+        amount: 210000,
+      },
+    });
+    expect(actionLabel(e)).toBe('تسجيل دفع عمولة');
+    expect(entryTargetLabel(e)).toBe('عمولة 2026-10');
+    expect(entryTargetLabel({ ...e, target_label: 'عمولة مسوّق تجريبي — 2026-10' })).toBe(
+      'عمولة مسوّق تجريبي — 2026-10',
+    );
+    expect(formatAuditValue('rate', 7000)).toBe(formatAuditValue('trial_price', 7000));
+    expect(formatAuditValue('amount', 210000)).toBe(formatAuditValue('trial_price', 210000));
+    expect(formatAuditValue('month', '2026-10')).toBe('2026-10');
+    expect(AUDIT_FIELD_LABELS.count).toBe('العدد');
+    expect(AUDIT_FIELD_LABELS.rate).toBe('سعر المشترك');
+    expect(AUDIT_FIELD_LABELS.amount).toBe('المبلغ');
+    expect(AUDIT_FIELD_LABELS.month).toBe('الشهر');
+    expect(AUDIT_FIELD_LABELS.tier_min_count).toBe('الشريحة (أقل عدد)');
+  });
+});

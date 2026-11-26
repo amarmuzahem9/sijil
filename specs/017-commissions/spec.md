@@ -209,7 +209,7 @@ row in the current month's report.
 - **Count exactly on a boundary** (29, 30, 49, 50): the tier is the one with the highest lowest-count not above the
   count; at 30 the rate is 7,000 for all 30.
 - **Marketer archived after the month**: their row and payment stay under their name.
-- **A month with no tiers change and no links**: nothing to show, nothing to pay.
+- **A month with no links**: no row, nothing to pay.
 
 ## Requirements *(mandatory)*
 

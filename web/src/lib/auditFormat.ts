@@ -21,7 +21,8 @@ import { formatMoney, formatNumber } from './money';
 import { STATUS_LABELS } from './requestStatus';
 import { formatBaghdad } from './time';
 
-const MONEY_FIELDS = new Set(['trial_price', 'second_price']);
+// specs/017: the rate and amount of «تم الدفع» are money too.
+const MONEY_FIELDS = new Set(['trial_price', 'second_price', 'rate', 'amount']);
 
 function formatTiers(value: unknown[]): string {
   return value
@@ -112,6 +113,12 @@ export function actionLabel(entry: AuditEntry): string {
 export function entryTargetLabel(entry: AuditEntry): string | null {
   if (entry.entity_type === 'user') return entry.target?.name ?? null;
   if (entry.entity_type === 'reward_tiers') return 'شرائح المكافآت';
+  if (entry.entity_type === 'commission_payment') {
+    // The server names the marketer; the month is in the entry either way (specs/017 R10).
+    if (entry.target_label) return entry.target_label;
+    const month = entry.after?.month;
+    return typeof month === 'string' ? `عمولة ${month}` : 'عمولة';
+  }
   if (entry.entity_type === 'app_setting') return 'الإعدادات العامة';
   if (entry.entity_type === 'draft') {
     const tower = entry.before?.tower_code;

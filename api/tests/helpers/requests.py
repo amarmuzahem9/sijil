@@ -159,6 +159,37 @@ def link_request(db: Session, request: Request, admin: User, at=None) -> Request
     return row
 
 
+def pay_month(
+    db: Session,
+    marketer: User,
+    month,
+    admin: User,
+    requests: list[Request],
+    rate: int = 5000,
+    tier_min_count: int = 0,
+    at=None,
+):
+    """A «تم الدفع» written directly (specs/017 data-model.md), for tests that need a paid month
+    of exactly `requests`."""
+    from app.models import CommissionPayment, CommissionPaymentRequest
+
+    payment = CommissionPayment(
+        marketer_id=marketer.id,
+        month=month,
+        count=len(requests),
+        tier_min_count=tier_min_count,
+        rate=rate,
+        amount=rate * len(requests),
+        paid_by=admin.id,
+        paid_at=at or utc_now(),
+    )
+    db.add(payment)
+    db.flush()
+    db.add_all(CommissionPaymentRequest(request_id=r.id, payment_id=payment.id) for r in requests)
+    db.flush()
+    return payment
+
+
 # --- extras for deletion tests (specs/011 tasks T014) ---------------------------------------------
 
 

@@ -1,0 +1,29 @@
+{
+  "_comment": "docs/system.md v1.23 §9, specs/017 research R1. tiers = [[min_count, rate], ...]; next = [remaining, rate] or null.",
+  "tier_sets": {
+    "default": [[0, 5000], [30, 7000], [50, 10000]],
+    "single": [[0, 4000]],
+    "second_at_one": [[0, 1000], [1, 2000]],
+    "twenty": [
+      [0, 1000], [5, 1500], [10, 2000], [15, 2500], [20, 3000],
+      [25, 3500], [30, 4000], [35, 4500], [40, 5000], [45, 5500],
+      [50, 6000], [55, 6500], [60, 7000], [65, 7500], [70, 8000],
+      [75, 8500], [80, 9000], [85, 9500], [90, 10000], [95, 10500]
+    ]
+  },
+  "cases": [
+    { "tiers": "default", "count": 0, "min": 0, "rate": 5000, "amount": 0, "next": [30, 7000] },
+    { "tiers": "default", "count": 27, "min": 0, "rate": 5000, "amount": 135000, "next": [3, 7000] },
+    { "tiers": "default", "count": 29, "min": 0, "rate": 5000, "amount": 145000, "next": [1, 7000] },
+    { "tiers": "default", "count": 30, "min": 30, "rate": 7000, "amount": 210000, "next": [20, 10000] },
+    { "tiers": "default", "count": 49, "min": 30, "rate": 7000, "amount": 343000, "next": [1, 10000] },
+    { "tiers": "default", "count": 50, "min": 50, "rate": 10000, "amount": 500000, "next": null },
+    { "tiers": "default", "count": 120, "min": 50, "rate": 10000, "amount": 1200000, "next": null },
+    { "tiers": "single", "count": 0, "min": 0, "rate": 4000, "amount": 0, "next": null },
+    { "tiers": "single", "count": 12, "min": 0, "rate": 4000, "amount": 48000, "next": null },
+    { "tiers": "second_at_one", "count": 0, "min": 0, "rate": 1000, "amount": 0, "next": [1, 2000] },
+    { "tiers": "second_at_one", "count": 1, "min": 1, "rate": 2000, "amount": 2000, "next": null },
+    { "tiers": "twenty", "count": 94, "min": 90, "rate": 10000, "amount": 940000, "next": [1, 10500] },
+    { "tiers": "twenty", "count": 95, "min": 95, "rate": 10500, "amount": 997500, "next": null }
+  ]
+}

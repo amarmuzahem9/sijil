@@ -47,6 +47,11 @@
       "access": ["reports"]
     },
     {
+      "key": "commissions",
+      "path": "/admin/commissions",
+      "access": ["commissions"]
+    },
+    {
       "key": "backup",
       "path": "/admin/backup",
       "access": "super_admin"
@@ -101,7 +106,7 @@
     {
       "role": "admin",
       "permissions": ["commissions"],
-      "visible": ["home", "account"]
+      "visible": ["home", "commissions", "account"]
     },
     {
       "role": "admin",
@@ -115,6 +120,7 @@
         "settings",
         "reports",
         "import",
+        "commissions",
         "account"
       ]
     },
@@ -131,6 +137,7 @@
         "admins",
         "reports",
         "import",
+        "commissions",
         "backup",
         "audit",
         "archive",

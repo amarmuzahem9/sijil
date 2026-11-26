@@ -2,6 +2,7 @@ from app.models.audit import AuditLog
 from app.models.backup import BackupEvent, BackupRun, BackupStatus
 from app.models.base import Base
 from app.models.catalog import AppSetting, Area, Plan, RewardTier, Tower
+from app.models.commission import CommissionPayment, CommissionPaymentRequest
 from app.models.draft import CardReading, Draft, DraftImage, ImageAccessLog
 from app.models.legacy import LegacyImage, LegacyImport, LegacyImportPreview, LegacySubscriber
 from app.models.notification import Notification
@@ -29,6 +30,8 @@ __all__ = [
     "BackupStatus",
     "Base",
     "CardReading",
+    "CommissionPayment",
+    "CommissionPaymentRequest",
     "Draft",
     "DraftImage",
     "ImageAccessLog",

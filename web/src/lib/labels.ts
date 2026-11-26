@@ -69,6 +69,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   // specs/013
   'request.linked': 'تم الربط',
   'request.unlinked': 'تراجع عن الربط',
+  // specs/017
+  'commission.paid': 'تسجيل دفع عمولة',
   // specs/014
   'legacy.imported': 'استيراد المشتركين القدامى',
   // specs/015
@@ -100,6 +102,13 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   status: 'الحالة',
   type: 'النوع',
   counts_commission: 'احتساب العمولة',
+  // specs/017: «تم الدفع»
+  marketer_id: 'المسوّق (رقم الحساب)',
+  month: 'الشهر',
+  count: 'العدد',
+  tier_min_count: 'الشريحة (أقل عدد)',
+  rate: 'سعر المشترك',
+  amount: 'المبلغ',
   despite_warnings: 'رغم التحذير',
   reason: 'السبب',
   note: 'النص',

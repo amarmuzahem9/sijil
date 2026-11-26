@@ -2,11 +2,22 @@
 
 import subprocess
 
+from alembic.config import Config
+from alembic.script import ScriptDirectory
+
 from app.backup import crypto
 from app.backup.manifest import Manifest
 from app.backup.snapshot import SnapshotConfig, take_snapshot
 from app.backup.store import DUMP, MANIFEST
+from tests.conftest import API_ROOT
 from tests.helpers.backup import new_image_name, seed
+
+
+def _head() -> str:
+    """The newest migration, so a new feature's migration does not break this test."""
+    cfg = Config(str(API_ROOT / "alembic.ini"))
+    cfg.set_main_option("script_location", str(API_ROOT / "migrations"))
+    return ScriptDirectory.from_config(cfg).get_current_head()
 
 
 def _cfg(env) -> SnapshotConfig:
@@ -33,7 +44,7 @@ def test_snapshot_holds_database_and_every_image(backup_env) -> None:
     assert Manifest.from_json((folder / MANIFEST).read_text()) == manifest
     assert manifest.kind == "nightly" and manifest.id.endswith("-nightly")
     assert manifest.app_commit == "testcommit"
-    assert manifest.alembic_revision == "0019"
+    assert manifest.alembic_revision == _head()
     assert manifest.missing_referenced == 0
     counts = manifest.counts
     assert (counts.requests, counts.legacy_subscribers, counts.sas_subscribers, counts.users) == (

@@ -29,6 +29,8 @@ PAGE_ACCESS: dict[str, AccessRule] = {
     "admins": "super_admin",
     "reports": ("reports",),
     "import": ("reports",),
+    # «العمولات» (docs/system.md v1.23 §10 item 13, specs/017 R8).
+    "commissions": ("commissions",),
     "backup": "super_admin",
     "audit": "super_admin",
     "archive": "super_admin",

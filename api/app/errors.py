@@ -91,6 +91,11 @@ MESSAGES: dict[str, str] = {
     # «تم الربط» and its undo (specs/013 contracts/api.md)
     "already_linked": "تم ربط هذا الطلب مسبقاً",
     "already_unlinked": "تم التراجع عن هذا الربط مسبقاً",
+    # Commissions and «تم الدفع» (specs/017 contracts/api.md)
+    "month_not_finished": "لا يُسجَّل الدفع قبل نهاية الشهر",
+    "nothing_to_pay": "لا يوجد عدد محسوب لهذا الشهر",
+    "commission_changed": "تغيّرت الأرقام، راجعها من جديد",
+    "already_paid": "تم تسجيل الدفع لهذا الشهر مسبقاً",
     # Legacy subscribers import (specs/014 contracts/api.md)
     "import_file_unreadable": "تعذّرت قراءة الملف، ارفع ملف xlsx أو csv",
     "import_columns_missing": "الملف ينقصه عمود",
