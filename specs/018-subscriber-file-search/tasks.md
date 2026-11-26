@@ -95,33 +95,33 @@ No migration in this feature (data-model.md).
 
 ### Tests (write first, run red)
 
-- [ ] T009 [P] [US1] New integration test `api/tests/integration/test_subscriber_search_api.py`: each kind across the
+- [x] T009 [P] [US1] New integration test `api/tests/integration/test_subscriber_search_api.py`: each kind across the
   sources (phone finds a request, a legacy row and a SAS row by its column phone and by its username phone; family
   finds request and legacy; username finds request and SAS; name with swapped أ/ا and ة/ه finds all three; legacy
   number; request number), rejected requests and «ملغي» legacy rows are found, rows have the result-row keys of
   data-model.md › Derived: result row, newest first, `limit` 50 and `total`, `search_unclear` for «اح».
-- [ ] T010 [P] [US1] In the same file: a deleted request is not found by phone or name and is found by number as
+- [x] T010 [P] [US1] In the same file: a deleted request is not found by phone or name and is found by number as
   `{deleted: true, number_label}` with every other field null (FR-006).
-- [ ] T011 [P] [US1] In the same file: as `link`-only and `reports`-only admins, national-ID and family searches
+- [x] T011 [P] [US1] In the same file: as `link`-only and `reports`-only admins, national-ID and family searches
   answer `403 identity_search_forbidden` for an existing and a made-up number alike, and no lookup runs (counted with
   a SQL event listener); as main admin and `review` they work; as `settings`-only and marketer every search is
   `403 forbidden` (FR-001, FR-009).
-- [ ] T012 [P] [US1] New Vitest `web/src/__tests__/subscriberSearch.test.tsx`: typing and searching calls
+- [x] T012 [P] [US1] New Vitest `web/src/__tests__/subscriberSearch.test.tsx`: typing and searching calls
   `searchSubscribers`; rows show source label, name, tower, phone, status (request status chip in its §7.2 color,
   legacy status text, SAS «حسب آخر استيراد»), date; «سجل محذوف» row; the two Arabic refusals; paging «التالي».
 
 ### Implementation
 
-- [ ] T013 [US1] New `api/app/services/subscriber_search.py`: one capped query per source (research R4), folded-name
+- [x] T013 [US1] New `api/app/services/subscriber_search.py`: one capped query per source (research R4), folded-name
   SQL (research R3), merge newest first, paging, deleted only for `number` (research R6).
-- [ ] T014 [US1] New `api/app/schemas/subscribers.py` (`ResultRow`, `SearchOut`).
-- [ ] T015 [US1] New router `api/app/api/admin_subscribers.py` with `GET /api/admin/subscribers`
+- [x] T014 [US1] New `api/app/schemas/subscribers.py` (`ResultRow`, `SearchOut`).
+- [x] T015 [US1] New router `api/app/api/admin_subscribers.py` with `GET /api/admin/subscribers`
   (`require_permission("review", "link", "reports")`), the identity-kind check before the service call, included by
   editing `api/app/main.py`; T009–T011 green.
-- [ ] T016 [P] [US1] New page `web/src/pages/admin/subscribers/SubscriberSearch.tsx`.
-- [ ] T017 [US1] Route `/admin/subscribers` to the new page by editing `web/src/router.tsx`, and remove
+- [x] T016 [P] [US1] New page `web/src/pages/admin/subscribers/SubscriberSearch.tsx`.
+- [x] T017 [US1] Route `/admin/subscribers` to the new page by editing `web/src/router.tsx`, and remove
   `AdminSubscribers` by editing `web/src/pages/admin/placeholders.tsx`; T012 green.
-- [ ] T018 [US1] Logs: the search logs its kind and result count only (no query text); a test in
+- [x] T018 [US1] Logs: the search logs its kind and result count only (no query text); a test in
   `api/tests/integration/test_subscriber_search_api.py` with `caplog` proves no phone, name or number appears.
 
 **Checkpoint**: batch 2 commit.
