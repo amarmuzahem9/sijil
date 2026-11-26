@@ -255,7 +255,7 @@ code is written**. Report red and green for every test task.
   `commissions` admin, `null` for a `link`-only admin; with `frozen_clock` 30 days − 1 minute after the undo it is
   1, 30 days + 1 minute after it is 0, while the report alert stays (research R6).
 - [x] T043 [P] [US4] Vitest `web/src/__tests__/commissions.test.tsx` (alert part): the paid row shows «تراجع بعد
-  الدفع» lines and «المدفوع N، اليوم M»; Vitest `web/src/__tests__/adminHome.test.tsx`: warning «يوجد تراجع بعد
+  الدفع» lines and «المدفوع N، اليوم M»; Vitest `web/src/__tests__/adminHomeCommissionAlert.test.tsx`: warning «يوجد تراجع بعد
   الدفع» with a link to `/admin/commissions` when `commission_alerts > 0`, nothing when 0 or null.
 
 ### Implementation
