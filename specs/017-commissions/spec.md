@@ -48,6 +48,8 @@ amount, no payment), §10 new page «العمولات» (`commissions`). No cons
 - Q: Does the marketer see past months? → A: Yes: a list of past months with count, amount and «تم الدفع» or
   «غير مدفوع», without who paid (FR-007).
 - The assumptions below were approved as written.
+- Q (plan review): the alert has no dismiss, so the home warning would stay for good? → A: The home warning
+  covers undos after payment in the last 30 days; the report keeps every alert (FR-015).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -154,8 +156,9 @@ in 013. If it is linked again later it does not count again, because it was alre
 
 1. **Given** a paid month, **When** one of its counted requests is undone, **Then** the paid row keeps its
    figures and shows the alert with the request number, undo date and reason.
-2. **Given** the alert, **When** an admin with `commissions` opens the main home (admin), **Then** they see a
-   short warning «يوجد تراجع بعد الدفع» linking to the report (main admin and `commissions` holders only).
+2. **Given** an undo after payment in the last 30 days, **When** an admin with `commissions` opens the admin
+   home, **Then** they see a short warning «يوجد تراجع بعد الدفع» linking to the report (main admin and
+   `commissions` holders only). After 30 days the home warning goes; the alert stays in the report.
 3. **Given** the undo happens while the month is not paid, **Then** no alert appears; the number simply goes down.
 4. **Given** a request paid in October and undone in November, **When** it is linked again in November, **Then**
    it does not count in November: the marketer's home shows it under «بلا عمولة», and the November report details
@@ -269,8 +272,9 @@ row in the current month's report.
 
 - **FR-015**: Undoing the link of a request counted in a paid month MUST stay allowed (013) and MUST NOT change the
   paid figures. The paid row MUST show an alert «تراجع بعد الدفع» with the request number, undo date, undo reason,
-  and the paid count against today's count. The main admin's home and the home of `commissions` holders MUST show
-  «يوجد تراجع بعد الدفع» while such an alert exists.
+  and the paid count against today's count; it stays in the report for good. The main admin's home and the home of
+  `commissions` holders MUST show «يوجد تراجع بعد الدفع» while there is an undo after payment within the last 30
+  days (owner, 2026-11-26).
 - **FR-016**: A request stored in a payment, then undone, then linked again MUST NOT count in the month of the new
   link: it was already paid. It MUST show as «بلا عمولة» on the marketer's home and as «مدفوع سابقاً» (with its
   paid month) in the report details. This narrows the 013 re-link rule (§6.5) to requests not yet paid (owner,
@@ -327,7 +331,8 @@ row in the current month's report.
 - «تم الدفع» has no undo; the confirmation shows what will be locked. A mistaken payment is fixed outside the
   system and noted by the admin.
 - A row exists only for marketers with links in the month; marketers with nothing linked are not listed.
-- The alert «تراجع بعد الدفع» stays on the paid row as history; it has no «dismiss» action.
+- The alert «تراجع بعد الدفع» stays on the paid row as history; it has no «dismiss» action. The home warning
+  covers the last 30 days only.
 - The rate per subscriber is the tier's, independent of the plan or its prices.
 - Paying a marketer sends no notification (§4.4 does not list one).
 - The report has no export; exports come with 019.
