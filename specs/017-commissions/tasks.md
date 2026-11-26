@@ -162,35 +162,35 @@ code is written**. Report red and green for every test task.
 
 ### Tests (write first, run red)
 
-- [ ] T024 [P] [US2] Integration test `api/tests/integration/test_commission_report.py`: `GET
+- [x] T024 [P] [US2] Integration test `api/tests/integration/test_commission_report.py`: `GET
   /api/admin/commissions/months` (from the earliest link or payment to the current month, newest first);
   `GET /api/admin/commissions?month=` rows only for marketers with a linked request or a payment in the month,
   ordered by name, with count, without_commission, paid_before, tier, amount, `payable`, `payment: null`, and
   `total_amount`; archived and stopped marketers included; a malformed or future month → 422 (contracts/api.md).
-- [ ] T025 [P] [US2] Integration test in the same file for `GET /api/admin/commissions/{month}/marketers/{id}`:
+- [x] T025 [P] [US2] Integration test in the same file for `GET /api/admin/commissions/{month}/marketers/{id}`:
   `counted`, `without_commission`, `paid_before` (with `paid_month`) lists; 404 when the marketer has no row; the
   response keys are exactly the allow-list (no phone, username, national ID, family number, card or image key)
   (FR-010, research R9).
-- [ ] T026 [P] [US2] Integration test `api/tests/integration/test_commission_access.py`: every
+- [x] T026 [P] [US2] Integration test `api/tests/integration/test_commission_access.py`: every
   `/api/admin/commissions*` route → 403 for a marketer and for admins with each other permission; 200 for main
   admin and a `commissions`-only admin; a request without a session → 401; no route edits or removes a payment
   (DELETE/PATCH on the pay path → 405) (FR-013).
-- [ ] T027 [P] [US2] Vitest `web/src/__tests__/commissions.test.tsx`: month picker defaults to current; rows,
+- [x] T027 [P] [US2] Vitest `web/src/__tests__/commissions.test.tsx`: month picker defaults to current; rows,
   states «غير مدفوع» / «تم الدفع»; total; opening a row shows the three lists; menu entry «العمولات» only when
   `canAccess(commissions)`.
 
 ### Implementation
 
-- [ ] T028 [US2] In `api/app/services/commission_service.py` add `months(db)`, `report(db, month)` (paid rows
+- [x] T028 [US2] In `api/app/services/commission_service.py` add `months(db)`, `report(db, month)` (paid rows
   from the payment, unpaid from `month_split` + today's tiers, research R4) and `detail(db, month, marketer_id)`.
-- [ ] T029 [US2] Report, row and detail schemas (allow-list) in `api/app/schemas/commissions.py`.
-- [ ] T030 [US2] New router `api/app/api/admin_commissions.py` (`require_permission("commissions")`) with the
+- [x] T029 [US2] Report, row and detail schemas (allow-list) in `api/app/schemas/commissions.py`.
+- [x] T030 [US2] New router `api/app/api/admin_commissions.py` (`require_permission("commissions")`) with the
   three GET routes, included in `api/app/main.py`; T024–T026 green.
-- [ ] T031 [P] [US2] Admin calls and types in `web/src/lib/commissions.ts`.
-- [ ] T032 [US2] Pages `web/src/pages/admin/commissions/Commissions.tsx` and `CommissionDetail.tsx`; route in
+- [x] T031 [P] [US2] Admin calls and types in `web/src/lib/commissions.ts`.
+- [x] T032 [US2] Pages `web/src/pages/admin/commissions/Commissions.tsx` and `CommissionDetail.tsx`; route in
   `web/src/router.tsx` with `page('commissions', …)`; menu entry «العمولات» in `web/src/layouts/AdminLayout.tsx`;
   T027 green.
-- [ ] T033 [US2] Consistency check in `api/tests/integration/test_commission_report.py`: for the same marketer
+- [x] T033 [US2] Consistency check in `api/tests/integration/test_commission_report.py`: for the same marketer
   and month, the report row equals the marketer's dashboard (current month) and past months line (finished
   month) (SC-002).
 

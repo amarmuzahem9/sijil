@@ -9,6 +9,7 @@ import HistoryOutlined from '@mui/icons-material/HistoryOutlined';
 import HourglassTopOutlined from '@mui/icons-material/HourglassTopOutlined';
 import Inventory2Outlined from '@mui/icons-material/Inventory2Outlined';
 import LinkOutlined from '@mui/icons-material/LinkOutlined';
+import PaymentsOutlined from '@mui/icons-material/PaymentsOutlined';
 import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined';
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
 
@@ -22,7 +23,7 @@ import { useAuth } from '../auth/AuthProvider';
 import { AppShell } from './AppShell';
 import type { NavItem } from './AppShell';
 
-/** The 12 admin pages of docs/system.md §10, in order. */
+/** The 13 admin pages of docs/system.md §10. */
 const ADMIN_PAGES: (NavItem & { page: PageKey })[] = [
   { label: 'الرئيسية', page: 'home', path: '/admin', icon: <DashboardOutlined />, exact: true },
   {
@@ -58,6 +59,13 @@ const ADMIN_PAGES: (NavItem & { page: PageKey })[] = [
     icon: <FactCheckOutlined />,
   },
   { label: 'الاستيراد', page: 'import', path: '/admin/import', icon: <FileUploadOutlined /> },
+  // specs/017: §10 item 13.
+  {
+    label: 'العمولات',
+    page: 'commissions',
+    path: '/admin/commissions',
+    icon: <PaymentsOutlined />,
+  },
   { label: 'النسخ الاحتياطي', page: 'backup', path: '/admin/backup', icon: <BackupOutlined /> },
   { label: 'سجل العمليات', page: 'audit', path: '/admin/audit', icon: <HistoryOutlined /> },
   {

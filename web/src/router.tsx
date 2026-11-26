@@ -16,6 +16,7 @@ import MarketerLayout from './layouts/MarketerLayout';
 import AccountPanel from './pages/AccountPanel';
 import { AdminReports, AdminSubscribers } from './pages/admin/placeholders';
 import Backup from './pages/admin/Backup';
+import Commissions from './pages/admin/commissions/Commissions';
 import Admins from './pages/admin/Admins';
 import ImportPage from './pages/admin/import/ImportPage';
 import AwaitingLink from './pages/admin/links/AwaitingLink';
@@ -98,6 +99,7 @@ export const routes: RouteObject[] = [
                       page('admins', { path: 'admins', element: <Admins /> }),
                       page('reports', { path: 'reports', element: <AdminReports /> }),
                       page('import', { path: 'import', element: <ImportPage /> }),
+                      page('commissions', { path: 'commissions', element: <Commissions /> }),
                       page('backup', { path: 'backup', element: <Backup /> }),
                       page('audit', { path: 'audit', element: <Audit /> }),
                       page('archive', { path: 'archive', element: <Archive /> }),

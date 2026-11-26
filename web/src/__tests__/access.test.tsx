@@ -94,6 +94,7 @@ describe('admin menu and page guard', () => {
     marketers: 'المسوّقون',
     admins: 'الأدمنية والصلاحيات',
     audit: 'سجل العمليات',
+    commissions: 'العمولات',
   };
 
   it.each(cases.filter((c) => c.role !== 'marketer').map((c) => [label(c), c] as const))(

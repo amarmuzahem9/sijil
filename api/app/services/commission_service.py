@@ -9,13 +9,14 @@ have no marketer, so they never enter it.
 
 from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from sqlalchemy import Date, case, exists, func, select
 from sqlalchemy.orm import Session
 
 from app.core import commission
 from app.core.timeutil import BAGHDAD, baghdad_month_bounds, baghdad_month_label, utc_now
+from app.errors import AppError
 from app.models import CommissionPayment, CommissionPaymentRequest, Request, User
 from app.services import settings_service
 
@@ -192,3 +193,141 @@ def marketer_past_months(db: Session, user: User) -> list[MonthFigures]:
         )
         for m in months
     ]
+
+
+# --- the admin report (research R4, R6, R7, R9) --------------------------------------------------
+
+
+@dataclass(frozen=True)
+class ReportRow:
+    marketer: User
+    figures: MonthFigures
+    paid_before: int
+    payable: bool
+    paid_by_name: str | None
+    count_today: int | None
+
+
+def months(db: Session) -> list[date]:
+    """Every Baghdad month from the earliest link or payment to the current one, newest first."""
+    local = func.timezone("Asia/Baghdad", Request.linked_at)
+    first_link = db.scalar(
+        select(func.min(func.date_trunc("month", local).cast(Date()))).where(
+            Request.status == "linked", Request.deleted_at.is_(None)
+        )
+    )
+    first_paid = db.scalar(select(func.min(CommissionPayment.month)))
+    current = current_month()
+    start = min(m for m in (first_link, first_paid, current) if m is not None)
+    out = []
+    m = current
+    while m >= start:
+        out.append(m)
+        m = (m.replace(day=1) - timedelta(days=1)).replace(day=1)
+    return out
+
+
+def _payments(db: Session, month: date, marketer_ids=None) -> dict[int, CommissionPayment]:
+    query = select(CommissionPayment).where(CommissionPayment.month == month)
+    if marketer_ids is not None:
+        query = query.where(CommissionPayment.marketer_id.in_(list(marketer_ids)))
+    return {p.marketer_id: p for p in db.scalars(query)}
+
+
+def _count_today(db: Session, payment: CommissionPayment) -> int:
+    """The payment's requests still linked in its month: lower after an undo (research R4)."""
+    return db.scalar(
+        select(func.count())
+        .select_from(CommissionPaymentRequest)
+        .join(Request, Request.id == CommissionPaymentRequest.request_id)
+        .where(CommissionPaymentRequest.payment_id == payment.id, *_in_month(payment.month))
+    )
+
+
+def _rows(db: Session, month: date, marketer_ids=None) -> list[ReportRow]:
+    splits = month_split(db, month, marketer_ids)
+    payments = _payments(db, month, marketer_ids)
+    ids = set(splits) | set(payments)
+    if not ids:
+        return []
+    users = {u.id: u for u in db.scalars(select(User).where(User.id.in_(ids)))}
+    payers = {
+        u.id: u.name
+        for u in db.scalars(select(User).where(User.id.in_({p.paid_by for p in payments.values()})))
+    }
+    tiers = settings_service.get_tiers(db)
+    finished = month < current_month()
+    rows = []
+    for marketer_id in ids:
+        split = splits.get(marketer_id, _EMPTY)
+        payment = payments.get(marketer_id)
+        figures = _figures(month, split, payment, tiers)
+        rows.append(
+            ReportRow(
+                marketer=users[marketer_id],
+                figures=figures,
+                paid_before=split.paid_before,
+                payable=finished and payment is None and figures.count > 0,
+                paid_by_name=payers.get(payment.paid_by) if payment else None,
+                count_today=_count_today(db, payment) if payment else None,
+            )
+        )
+    return sorted(rows, key=lambda r: (r.marketer.name, r.marketer.id))
+
+
+def report(db: Session, month: date) -> list[ReportRow]:
+    """One row per marketer with a linked request or a payment in the month (FR-009)."""
+    return _rows(db, month)
+
+
+def report_row(db: Session, month: date, marketer_id: int) -> ReportRow:
+    rows = _rows(db, month, [marketer_id])
+    if not rows:
+        raise AppError("not_found", 404)
+    return rows[0]
+
+
+@dataclass(frozen=True)
+class DetailLists:
+    counted: list[Request]
+    without_commission: list[Request]
+    # (request, the month it was paid in)
+    paid_before: list[tuple[Request, date]]
+
+
+def detail(db: Session, month: date, marketer_id: int) -> DetailLists:
+    """The requests behind a row (FR-010). A paid row lists the requests stored at payment."""
+    report_row(db, month, marketer_id)  # 404 when there is no row
+    payment = _payments(db, month, [marketer_id]).get(marketer_id)
+    in_month = db.scalars(
+        select(Request)
+        .where(Request.marketer_id == marketer_id, *_in_month(month))
+        .order_by(Request.linked_at, Request.id)
+    ).all()
+    paid_months = dict(
+        db.execute(
+            select(CommissionPaymentRequest.request_id, CommissionPayment.month)
+            .join(CommissionPayment, CommissionPayment.id == CommissionPaymentRequest.payment_id)
+            .where(CommissionPaymentRequest.request_id.in_([r.id for r in in_month]))
+        ).all()
+    )
+    if payment is not None:
+        counted = db.scalars(
+            select(Request)
+            .join(CommissionPaymentRequest, CommissionPaymentRequest.request_id == Request.id)
+            .where(CommissionPaymentRequest.payment_id == payment.id)
+            .order_by(Request.id)
+        ).all()
+    else:
+        counted = [r for r in in_month if r.id not in paid_months and r.counts_commission]
+    return DetailLists(
+        counted=list(counted),
+        without_commission=[
+            r for r in in_month if r.id not in paid_months and not r.counts_commission
+        ],
+        paid_before=[
+            (r, paid_months[r.id])
+            for r in in_month
+            if r.id in paid_months and paid_months[r.id] != month
+        ],
+    )
