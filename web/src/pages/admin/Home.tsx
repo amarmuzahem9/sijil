@@ -79,6 +79,20 @@ function BackupWarnings({ codes }: { codes: BackupWarning[] }) {
   );
 }
 
+/** specs/017 FR-015: an undo of a paid link in the last 30 days. */
+function CommissionAlert() {
+  return (
+    <Alert severity="warning">
+      <Stack spacing={0.5}>
+        <span>يوجد تراجع بعد الدفع</span>
+        <MuiLink component={RouterLink} to="/admin/commissions">
+          صفحة العمولات
+        </MuiLink>
+      </Stack>
+    </Alert>
+  );
+}
+
 export default function AdminHome() {
   const query = useQuery({ queryKey: ['admin', 'home'], queryFn: getHome });
   return (
@@ -96,6 +110,7 @@ export default function AdminHome() {
       {query.data?.backup_warnings && query.data.backup_warnings.length > 0 && (
         <BackupWarnings codes={query.data.backup_warnings} />
       )}
+      {(query.data?.commission_alerts ?? 0) > 0 && <CommissionAlert />}
       {query.data && (
         <>
           <Row title="اليوم" counts={query.data.today} />

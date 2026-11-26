@@ -16,6 +16,7 @@ from app.db import get_db
 from app.errors import AppError
 from app.models import Request
 from app.schemas.commissions import (
+    AlertOut,
     DetailLine,
     DetailOut,
     MonthList,
@@ -65,7 +66,9 @@ def _row_out(row: ReportRow) -> ReportRowOut:
             if f.payment is not None
             else None
         ),
-        alerts=[],
+        alerts=[
+            AlertOut(number_label=a.number_label, at=a.at, reason=a.reason) for a in row.alerts
+        ],
     )
 
 

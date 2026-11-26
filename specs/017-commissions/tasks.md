@@ -248,23 +248,23 @@ code is written**. Report red and green for every test task.
 
 ### Tests (write first, run red)
 
-- [ ] T042 [P] [US4] Integration test `api/tests/integration/test_commission_alerts.py`: an undo of a paid
+- [x] T042 [P] [US4] Integration test `api/tests/integration/test_commission_alerts.py`: an undo of a paid
   request after `paid_at` keeps the paid figures and adds an alert line (number, time, reason) and `count_today`
   one lower; an undo before payment adds none; re-linking that request in a later month puts it in
   `paid_before`, not counted (FR-016); `GET /api/admin/home` `commission_alerts` = 1 for main admin and a
   `commissions` admin, `null` for a `link`-only admin; with `frozen_clock` 30 days − 1 minute after the undo it is
   1, 30 days + 1 minute after it is 0, while the report alert stays (research R6).
-- [ ] T043 [P] [US4] Vitest `web/src/__tests__/commissions.test.tsx` (alert part): the paid row shows «تراجع بعد
+- [x] T043 [P] [US4] Vitest `web/src/__tests__/commissions.test.tsx` (alert part): the paid row shows «تراجع بعد
   الدفع» lines and «المدفوع N، اليوم M»; Vitest `web/src/__tests__/adminHome.test.tsx`: warning «يوجد تراجع بعد
   الدفع» with a link to `/admin/commissions` when `commission_alerts > 0`, nothing when 0 or null.
 
 ### Implementation
 
-- [ ] T044 [US4] Alerts and `count_today` in `report` of `api/app/services/commission_service.py`, plus
+- [x] T044 [US4] Alerts and `count_today` in `report` of `api/app/services/commission_service.py`, plus
   `home_alert_count(db, now)` (30-day window); T042 report part green.
-- [ ] T045 [US4] `commission_alerts` in `HomeOut` (`api/app/schemas/admin_requests.py`), filled in
+- [x] T045 [US4] `commission_alerts` in `HomeOut` (`api/app/schemas/admin_requests.py`), filled in
   `api/app/api/admin.py` for main admin and `commissions` holders; T042 green.
-- [ ] T046 [US4] Alert lines on the paid row in `web/src/pages/admin/commissions/Commissions.tsx` and the warning
+- [x] T046 [US4] Alert lines on the paid row in `web/src/pages/admin/commissions/Commissions.tsx` and the warning
   in `web/src/pages/admin/Home.tsx`; T043 green.
 
 ---
@@ -277,18 +277,18 @@ code is written**. Report red and green for every test task.
 
 ### Tests (write first, run red)
 
-- [ ] T047 [P] [US5] Integration test `api/tests/integration/test_marketers_month_summary.py`: `GET
+- [x] T047 [P] [US5] Integration test `api/tests/integration/test_marketers_month_summary.py`: `GET
   /api/admin/marketers/month-summary` (current month, count and amount per marketer, equal to each marketer's
   dashboard); 403 without `marketers`; no request data in the body.
-- [ ] T048 [P] [US5] Vitest `web/src/__tests__/marketers.test.tsx`: columns «عدد الشهر» and «العمولة المتوقعة»;
+- [x] T048 [P] [US5] Vitest `web/src/__tests__/marketers.test.tsx`: columns «عدد الشهر» and «العمولة المتوقعة»;
   no «تم الدفع».
 
 ### Implementation
 
-- [ ] T049 [US5] `month_summary(db)` in `api/app/services/commission_service.py` and the route in
+- [x] T049 [US5] `month_summary(db)` in `api/app/services/commission_service.py` and the route in
   `api/app/api/marketers.py` (declared before `/{user_id}` routes); T047 green.
-- [ ] T050 [P] [US5] Call in `web/src/lib/commissions.ts`.
-- [ ] T051 [US5] Two columns in `web/src/pages/admin/Marketers.tsx`; T048 green.
+- [x] T050 [P] [US5] Call in `web/src/lib/commissions.ts`.
+- [x] T051 [US5] Two columns in `web/src/pages/admin/Marketers.tsx`; T048 green.
 
 **Checkpoint**: batch 5 commit.
 

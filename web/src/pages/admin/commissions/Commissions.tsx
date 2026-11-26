@@ -12,6 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { amountText, getReport, listMonths, type ReportRow } from '../../../lib/commissions';
+import { UNLINK_REASON_LABELS } from '../../../lib/labels';
 import { formatMoney, formatNumber } from '../../../lib/money';
 import { formatBaghdad } from '../../../lib/time';
 import CommissionDetailDialog from './CommissionDetail';
@@ -59,6 +60,20 @@ function RowCard({
           <Typography variant="body2" color="text.secondary" data-testid="row-paid">
             تم الدفع بواسطة {row.payment.paid_by_name ?? '—'} · {formatBaghdad(row.payment.paid_at)}
           </Typography>
+        )}
+        {row.payment && row.alerts.length > 0 && (
+          <Alert severity="warning" sx={{ mt: 1 }} data-testid="row-alert">
+            <Typography variant="body2" sx={{ fontWeight: 700 }}>
+              تراجع بعد الدفع · المدفوع {formatNumber(row.count)}، اليوم{' '}
+              {formatNumber(row.payment.count_today)}
+            </Typography>
+            {row.alerts.map((a) => (
+              <Typography variant="body2" key={`${a.number_label}-${a.at}`}>
+                <span dir="ltr">{a.number_label}</span> · {formatBaghdad(a.at)} ·{' '}
+                {UNLINK_REASON_LABELS[a.reason as keyof typeof UNLINK_REASON_LABELS] ?? a.reason}
+              </Typography>
+            ))}
+          </Alert>
         )}
         <Stack direction="row" sx={{ mt: 1, gap: 1 }}>
           <Button size="small" onClick={onDetail}>

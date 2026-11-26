@@ -49,6 +49,7 @@ def test_today_and_month(client, db, make_user, marketer, frozen_clock) -> None:
 
     body = _home(client, headers_for(client, make_user("super_admin")))
     body.pop("backup_warnings")  # the main admin's backup warnings (specs/016), checked apart
+    body.pop("commission_alerts")  # undos after payment (specs/017), checked apart
 
     assert body == {
         "today": {"submitted": 3, "approved": 1, "pending": 1, "linked": 0, "rejected": 1},
@@ -103,8 +104,9 @@ def test_month_starts_in_baghdad(client, db, make_user, marketer, frozen_clock) 
 
 def test_any_admin_but_no_marketer(client, db, make_user, marketer) -> None:
     body = _home(client, headers_for(client, admin_with(make_user, "settings")))
-    assert set(body) == {"today", "month", "backup_warnings"}
+    assert set(body) == {"today", "month", "backup_warnings", "commission_alerts"}
     assert body.pop("backup_warnings") == []  # main admin only (specs/016)
+    assert body.pop("commission_alerts") is None  # main admin and `commissions` (specs/017)
     for row in body.values():
         assert set(row) == KEYS
         assert all(type(v) is int for v in row.values())

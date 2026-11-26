@@ -240,3 +240,6 @@ class HomeOut(BaseModel):
     month: HomeCounts
     # Main admin only; [] for other admins (specs/016 FR-017).
     backup_warnings: list[str] = []
+    # Undos after payment in the last 30 days; main admin and `commissions` only, null for other
+    # admins (specs/017 FR-015).
+    commission_alerts: int | None = None

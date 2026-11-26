@@ -231,4 +231,6 @@ export const getHome = () =>
     month: HomeCounts;
     /** Main admin only; [] for other admins (specs/016 FR-017). */
     backup_warnings?: BackupWarning[];
+    /** Undos after payment in the last 30 days; null without `commissions` (specs/017 FR-015). */
+    commission_alerts?: number | null;
   }>('/api/admin/home');

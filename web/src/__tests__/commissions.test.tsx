@@ -153,3 +153,35 @@ describe('Commissions (specs/017 US2)', () => {
     expect(within(dialog).queryByText(/07\d{9}/)).toBeNull();
   });
 });
+
+describe('«تراجع بعد الدفع» on a paid row (specs/017 US4, FR-015)', () => {
+  it('shows each alert and the paid count against today', async () => {
+    getReport.mockImplementation((month: string) =>
+      Promise.resolve(
+        report(month, [
+          {
+            ...PAID,
+            payment: { ...PAID.payment!, count_today: 1 },
+            alerts: [
+              { number_label: 'T3C-1042', at: '2026-11-10T12:00:00Z', reason: 'not_linked_in_sas' },
+            ],
+          },
+        ]),
+      ),
+    );
+    show();
+    const [row] = await screen.findAllByTestId('commission-row');
+    const alert = within(row).getByTestId('row-alert');
+    expect(alert.textContent).toContain('تراجع بعد الدفع');
+    expect(alert.textContent).toContain('المدفوع 2، اليوم 1');
+    expect(alert.textContent).toContain('T3C-1042');
+    expect(alert.textContent).toContain('لم يُربط فعلياً في SAS');
+  });
+
+  it('shows no alert when there is none', async () => {
+    getReport.mockImplementation((month: string) => Promise.resolve(report(month, [PAID])));
+    show();
+    const [row] = await screen.findAllByTestId('commission-row');
+    expect(within(row).queryByTestId('row-alert')).toBeNull();
+  });
+});

@@ -95,3 +95,16 @@ class PayIn(BaseModel):
 
     count: int = Field(ge=0)
     amount: int = Field(ge=0)
+
+
+class MonthSummaryItem(BaseModel):
+    marketer_id: int
+    count: int
+    amount: int
+
+
+class MonthSummary(BaseModel):
+    """«المسوّقون»: this month only, no payment (FR-019)."""
+
+    month_label: str
+    items: list[MonthSummaryItem]

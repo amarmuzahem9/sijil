@@ -97,6 +97,13 @@ export const listMonths = () =>
 export const getReport = (month: string) =>
   apiFetch<CommissionReport>(`/api/admin/commissions?month=${encodeURIComponent(month)}`);
 
+/** «المسوّقون»: this month's count and expected amount per marketer (FR-019). */
+export const getMonthSummary = () =>
+  apiFetch<{
+    month_label: string;
+    items: { marketer_id: number; count: number; amount: number }[];
+  }>('/api/admin/marketers/month-summary');
+
 /** «تم الدفع» with the figures the confirmation showed (research R5). */
 export const payMonth = (month: string, marketerId: number, count: number, amount: number) =>
   apiFetch<ReportRow>(

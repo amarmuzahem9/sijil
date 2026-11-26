@@ -23,6 +23,8 @@ import { ResetPasswordDialog } from '../../components/ResetPasswordDialog';
 import { accountsApi } from '../../lib/accounts';
 import type { Account } from '../../lib/accounts';
 import { ApiError, NETWORK_ERROR_MESSAGE } from '../../lib/api';
+import { getMonthSummary } from '../../lib/commissions';
+import { formatMoney, formatNumber } from '../../lib/money';
 import { normalizePhone } from '../../lib/phone';
 
 const QUERY_KEY = ['accounts', 'marketers'] as const;
@@ -33,6 +35,9 @@ export default function Marketers() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const marketers = useQuery({ queryKey: QUERY_KEY, queryFn: () => accountsApi.list('marketers') });
+  // specs/017 FR-019: this month's count and expected commission, without payment.
+  const summary = useQuery({ queryKey: ['marketers-month-summary'], queryFn: getMonthSummary });
+  const monthFigures = new Map(summary.data?.items.map((i) => [i.marketer_id, i]) ?? []);
   const [search, setSearch] = useState('');
   const [state, setState] = useState<StateFilter>('all');
   const [adding, setAdding] = useState(false);
@@ -121,6 +126,11 @@ export default function Marketers() {
     name: m.name,
     phone: m.phone,
     isActive: m.is_active,
+    extra: summary.data && (
+      <Typography variant="body2" color="text.secondary">
+        {`عدد الشهر: ${formatNumber(monthFigures.get(m.id)?.count ?? 0)} · العمولة المتوقعة: ${formatMoney(monthFigures.get(m.id)?.amount ?? 0)}`}
+      </Typography>
+    ),
     actions: (
       <>
         <Button size="small" onClick={() => setEditing(m)}>
@@ -194,7 +204,9 @@ export default function Marketers() {
 
       {marketers.isPending && <CircularProgress aria-label="جارٍ التحميل" />}
       {marketers.isError && <Alert severity="error">{marketers.error.message}</Alert>}
-      {marketers.isSuccess && <AccountList rows={rows} emptyText="لا يوجد مسوّقون" />}
+      {marketers.isSuccess && (
+        <AccountList rows={rows} emptyText="لا يوجد مسوّقون" extraHeader="هذا الشهر" />
+      )}
 
       <AccountDialog
         open={adding}

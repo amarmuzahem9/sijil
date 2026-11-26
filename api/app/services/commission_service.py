@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 from app.core import commission
 from app.core.timeutil import BAGHDAD, baghdad_month_bounds, baghdad_month_label, utc_now
 from app.errors import AppError
-from app.models import CommissionPayment, CommissionPaymentRequest, Request, User
+from app.models import CommissionPayment, CommissionPaymentRequest, Request, RequestLink, User
 from app.services import audit_service, settings_service
 
 log = logging.getLogger("sijil.commissions")
@@ -203,6 +203,15 @@ def marketer_past_months(db: Session, user: User) -> list[MonthFigures]:
 
 
 @dataclass(frozen=True)
+class Alert:
+    """«تراجع بعد الدفع»: an undo of a paid request after its payment (research R6)."""
+
+    number_label: str
+    at: datetime
+    reason: str
+
+
+@dataclass(frozen=True)
 class ReportRow:
     marketer: User
     figures: MonthFigures
@@ -210,6 +219,7 @@ class ReportRow:
     payable: bool
     paid_by_name: str | None
     count_today: int | None
+    alerts: tuple[Alert, ...] = ()
 
 
 def months(db: Session) -> list[date]:
@@ -248,6 +258,40 @@ def _count_today(db: Session, payment: CommissionPayment) -> int:
     )
 
 
+def _undos_after_payment():
+    """Undo rows of paid requests made after their payment, computed from the append-only link
+    history: nothing new is written by the undo (research R6)."""
+    return (
+        select(RequestLink, Request.number)
+        .join(
+            CommissionPaymentRequest, CommissionPaymentRequest.request_id == RequestLink.request_id
+        )
+        .join(CommissionPayment, CommissionPayment.id == CommissionPaymentRequest.payment_id)
+        .join(Request, Request.id == RequestLink.request_id)
+        .where(RequestLink.kind == "unlinked", RequestLink.at > CommissionPayment.paid_at)
+    )
+
+
+def _alerts(db: Session, payment: CommissionPayment) -> list[Alert]:
+    rows = db.execute(
+        _undos_after_payment()
+        .where(CommissionPayment.id == payment.id)
+        .order_by(RequestLink.at, RequestLink.id)
+    ).all()
+    return [Alert(f"T3C-{number}", link.at, link.reason) for link, number in rows]
+
+
+HOME_ALERT_DAYS = 30
+
+
+def home_alert_count(db: Session) -> int:
+    """Undos after payment in the last 30 days, for the admin home warning (owner, 2026-11-26).
+    The report keeps every alert for good."""
+    since = utc_now() - timedelta(days=HOME_ALERT_DAYS)
+    query = _undos_after_payment().where(RequestLink.at > since)
+    return db.scalar(select(func.count()).select_from(query.subquery()))
+
+
 def _rows(db: Session, month: date, marketer_ids=None) -> list[ReportRow]:
     splits = month_split(db, month, marketer_ids)
     payments = _payments(db, month, marketer_ids)
@@ -274,6 +318,7 @@ def _rows(db: Session, month: date, marketer_ids=None) -> list[ReportRow]:
                 payable=finished and payment is None and figures.count > 0,
                 paid_by_name=payers.get(payment.paid_by) if payment else None,
                 count_today=_count_today(db, payment) if payment else None,
+                alerts=tuple(_alerts(db, payment)) if payment else (),
             )
         )
     return sorted(rows, key=lambda r: (r.marketer.name, r.marketer.id))
@@ -421,3 +466,16 @@ def pay(
     # Marketer id, month and amount only (constitution Principle II).
     log.info("commission paid marketer=%s month=%s amount=%s", marketer_id, key, total)
     return report_row(db, month, marketer_id)
+
+
+# --- the marketers page (FR-019) -----------------------------------------------------------------
+
+
+def month_summary(db: Session) -> list[tuple[int, int, int]]:
+    """(marketer id, count, expected amount) of the current month for every marketer with a link
+    in it, by the same rule as the marketer home."""
+    tiers = settings_service.get_tiers(db)
+    return [
+        (marketer_id, split.counted, commission.amount(split.counted, tiers))
+        for marketer_id, split in month_split(db, current_month()).items()
+    ]

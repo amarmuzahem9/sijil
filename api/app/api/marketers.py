@@ -15,7 +15,8 @@ from app.schemas.accounts import (
     MarketerUpdate,
     ResetPasswordBody,
 )
-from app.services import account_service
+from app.schemas.commissions import MonthSummary, MonthSummaryItem
+from app.services import account_service, commission_service
 
 router = APIRouter(prefix="/admin/marketers", tags=["marketers"])
 _can_manage = require_permission("marketers")
@@ -27,6 +28,21 @@ def list_marketers(
 ) -> AccountList:
     users = account_service.list_accounts(db, "marketer")
     return AccountList(items=[AccountOut.model_validate(u) for u in users])
+
+
+@router.get("/month-summary", response_model=MonthSummary)
+def month_summary(
+    _: AuthContext = Depends(_can_manage), db: Session = Depends(get_db)
+) -> MonthSummary:
+    """This month's count and expected commission per marketer, without payment (specs/017
+    FR-019). Same rule as the marketer home."""
+    return MonthSummary(
+        month_label=commission_service.month_label(commission_service.current_month()),
+        items=[
+            MonthSummaryItem(marketer_id=m, count=c, amount=a)
+            for m, c, a in commission_service.month_summary(db)
+        ],
+    )
 
 
 @router.post("", response_model=AccountOut, status_code=201)
