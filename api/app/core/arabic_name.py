@@ -77,3 +77,23 @@ def join_full_name(parts: list[str | None]) -> str | None:
     """`full_name`: the given parts joined by one space, empty parts skipped; None if all empty."""
     words = [p for p in parts if p]
     return " ".join(words) or None
+
+
+# --- folding for search (specs/018 research R3) ------------------------------------------------
+
+# أ إ آ ٱ → ا, ة → ه, ى → ي. Mirrored in SQL by services/subscriber_search.py (FOLD_FROM, FOLD_TO).
+FOLD_FROM = chr(0x0623) + chr(0x0625) + chr(0x0622) + chr(0x0671) + chr(0x0629) + chr(0x0649)
+FOLD_TO = chr(0x0627) * 4 + chr(0x0647) + chr(0x064A)
+_FOLD = str.maketrans(FOLD_FROM, FOLD_TO)
+# The characters folding removes (diacritics, tatweel, direction marks), for the SQL mirror.
+REMOVED_CHARACTERS = _REMOVED
+
+
+def fold_arabic(raw: str | None) -> str | None:
+    """A name as the search compares it: spellings of the same name meet. Legacy and SAS names are
+    kept as written (§12), so both the query and the stored name are folded. None when empty."""
+    if raw is None:
+        return None
+    text = _REMOVE.sub("", unicodedata.normalize("NFC", raw)).translate(_FOLD)
+    text = _SPACES.sub(" ", text).strip()
+    return text or None

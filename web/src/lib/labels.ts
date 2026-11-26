@@ -238,3 +238,29 @@ export const UNLINK_REASON_LABELS = {
   other: 'سبب آخر',
 } as const;
 export type UnlinkReason = keyof typeof UNLINK_REASON_LABELS;
+
+// «المشتركون» (docs/system.md v1.24 §10 item 4, specs/018 contracts/api.md).
+export const SUBSCRIBER_SOURCE_LABELS = {
+  sijil: 'طلب سِجلّ',
+  legacy: 'مشترك قديم',
+  sas: 'مشترك SAS',
+} as const;
+export type SubscriberSource = keyof typeof SUBSCRIBER_SOURCE_LABELS;
+
+export const LINK_REASON_LABELS = {
+  same_person: 'نفس الشخص',
+  same_phone: 'نفس الهاتف',
+  same_family: 'نفس العائلة',
+} as const;
+export type LinkReason = keyof typeof LINK_REASON_LABELS;
+
+export const HISTORY_KIND_LABELS = {
+  submitted: 'أُرسل',
+  approved: 'قُبل',
+  rejected: 'رُفض',
+  pinned: 'تثبيت رقم',
+  linked: 'تم الربط',
+  unlinked: 'تراجع عن الربط',
+  deleted: 'حُذف',
+} as const;
+export type HistoryKind = keyof typeof HISTORY_KIND_LABELS;

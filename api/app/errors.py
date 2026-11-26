@@ -96,6 +96,9 @@ MESSAGES: dict[str, str] = {
     "nothing_to_pay": "لا يوجد عدد محسوب لهذا الشهر",
     "commission_changed": "تغيّرت الأرقام، راجعها من جديد",
     "already_paid": "تم تسجيل الدفع لهذا الشهر مسبقاً",
+    # «المشتركون» search (specs/018 contracts/api.md)
+    "search_unclear": "اكتب اسماً (3 أحرف على الأقل) أو هاتفاً أو رقماً",
+    "identity_search_forbidden": "البحث بالرقم الوطني أو العائلي يحتاج صلاحية المراجعة",
     # Legacy subscribers import (specs/014 contracts/api.md)
     "import_file_unreadable": "تعذّرت قراءة الملف، ارفع ملف xlsx أو csv",
     "import_columns_missing": "الملف ينقصه عمود",
