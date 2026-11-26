@@ -3,7 +3,7 @@ number, card field or image ever goes out (research R9)."""
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class PastMonth(BaseModel):
@@ -88,3 +88,10 @@ class DetailOut(BaseModel):
     counted: list[DetailLine]
     without_commission: list[DetailLine]
     paid_before: list[PaidBeforeLine]
+
+
+class PayIn(BaseModel):
+    """The figures the confirmation showed; the server refuses when they changed (research R5)."""
+
+    count: int = Field(ge=0)
+    amount: int = Field(ge=0)

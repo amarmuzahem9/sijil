@@ -15,13 +15,22 @@ import { amountText, getReport, listMonths, type ReportRow } from '../../../lib/
 import { formatMoney, formatNumber } from '../../../lib/money';
 import { formatBaghdad } from '../../../lib/time';
 import CommissionDetailDialog from './CommissionDetail';
+import PayDialog from './PayDialog';
 
 function extraText(row: ReportRow): string | null {
   if (row.without_commission + row.paid_before === 0) return null;
   return `بلا عمولة: ${formatNumber(row.without_commission)} · مدفوع سابقاً: ${formatNumber(row.paid_before)}`;
 }
 
-function RowCard({ row, onDetail }: { row: ReportRow; onDetail: () => void }) {
+function RowCard({
+  row,
+  onDetail,
+  onPay,
+}: {
+  row: ReportRow;
+  onDetail: () => void;
+  onPay: () => void;
+}) {
   const extra = extraText(row);
   return (
     <Card variant="outlined" data-testid="commission-row">
@@ -55,6 +64,12 @@ function RowCard({ row, onDetail }: { row: ReportRow; onDetail: () => void }) {
           <Button size="small" onClick={onDetail}>
             التفاصيل
           </Button>
+          {/* A finished, unpaid month with a count above 0 (FR-011). */}
+          {row.payable && (
+            <Button size="small" variant="contained" onClick={onPay}>
+              تم الدفع
+            </Button>
+          )}
         </Stack>
       </CardContent>
     </Card>
@@ -76,6 +91,7 @@ export default function Commissions() {
     enabled: month !== null,
   });
   const [detail, setDetail] = useState<ReportRow | null>(null);
+  const [paying, setPaying] = useState<ReportRow | null>(null);
   const error = months.error ?? report.error;
 
   return (
@@ -114,11 +130,17 @@ export default function Commissions() {
             <Typography color="text.secondary">لا يوجد ربط في هذا الشهر</Typography>
           ) : (
             report.data.rows.map((row) => (
-              <RowCard key={row.marketer_id} row={row} onDetail={() => setDetail(row)} />
+              <RowCard
+                key={row.marketer_id}
+                row={row}
+                onDetail={() => setDetail(row)}
+                onPay={() => setPaying(row)}
+              />
             ))
           )}
         </>
       )}
+      {paying && month && <PayDialog month={month} row={paying} onClose={() => setPaying(null)} />}
       {detail && month && (
         <CommissionDetailDialog
           month={month}

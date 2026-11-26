@@ -97,6 +97,13 @@ export const listMonths = () =>
 export const getReport = (month: string) =>
   apiFetch<CommissionReport>(`/api/admin/commissions?month=${encodeURIComponent(month)}`);
 
+/** «تم الدفع» with the figures the confirmation showed (research R5). */
+export const payMonth = (month: string, marketerId: number, count: number, amount: number) =>
+  apiFetch<ReportRow>(
+    `/api/admin/commissions/${encodeURIComponent(month)}/marketers/${marketerId}/pay`,
+    { method: 'POST', body: { count, amount } },
+  );
+
 export const getDetail = (month: string, marketerId: number) =>
   apiFetch<CommissionDetail>(
     `/api/admin/commissions/${encodeURIComponent(month)}/marketers/${marketerId}`,

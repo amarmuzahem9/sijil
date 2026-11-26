@@ -7,18 +7,22 @@ Baghdad month. Each is `counted`, `without_commission` (a return accepted with �
 have no marketer, so they never enter it.
 """
 
+import logging
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
 from sqlalchemy import Date, case, exists, func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core import commission
 from app.core.timeutil import BAGHDAD, baghdad_month_bounds, baghdad_month_label, utc_now
 from app.errors import AppError
 from app.models import CommissionPayment, CommissionPaymentRequest, Request, User
-from app.services import settings_service
+from app.services import audit_service, settings_service
+
+log = logging.getLogger("sijil.commissions")
 
 
 @dataclass(frozen=True)
@@ -331,3 +335,89 @@ def detail(db: Session, month: date, marketer_id: int) -> DetailLists:
             if r.id in paid_months and paid_months[r.id] != month
         ],
     )
+
+
+# --- «تم الدفع» (research R5, R10) ----------------------------------------------------------------
+
+
+def pay(
+    db: Session, admin: User, month: date, marketer_id: int, count: int, amount: int
+) -> ReportRow:
+    """Lock a finished month of one marketer at the figures the admin confirmed (FR-011, FR-012).
+
+    The counted requests are locked `FOR UPDATE`, the same row lock as «التراجع عن الربط», so an
+    undo either lands before (the figures differ: `commission_changed`) or after (an alert). A
+    refused call writes nothing; a second payment hits the unique key (`already_paid`)."""
+    if month >= current_month():
+        raise AppError("month_not_finished", 409)
+    marketer = db.get(User, marketer_id)
+    if marketer is None or marketer.role != "marketer":
+        raise AppError("not_found", 404)
+    if _payments(db, month, [marketer_id]):
+        raise AppError("already_paid", 409)
+
+    counted = db.scalars(
+        select(Request)
+        .where(
+            Request.marketer_id == marketer_id,
+            *_in_month(month),
+            ~_paid_in(None),
+            Request.counts_commission.is_(True),
+        )
+        .order_by(Request.id)
+        .with_for_update(of=Request)
+    ).all()
+    # A second admin waited on those row locks: by now the first payment is visible to this new
+    # statement (READ COMMITTED), and its requests left the locked set.
+    if _payments(db, month, [marketer_id]):
+        raise AppError("already_paid", 409)
+    n = len(counted)
+    if n == 0:
+        raise AppError("nothing_to_pay", 409)
+    tiers = settings_service.get_tiers(db)
+    tier_min, rate = commission.tier_for(n, tiers)
+    total = rate * n
+    if (count, amount) != (n, total):
+        raise AppError("commission_changed", 409)
+
+    payment = CommissionPayment(
+        marketer_id=marketer_id,
+        month=month,
+        count=n,
+        tier_min_count=tier_min,
+        rate=rate,
+        amount=total,
+        paid_by=admin.id,
+        paid_at=utc_now(),
+    )
+    try:
+        with db.begin_nested():
+            db.add(payment)
+            db.flush()
+            db.add_all(
+                CommissionPaymentRequest(request_id=r.id, payment_id=payment.id) for r in counted
+            )
+            db.flush()
+    except IntegrityError:
+        # Another admin paid the same row (or one of its requests) first.
+        raise AppError("already_paid", 409) from None
+    key = commission.month_key(month)
+    audit_service.record(
+        db,
+        actor_id=admin.id,
+        action="commission.paid",
+        entity_type="commission_payment",
+        entity_id=f"{marketer_id}:{key}",
+        after={
+            "marketer_id": marketer_id,
+            "month": key,
+            "count": n,
+            "tier_min_count": tier_min,
+            "rate": rate,
+            "amount": total,
+        },
+    )
+    db.commit()
+    # Marketer id, month and amount only (constitution Principle II).
+    log.info("commission paid marketer=%s month=%s amount=%s", marketer_id, key, total)
+    return report_row(db, month, marketer_id)

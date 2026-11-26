@@ -206,7 +206,7 @@ code is written**. Report red and green for every test task.
 
 ### Tests (write first, run red)
 
-- [ ] T034 [P] [US3] Integration test `api/tests/integration/test_commission_pay.py` (contracts/api.md › pay):
+- [x] T034 [P] [US3] Integration test `api/tests/integration/test_commission_pay.py` (contracts/api.md › pay):
   success stores data-model.md `commission_payments.count`, `commission_payments.tier_min_count`,
   `commission_payments.rate`, `commission_payments.amount`, `commission_payments.paid_by`,
   `commission_payments.paid_at` and one `commission_payment_requests` row per counted request, and one audit
@@ -214,25 +214,25 @@ code is written**. Report red and green for every test task.
   audit): current month → `month_not_finished`, count 0 → `nothing_to_pay`, body figures differ →
   `commission_changed`, second pay → `already_paid`, unknown marketer → 404, no permission → 403; after a tier
   change the paid row keeps its rate and amount while an unpaid month moves (FR-005).
-- [ ] T035 [P] [US3] Concurrency test in the same file: two pays on the same row in two sessions → one 200, one
+- [x] T035 [P] [US3] Concurrency test in `api/tests/integration/test_commission_pay_concurrency.py` (it commits, so it has its own file): two pays on the same row in two sessions → one 200, one
   `already_paid`; a pay and an undo of one of its requests in two sessions → either the pay sees the lower count
   (`commission_changed`) or the undo runs after it (paid row unchanged) — never a payment that includes an undone
   request (research R5).
-- [ ] T036 [P] [US3] Vitest `web/src/__tests__/payDialog.test.tsx`: the dialog shows count, rate and amount and
+- [x] T036 [P] [US3] Vitest `web/src/__tests__/payDialog.test.tsx`: the dialog shows count, rate and amount and
   sends them; the button is hidden when `payable` is false; Arabic messages for the four 409 codes; the row
   turns «تم الدفع» with who and when after success.
 
 ### Implementation
 
-- [ ] T037 [US3] `pay(db, admin, month, marketer_id, count, amount)` in `api/app/services/commission_service.py`:
+- [x] T037 [US3] `pay(db, admin, month, marketer_id, count, amount)` in `api/app/services/commission_service.py`:
   finished-month check, `FOR UPDATE` on the counted requests, recompute, compare, insert payment and requests,
   audit, commit; unique-key violation → `already_paid` (research R5, R10); T034, T035 green.
-- [ ] T038 [US3] Pay body schema in `api/app/schemas/commissions.py` and route `POST
+- [x] T038 [US3] Pay body schema in `api/app/schemas/commissions.py` and route `POST
   /{month}/marketers/{marketer_id}/pay` in `api/app/api/admin_commissions.py`.
-- [ ] T039 [P] [US3] `pay` call in `web/src/lib/commissions.ts`.
-- [ ] T040 [US3] New `web/src/pages/admin/commissions/PayDialog.tsx` and the «تم الدفع» button on the row in
+- [x] T039 [P] [US3] `pay` call in `web/src/lib/commissions.ts`.
+- [x] T040 [US3] New `web/src/pages/admin/commissions/PayDialog.tsx` and the «تم الدفع» button on the row in
   `Commissions.tsx`; T036 green.
-- [ ] T041 [US3] Add a test in `api/tests/integration/test_commission_pay.py` that a payment made by
+- [x] T041 [US3] Add a test in `api/tests/integration/test_commission_pay.py` that a payment made by
   `commission_service.pay` and one made by the helper `pay_month` (T011) for the same requests give the same rows,
   so the helper stays faithful to the service; the suite stays green.
 
@@ -302,7 +302,7 @@ code is written**. Report red and green for every test task.
   clock); open «العمولات», check row and details, «تم الدفع», undo one link, see
   the alert and the home warning, the marketer's «الأشهر السابقة» shows «تم الدفع»; a `link`-only admin has no
   «العمولات» menu.
-- [ ] T053 [P] Log check in `api/tests/integration/test_commission_pay.py`: the pay logs only marketer id, month
+- [x] T053 [P] Log check in `api/tests/integration/test_commission_pay.py`: the pay logs only marketer id, month
   and amount; no names, phones or request numbers (Principle II).
 - [ ] T054 [P] Performance check in `api/tests/integration/test_commission_report.py`: a month with 50 marketers
   and 3,000 links builds the report in under 1 s on the local stack (plan › Performance Goals).

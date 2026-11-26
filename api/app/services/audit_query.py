@@ -56,6 +56,7 @@ def list_entries(
     rows = db.execute(query).all()
     page = rows[:limit]
     labels = _settings_labels(db, [entry for entry, _, _ in page])
+    labels |= _payment_labels(db, [entry for entry, _, _ in page])
     deleted = _deleted_requests(db, [entry for entry, _, _ in page])
     items = [
         AuditEntryOut(
@@ -122,6 +123,21 @@ def _settings_labels(db: Session, entries: list[AuditLog]) -> dict[tuple[str, st
             )
             if isinstance(stored, str):
                 labels[key] = stored
+    return labels
+
+
+def _payment_labels(db: Session, entries: list[AuditLog]) -> dict[tuple[str, str], str]:
+    """«عمولة {marketer} — {month}» for «تم الدفع» entries (specs/017 research R10)."""
+    keys = {e.entity_id for e in entries if e.entity_type == "commission_payment"}
+    ids = {int(k.split(":", 1)[0]) for k in keys if k.split(":", 1)[0].isdigit()}
+    if not ids:
+        return {}
+    names = dict(db.execute(select(User.id, User.name).where(User.id.in_(ids))).all())
+    labels = {}
+    for key in keys:
+        marketer, _, month = key.partition(":")
+        if marketer.isdigit() and int(marketer) in names:
+            labels[("commission_payment", key)] = f"عمولة {names[int(marketer)]} — {month}"
     return labels
 
 

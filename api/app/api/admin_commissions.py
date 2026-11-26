@@ -20,6 +20,7 @@ from app.schemas.commissions import (
     DetailOut,
     MonthList,
     PaidBeforeLine,
+    PayIn,
     PaymentOut,
     ReportOut,
     ReportRowOut,
@@ -125,3 +126,18 @@ def row_detail(
             for r, paid in lists.paid_before
         ],
     )
+
+
+@router.post("/{month}/marketers/{marketer_id}/pay", response_model=ReportRowOut)
+def pay_month(
+    month: str,
+    marketer_id: int,
+    body: PayIn,
+    ctx: AuthContext = Depends(commissions_only),
+    db: Session = Depends(get_db),
+) -> ReportRowOut:
+    """«تم الدفع» (FR-011, FR-012). 409 `month_not_finished`, `nothing_to_pay`,
+    `commission_changed` or `already_paid`; nothing is written then. No route edits or removes a
+    payment (FR-013)."""
+    row = commission_service.pay(db, ctx.user, _month(month), marketer_id, body.count, body.amount)
+    return _row_out(row)
