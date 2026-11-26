@@ -30,6 +30,7 @@ import ChangePassword from './pages/ChangePassword';
 import Login from './pages/Login';
 import Dashboard from './pages/marketer/Dashboard';
 import Notifications from './pages/marketer/Notifications';
+import PastMonths from './pages/marketer/PastMonths';
 import RequestResult from './pages/marketer/RequestResult';
 import Requests from './pages/marketer/Requests';
 import SubscriberForm from './pages/marketer/subscriber/SubscriberForm';
@@ -70,6 +71,8 @@ export const routes: RouteObject[] = [
                       // the form stays mounted when the URL is replaced after the first save.
                       { path: '/drafts/:draftId', element: <SubscriberForm /> },
                       { path: '/notifications', element: <Notifications /> },
+                      // specs/017 FR-007: «الأشهر السابقة».
+                      { path: '/commissions', element: <PastMonths /> },
                       { path: '/account', element: <AccountPanel /> },
                     ],
                   },

@@ -120,34 +120,34 @@ code is written**. Report red and green for every test task.
 
 ### Tests (write first, run red)
 
-- [ ] T014 [P] [US1] New `api/tests/integration/test_commission_dashboard.py`: `GET /api/marketer/dashboard` returns `tier_rate`,
+- [x] T014 [P] [US1] New `api/tests/integration/test_commission_dashboard.py`: `GET /api/marketer/dashboard` returns `tier_rate`,
   `expected_amount`, `next_tier` for 0, 27, 30, 50 counted links; `next_tier` null in the top tier; a «لا» return
   and a paid-before request add to `linked_without_commission` only; a tier change is reflected on the next call
   (contracts/api.md › dashboard).
-- [ ] T015 [P] [US1] Integration test `api/tests/integration/test_marketer_past_months.py`: `GET
+- [x] T015 [P] [US1] Integration test `api/tests/integration/test_marketer_past_months.py`: `GET
   /api/marketer/commissions/months` lists finished months with a link or a payment, newest first, never the
   current month; a paid month shows the stored figures after a tier change and `paid: true`; an unpaid month
   follows today's tiers; the body has no `paid_by`, `paid_at` or alerts; marketer B never sees A's months; an
   admin gets 403 (FR-007, research R9).
-- [ ] T016 [P] [US1] Vitest `web/src/__tests__/dashboard.test.tsx`: the tier block shows rate, amount and
+- [x] T016 [P] [US1] Vitest `web/src/__tests__/dashboard.test.tsx`: the tier block shows rate, amount and
   «عندك N، باقيلك K وتصير R للمشترك»; no «باقيلك» when `next_tier` is null; a link «الأشهر السابقة».
-- [ ] T017 [P] [US1] Vitest `web/src/__tests__/pastMonths.test.tsx`: lines with month, count, «بلا عمولة», rate,
+- [x] T017 [P] [US1] Vitest `web/src/__tests__/pastMonths.test.tsx`: lines with month, count, «بلا عمولة», rate,
   amount and «تم الدفع» / «غير مدفوع»; empty state «لا توجد أشهر سابقة».
 
 ### Implementation
 
-- [ ] T018 [US1] In `api/app/services/commission_service.py` add `marketer_current(db, user)` (counted,
+- [x] T018 [US1] In `api/app/services/commission_service.py` add `marketer_current(db, user)` (counted,
   without_commission + paid_before, tier, amount, next tier) and `marketer_past_months(db, user)` (research R4,
   R7, R11).
-- [ ] T019 [US1] Extend `api/app/schemas/dashboard.py` (`tier_rate`, `expected_amount`, `NextTier | None`) and
+- [x] T019 [US1] Extend `api/app/schemas/dashboard.py` (`tier_rate`, `expected_amount`, `NextTier | None`) and
   make `link_service.marketer_counts` in `api/app/services/link_service.py` take its numbers from
   `commission_service.marketer_current`; the 013 counter tests stay green; T014 green.
-- [ ] T020 [US1] Add schemas `PastMonth`, `PastMonths` in new `api/app/schemas/commissions.py` and route `GET
+- [x] T020 [US1] Add schemas `PastMonth`, `PastMonths` in new `api/app/schemas/commissions.py` and route `GET
   /commissions/months` in `api/app/api/marketer.py` (`require_roles("marketer")`); T015 green.
-- [ ] T021 [P] [US1] Create `web/src/lib/commissions.ts` (types and the marketer calls) using `lib/money.ts` for
+- [x] T021 [P] [US1] Create `web/src/lib/commissions.ts` (types and the marketer calls) using `lib/money.ts` for
   amounts.
-- [ ] T022 [US1] Tier block and «الأشهر السابقة» link in `web/src/pages/marketer/Dashboard.tsx`; T016 green.
-- [ ] T023 [US1] New page `web/src/pages/marketer/PastMonths.tsx`, route `/commissions` in `web/src/router.tsx`
+- [x] T022 [US1] Tier block and «الأشهر السابقة» link in `web/src/pages/marketer/Dashboard.tsx`; T016 green.
+- [x] T023 [US1] New page `web/src/pages/marketer/PastMonths.tsx`, route `/commissions` in `web/src/router.tsx`
   under the marketer layout; T017 green.
 
 **Checkpoint**: batch 2 commit.

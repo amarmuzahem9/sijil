@@ -13,16 +13,22 @@ import { useQuery } from '@tanstack/react-query';
 import { Link as RouterLink } from 'react-router-dom';
 
 import { apiFetch } from '../../lib/api';
+import { nextTierText, type NextTier } from '../../lib/commissions';
+import { formatMoney } from '../../lib/money';
 import { STATUS_COLORS, STATUS_LABELS } from '../../lib/requestStatus';
 import { formatBaghdad } from '../../lib/time';
 
-/** The marketer home (system.md v1.18 §4.2, specs/013 contracts/api.md › dashboard). */
+/** The marketer home (system.md v1.23 §4.2, specs/013 and 017 contracts/api.md › dashboard). */
 interface DashboardData {
   /** Links of this Baghdad month counted for commission. */
   linked_this_month: number;
-  /** Returns accepted with «لا» for commission: «و M بلا عمولة». */
+  /** Returns accepted with «لا», and requests paid in an earlier month: «و M بلا عمولة». */
   linked_without_commission: number;
   month_label: string;
+  /** The tier and the expected amount by today's tiers (specs/017 US1). */
+  tier_rate: number;
+  expected_amount: number;
+  next_tier: NextTier | null;
   /** Up to 10 of this month, newest link first. */
   recent_links: { id: number; number_label: string; full_name: string | null; linked_at: string }[];
 }
@@ -92,10 +98,27 @@ export default function Dashboard() {
               <Typography variant="body2" color="text.secondary">
                 {data.month_label}
               </Typography>
+              <Stack spacing={0.25} sx={{ mt: 1.5 }}>
+                <Typography data-testid="tier-rate">
+                  الشريحة الحالية: {formatMoney(data.tier_rate)} للمشترك
+                </Typography>
+                <Typography sx={{ fontWeight: 700 }} data-testid="expected-amount">
+                  المبلغ المتوقع: {formatMoney(data.expected_amount)}
+                </Typography>
+                {data.next_tier && (
+                  <Typography variant="body2" color="text.secondary" data-testid="next-tier">
+                    {nextTierText(data.linked_this_month, data.next_tier)}
+                  </Typography>
+                )}
+              </Stack>
             </>
           )}
         </CardContent>
       </Card>
+
+      <Button component={RouterLink} to="/commissions" variant="text" sx={{ alignSelf: 'start' }}>
+        الأشهر السابقة
+      </Button>
 
       {data && (
         <Stack spacing={1}>

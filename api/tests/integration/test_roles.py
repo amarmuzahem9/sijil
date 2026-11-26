@@ -31,11 +31,15 @@ def test_marketer_dashboard(client, make_user) -> None:
     user = make_user("marketer")
     r = client.get("/api/marketer/dashboard", headers=auth_header(login(client, user.phone)))
     assert r.status_code == 200
-    # specs/013 contracts/api.md › dashboard: a marketer with no links yet.
+    # specs/013 and specs/017 contracts/api.md › dashboard: a marketer with no links yet, at the
+    # first default tier (0 → 5,000; 30 → 7,000).
     assert r.json() == {
         "linked_this_month": 0,
         "linked_without_commission": 0,
         "month_label": baghdad_month_label(),
+        "tier_rate": 5000,
+        "expected_amount": 0,
+        "next_tier": {"remaining": 30, "rate": 7000},
         "recent_links": [],
     }
 

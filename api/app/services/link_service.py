@@ -15,7 +15,7 @@ from app.core.timeutil import baghdad_month_bounds, baghdad_month_label, utc_now
 from app.errors import AppError
 from app.models import Request, RequestLink, User
 from app.schemas.admin_links import LinkList, LinkRow, UnlinkIn
-from app.schemas.dashboard import MarketerDashboard, RecentLink
+from app.schemas.dashboard import MarketerDashboard, NextTier, RecentLink
 from app.services import audit_service, notification_service
 
 log = logging.getLogger("sijil.links")
@@ -196,8 +196,13 @@ RECENT_LIMIT = 10
 
 
 def marketer_counts(db: Session, user: User) -> MarketerDashboard:
-    """This Baghdad month's links of `user`: counted for commission, without commission, and the
-    latest ten. A request has one current `linked_at`, so it counts once (FR-012)."""
+    """This Baghdad month's links of `user`: counted for commission, without commission, the tier
+    and the expected amount (from `commission_service`, so the home and the report share one
+    rule, specs/017 R11), and the latest ten. A request has one current `linked_at`, so it counts
+    once (FR-012)."""
+    from app.services import commission_service
+
+    figures = commission_service.marketer_current(db, user)
     start, end = baghdad_month_bounds()
     this_month = (
         Request.marketer_id == user.id,
@@ -206,13 +211,6 @@ def marketer_counts(db: Session, user: User) -> MarketerDashboard:
         Request.linked_at >= start,
         Request.linked_at < end,
     )
-    split = dict(
-        db.execute(
-            select(Request.counts_commission, func.count())
-            .where(*this_month)
-            .group_by(Request.counts_commission)
-        ).all()
-    )
     recent = db.scalars(
         select(Request)
         .where(*this_month)
@@ -220,9 +218,16 @@ def marketer_counts(db: Session, user: User) -> MarketerDashboard:
         .limit(RECENT_LIMIT)
     ).all()
     return MarketerDashboard(
-        linked_this_month=split.get(True, 0),
-        linked_without_commission=split.get(False, 0),
+        linked_this_month=figures.count,
+        linked_without_commission=figures.without_commission,
         month_label=baghdad_month_label(),
+        tier_rate=figures.rate,
+        expected_amount=figures.amount,
+        next_tier=(
+            NextTier(remaining=figures.next_tier[0], rate=figures.next_tier[1])
+            if figures.next_tier
+            else None
+        ),
         recent_links=[
             RecentLink(
                 id=r.id, number_label=r.number_label, full_name=r.full_name, linked_at=r.linked_at

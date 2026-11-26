@@ -17,6 +17,9 @@ const EMPTY = {
   linked_this_month: 0,
   linked_without_commission: 0,
   month_label: 'تشرين الثاني 2026',
+  tier_rate: 5000,
+  expected_amount: 0,
+  next_tier: { remaining: 30, rate: 7000 } as { remaining: number; rate: number } | null,
   recent_links: [],
 };
 
@@ -96,5 +99,46 @@ describe('«تم الربط هذا الشهر» (specs/013 US2, FR-011, FR-014)'
     expect(links.map((a) => a.getAttribute('href'))).toEqual(['/requests/31', '/requests/30']);
     expect(within(links[0]).getByText('عينة أولى')).toBeTruthy();
     expect(within(links[0]).getByText('تم الربط')).toBeTruthy();
+  });
+});
+
+describe('the tier and the expected amount (specs/017 US1, FR-006)', () => {
+  it('shows the rate, the amount and «باقيلك»', async () => {
+    apiFetch.mockResolvedValue({
+      ...EMPTY,
+      linked_this_month: 27,
+      tier_rate: 5000,
+      expected_amount: 135000,
+      next_tier: { remaining: 3, rate: 7000 },
+    });
+    show();
+    expect((await screen.findByTestId('tier-rate')).textContent).toBe(
+      'الشريحة الحالية: 5,000 د.ع للمشترك',
+    );
+    expect(screen.getByTestId('expected-amount').textContent).toBe('المبلغ المتوقع: 135,000 د.ع');
+    expect(screen.getByTestId('next-tier').textContent).toBe(
+      'عندك 27، باقيلك 3 وتصير 7,000 للمشترك',
+    );
+  });
+
+  it('hides «باقيلك» in the top tier', async () => {
+    apiFetch.mockResolvedValue({
+      ...EMPTY,
+      linked_this_month: 50,
+      tier_rate: 10000,
+      expected_amount: 500000,
+      next_tier: null,
+    });
+    show();
+    expect((await screen.findByTestId('expected-amount')).textContent).toBe(
+      'المبلغ المتوقع: 500,000 د.ع',
+    );
+    expect(screen.queryByTestId('next-tier')).toBeNull();
+  });
+
+  it('links to «الأشهر السابقة»', async () => {
+    show();
+    const link = await screen.findByRole('link', { name: 'الأشهر السابقة' });
+    expect(link.getAttribute('href')).toBe('/commissions');
   });
 });
