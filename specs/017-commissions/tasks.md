@@ -296,22 +296,21 @@ code is written**. Report red and green for every test task.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T052 [P] e2e `e2e/tests/commissions.spec.ts` (local Docker only): link synthetic requests for a marketer,
-  then an e2e-only helper in `e2e/tests/helpers.ts` moves those requests' `linked_at` (and their `request_links`
-  times) one month back in the local e2e database through `docker compose exec db psql` (the e2e has no test
-  clock); open «العمولات», check row and details, «تم الدفع», undo one link, see
+- [x] T052 [P] e2e `e2e/tests/commissions.spec.ts` (local Docker only): link synthetic requests for a marketer,
+  seeded by `api/tests/e2e_commission_seed.py`, which `scripts/e2e.sh` runs before Playwright and which writes last
+  month's links directly (the e2e browser has no test clock and no database access); open «العمولات», check row and details, «تم الدفع», undo one link, see
   the alert and the home warning, the marketer's «الأشهر السابقة» shows «تم الدفع»; a `link`-only admin has no
   «العمولات» menu.
 - [x] T053 [P] Log check in `api/tests/integration/test_commission_pay.py`: the pay logs only marketer id, month
   and amount; no names, phones or request numbers (Principle II).
-- [ ] T054 [P] Performance check in `api/tests/integration/test_commission_report.py`: a month with 50 marketers
+- [x] T054 [P] Performance check in its own file `api/tests/integration/test_commission_performance.py`: a month with 50 marketers
   and 3,000 links builds the report in under 1 s on the local stack (plan › Performance Goals).
-- [ ] T055 Run the whole suite: `docker compose exec api pytest`, the web suite from PowerShell, and the e2e
+- [x] T055 Run the whole suite: `docker compose exec api pytest`, the web suite from PowerShell, and the e2e
   suite; all green; note counts.
-- [ ] T056 `docker compose up` on the owner's machine: the app starts and migration 0020 is applied.
-- [ ] T057 Write `specs/017-commissions/manual-test-ar.md`: the Arabic manual steps for the owner, from
+- [x] T056 `docker compose up` on the owner's machine: the app starts and migration 0020 is applied.
+- [x] T057 Write `specs/017-commissions/manual-test-ar.md`: the Arabic manual steps for the owner, from
   quickstart.md, local machine only.
-- [ ] T058 Mark the tasks done and check `docs/system.md` 1.23 matches what was built; batch 6 commit.
+- [x] T058 Mark the tasks done and check `docs/system.md` 1.23 matches what was built; batch 6 commit.
 
 **Checkpoint**: batch 6 commit.
 

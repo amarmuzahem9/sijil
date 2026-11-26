@@ -18,4 +18,6 @@ E2E_BACKUP_RECIPIENT="$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n' \
 export E2E_BACKUP_RECIPIENT
 "${DC[@]}" up -d --wait backup
 "${DC[@]}" exec -T api python -m app.cli seed-demo --e2e
+# Last month's links for commissions.spec.ts (feature 017): the browser has no test clock.
+"${DC[@]}" exec -T api python -m tests.e2e_commission_seed
 "${DC[@]}" --profile e2e run --rm --build e2e "$@"
