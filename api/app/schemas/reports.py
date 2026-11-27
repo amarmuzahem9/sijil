@@ -114,3 +114,38 @@ class ReportOptions(BaseModel):
     towers: list[TowerOption]
     plans: list[PlanOption]
     marketers: list[MarketerOption]
+
+
+# --- exports (specs/019 contracts/api.md) --------------------------------------------------------
+
+ExportState = Literal["preparing", "ready", "failed", "removed"]
+
+
+class ExportCreate(ReportFilters):
+    """The report filters plus the box «تضمين الرقم الوطني والعائلي والصور» (FR-008)."""
+
+    include_identity: bool = False
+
+
+class ExportOut(BaseModel):
+    id: str
+    state: ExportState
+    include_identity: bool
+    row_count: int | None
+    missing_images: int | None
+    # Ids, codes and days only (research R8).
+    filters: dict
+    created_at: datetime
+    ready_at: datetime | None
+    expires_at: datetime | None
+    # The error code of a failed build; never a row value.
+    error: str | None
+
+
+class ExportList(BaseModel):
+    items: list[ExportOut]
+
+
+class TicketOut(BaseModel):
+    url: str
+    expires_in: int

@@ -8,14 +8,24 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiError } from '../lib/api';
-import type { ReportOptions, ReportResult, ReportRow } from '../lib/reports';
+import type { ExportItem, ReportOptions, ReportResult, ReportRow } from '../lib/reports';
 
 const fetchReport = vi.fn();
 const fetchOptions = vi.fn();
+const createExport = vi.fn();
+const listExports = vi.fn();
+const downloadTicket = vi.fn();
+const startDownload = vi.fn();
 vi.mock('../lib/reports', async (original) => ({
   ...(await original<typeof import('../lib/reports')>()),
+  // Poll fast in tests; the page uses this value while an export is preparing.
+  EXPORT_POLL_MS: 20,
   fetchReport: (...args: unknown[]) => fetchReport(...args),
   fetchOptions: (...args: unknown[]) => fetchOptions(...args),
+  createExport: (...args: unknown[]) => createExport(...args),
+  listExports: (...args: unknown[]) => listExports(...args),
+  downloadTicket: (...args: unknown[]) => downloadTicket(...args),
+  startDownload: (...args: unknown[]) => startDownload(...args),
 }));
 
 import Reports from '../pages/admin/reports/Reports';
@@ -76,8 +86,13 @@ function result(rows: ReportRow[], total = rows.length): ReportResult {
 beforeEach(() => {
   fetchReport.mockReset();
   fetchOptions.mockReset();
+  createExport.mockReset();
+  listExports.mockReset();
+  downloadTicket.mockReset();
+  startDownload.mockReset();
   fetchOptions.mockResolvedValue(OPTIONS);
   fetchReport.mockResolvedValue(result([ROW, DELETED]));
+  listExports.mockResolvedValue({ items: [] });
 });
 afterEach(cleanup);
 
@@ -202,5 +217,122 @@ describe('Reports (specs/019 US1)', () => {
     fetchReport.mockRejectedValue(new ApiError('period_invalid', 'الفترة غير صحيحة', 422));
     show();
     expect(await screen.findByText('الفترة غير صحيحة')).toBeTruthy();
+  });
+});
+
+const EXPORT: ExportItem = {
+  id: '6f1c0c1e-0000-4000-8000-000000000001',
+  state: 'preparing',
+  include_identity: false,
+  row_count: null,
+  missing_images: null,
+  filters: { period: 'month', date_kind: 'submitted' },
+  created_at: '2026-11-27T09:00:00Z',
+  ready_at: null,
+  expires_at: null,
+  error: null,
+};
+
+describe('Reports export (specs/019 US2, FR-008, FR-009, FR-012)', () => {
+  it('shows the identity box only when the server allows it', async () => {
+    show();
+    await screen.findAllByTestId('report-row');
+    expect(screen.getByRole('button', { name: 'تصدير' })).toBeTruthy();
+    expect(screen.queryByLabelText('تضمين الرقم الوطني والعائلي والصور')).toBeNull();
+    cleanup();
+    fetchReport.mockResolvedValue({ ...result([ROW]), can_export_identity: true });
+    show();
+    const box = (await screen.findByLabelText(
+      'تضمين الرقم الوطني والعائلي والصور',
+    )) as HTMLInputElement;
+    expect(box.checked).toBe(false); // unticked by default (FR-008)
+  });
+
+  it('posts the filters with the box, then lists the export until it is ready', async () => {
+    fetchReport.mockResolvedValue({ ...result([ROW]), can_export_identity: true });
+    createExport.mockResolvedValue(EXPORT);
+    show();
+    fireEvent.click(await screen.findByLabelText('تضمين الرقم الوطني والعائلي والصور'));
+    // Preparing until the test says otherwise, so the poll cannot skip past it.
+    listExports.mockResolvedValue({ items: [{ ...EXPORT, include_identity: true }] });
+    fireEvent.click(screen.getByRole('button', { name: 'تصدير' }));
+    await waitFor(() =>
+      expect(createExport).toHaveBeenCalledWith({ period: 'month', date_kind: 'submitted' }, true),
+    );
+    const list = within(await screen.findByTestId('exports-list'));
+    expect(await list.findByText('جارٍ التجهيز')).toBeTruthy();
+    expect(list.queryByRole('button', { name: 'تنزيل' })).toBeNull();
+    listExports.mockResolvedValue({
+      items: [
+        {
+          ...EXPORT,
+          include_identity: true,
+          state: 'ready',
+          row_count: 1,
+          missing_images: 0,
+          ready_at: '2026-11-27T09:01:00Z',
+          expires_at: '2026-11-28T09:01:00Z',
+        },
+      ],
+    });
+    // The page asks again on its own while an export is preparing (the poll).
+    expect(await list.findByRole('button', { name: 'تنزيل' })).toBeTruthy();
+    expect(list.getByText(/مع الأرقام والصور/)).toBeTruthy();
+    expect(list.getByText(/1 طلب/)).toBeTruthy();
+  });
+
+  it('downloads through a one-use ticket, natively', async () => {
+    listExports.mockResolvedValue({
+      items: [{ ...EXPORT, state: 'ready', row_count: 2, missing_images: 0 }],
+    });
+    downloadTicket.mockResolvedValue({
+      url: `/api/admin/exports/${EXPORT.id}/download?ticket=t`,
+      expires_in: 60,
+    });
+    show();
+    fireEvent.click(await screen.findByRole('button', { name: 'تنزيل' }));
+    await waitFor(() =>
+      expect(startDownload).toHaveBeenCalledWith(
+        `/api/admin/exports/${EXPORT.id}/download?ticket=t`,
+      ),
+    );
+    expect(downloadTicket).toHaveBeenCalledWith(EXPORT.id);
+  });
+
+  it('shows failed and removed exports without a download', async () => {
+    listExports.mockResolvedValue({
+      items: [
+        { ...EXPORT, id: 'a', state: 'failed', error: 'build_failed' },
+        { ...EXPORT, id: 'b', state: 'removed' },
+      ],
+    });
+    show();
+    const list = within(await screen.findByTestId('exports-list'));
+    expect(await list.findByText('فشل التجهيز')).toBeTruthy();
+    expect(list.getByText('انتهت صلاحية الملف')).toBeTruthy();
+    expect(list.queryByRole('button', { name: 'تنزيل' })).toBeNull();
+  });
+
+  it.each([
+    ['export_too_large', 'ضيّق الفلاتر، الحد 5,000 طلب', 422],
+    ['export_in_progress', 'عندك تصدير قيد التجهيز', 409],
+    ['identity_export_forbidden', 'تصدير الرقم الوطني والعائلي والصور يحتاج صلاحية المراجعة', 403],
+  ])('shows the Arabic answer of %s', async (code, message, status) => {
+    createExport.mockRejectedValue(new ApiError(code, message, status));
+    show();
+    await screen.findAllByTestId('report-row');
+    fireEvent.click(screen.getByRole('button', { name: 'تصدير' }));
+    expect(await screen.findByText(message)).toBeTruthy();
+  });
+
+  it('shows the answer of a refused ticket', async () => {
+    listExports.mockResolvedValue({ items: [{ ...EXPORT, state: 'ready', row_count: 2 }] });
+    downloadTicket.mockRejectedValue(
+      new ApiError('export_removed', 'انتهت صلاحية الملف، صدّره من جديد', 410),
+    );
+    show();
+    fireEvent.click(await screen.findByRole('button', { name: 'تنزيل' }));
+    expect(await screen.findByText('انتهت صلاحية الملف، صدّره من جديد')).toBeTruthy();
+    expect(startDownload).not.toHaveBeenCalled();
   });
 });

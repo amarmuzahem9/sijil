@@ -74,6 +74,7 @@ New actions (R8), no personal data:
 ```text
 (POST) ──► preparing ──build ok──► ready ──24 h──► removed
                │                      │
-               └──error / restart──► failed ──sweep──► removed
+               └──error / restart──► failed ──24 h after created (sweep)──► removed
+failed: its folder is removed at once; the row stays «فشل التجهيز» for its owner for 24 h
 ready: an identity export whose requester lost `review` or `reports` ──download attempt──► removed
 ```

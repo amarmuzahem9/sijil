@@ -181,7 +181,7 @@ images with working links, and one audit entry with the 3 numbers. A `reports`-o
 
 ### Tests (write first, run red)
 
-- [ ] T021 [P] [US2] New unit test `api/tests/unit/test_export_sheet.py` (research R9):
+- [x] T021 [P] [US2] New unit test `api/tests/unit/test_export_sheet.py` (research R9):
   - `columns(identity=False)` holds the FR-007 headers and none of the identity headers;
   - `columns(True)` adds them and the two image columns;
   - the workbook is right-to-left;
@@ -189,7 +189,7 @@ images with working links, and one audit entry with the 3 numbers. A `reports`-o
   - a deleted row has kept fields and «محذوف» only;
   - image cells link to `cards/T3C-<n>-front.jpg`, and a missing image reads «الصورة غير متوفرة»;
   - dates are in Baghdad time and money is an integer.
-- [ ] T022 [P] [US2] New `api/tests/integration/test_exports_api.py` (contracts/api.md, research R5–R8):
+- [x] T022 [P] [US2] New `api/tests/integration/test_exports_api.py` (contracts/api.md, research R5–R8):
   - lifecycle `preparing` → `ready` with `submit` run inline;
   - `no_rows`, `export_too_large` (5,001), `export_in_progress`;
   - `identity_export_forbidden` for a `reports`-only admin;
@@ -206,12 +206,12 @@ images with working links, and one audit entry with the 3 numbers. A `reports`-o
   - no audit row holds a synthetic name, phone or national ID;
   - the job re-checks the permissions;
   - `sweep_at_startup` turns `preparing` into `failed`.
-- [ ] T023 [P] [US2] New `api/tests/integration/test_exports_sweep.py` (R10): with `frozen_clock`:
+- [x] T023 [P] [US2] New `api/tests/integration/test_exports_sweep.py` (R10): with `frozen_clock`:
   - a ready export at 24 h + 1 s is `removed` and its folder is gone;
   - a `failed` export's folder is gone;
   - an export at 23 h stays;
   - `backup.snapshot.stored_files` never lists anything from `EXPORTS_DIR`.
-- [ ] T024 [P] [US2] Extend `web/src/__tests__/reports.test.tsx` (edit) with the export part:
+- [x] T024 [P] [US2] Extend `web/src/__tests__/reports.test.tsx` (edit) with the export part:
   - the box shows only when `can_export_identity`;
   - «تصدير» posts the filters and the box;
   - the list moves from «جارٍ التجهيز» to «تنزيل»;
@@ -220,10 +220,10 @@ images with working links, and one audit entry with the 3 numbers. A `reports`-o
 
 ### Implementation
 
-- [ ] T025 [US2] New `api/app/services/export_sheet.py`: `columns(identity)`, `request_workbook(rows, identity,
+- [x] T025 [US2] New `api/app/services/export_sheet.py`: `columns(identity)`, `request_workbook(rows, identity,
   images)` returning bytes. It uses openpyxl with string cells forced to type `s` with the quote-prefix style, RTL
   and a frozen header; T021 green.
-- [ ] T026 [US2] New `api/app/services/export_service.py`, part 1:
+- [x] T026 [US2] New `api/app/services/export_service.py`, part 1:
   - `can_export_identity(user)`;
   - `create(db, user, filters, include_identity)` checks the limit and the one-preparing rule against data-model.md ›
     exports.state;
@@ -233,31 +233,31 @@ images with working links, and one audit entry with the 3 numbers. A `reports`-o
     records `requests.exported` in the same transaction;
   - a failure sets `failed` with `exports.error_code` and removes the folder;
   - `sweep_at_startup`.
-- [ ] T027 [US2] `export_service.py`, part 2 (edit):
+- [x] T027 [US2] `export_service.py`, part 2 (edit):
   - `issue_ticket` (32 random bytes; SHA-256 into `exports.ticket_hash`; `exports.ticket_expires_at` = now + 60 s);
   - `open_download` (single use, permission re-check; then, in one transaction before streaming, the
     `export.downloaded` audit with the image count and one `image_access_log` row per image to send, with
     data-model.md › image_access_log.purpose = `export`);
   - `stream_zip` (zipfile over an unseekable writer, ZIP64, stored JPEGs from `UPLOADS_DIR` through
     `image_store.open_path`, an erased image skipped).
-- [ ] T028 [US2] `export_service.sweep_expired()` (edit), which sets `state = 'removed'` and data-model.md ›
+- [x] T028 [US2] `export_service.sweep_expired()` (edit), which sets `state = 'removed'` and data-model.md ›
   exports.removed_at, and deletes the folder. Wire it into the lifespan by editing `api/app/main.py`:
   - `sweep_at_startup` and `sweep_expired` run at startup;
   - a 15-minute asyncio task runs `sweep_expired` (not in `test`);
   - `sweep_expired` also runs at the start of every exports route;
   - T023 green.
-- [ ] T029 [US2] Add the export routes by editing `api/app/api/admin_reports.py`: `POST /exports`, `GET /exports`,
+- [x] T029 [US2] Add the export routes by editing `api/app/api/admin_reports.py`: `POST /exports`, `GET /exports`,
   `GET /exports/{id}`, `POST /exports/{id}/ticket` under `require_permission("reports")`, and `GET
   /exports/{id}/download` with the ticket only (`StreamingResponse`, `Cache-Control: no-store`, attachment name);
   T022 green.
-- [ ] T030 [P] [US2] Export calls by editing `web/src/lib/reports.ts`: `createExport`, `listExports`, `getExport`,
+- [x] T030 [P] [US2] Export calls by editing `web/src/lib/reports.ts`: `createExport`, `listExports`, `getExport`,
   `downloadTicket`.
-- [ ] T031 [US2] New `web/src/pages/admin/reports/ExportsList.tsx`; wire «تصدير», the box and the list into
+- [x] T031 [US2] New `web/src/pages/admin/reports/ExportsList.tsx`; wire «تصدير», the box and the list into
   `Reports.tsx` (edit). The list polls every few seconds while an export is preparing, and «تنزيل» navigates to the
   ticket URL (native download, no blob). T024 green.
-- [ ] T032 [US2] Confirm locally with `docker compose up` that the `exports` volume is mounted on `api` only
+- [x] T032 [US2] Confirm locally with `docker compose up` that the `exports` volume is mounted on `api` only
   (`docker compose config`), and that a download streams on the stack.
-- [ ] T033 [US2] Run the api and web suites; fix only what this batch broke.
+- [x] T033 [US2] Run the api and web suites; fix only what this batch broke.
 
 **Checkpoint**: batch 3 commit.
 

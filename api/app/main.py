@@ -1,6 +1,8 @@
 """FastAPI application. Client IP from X-Forwarded-For is trusted only from TRUSTED_PROXY_CIDRS,
 which uvicorn enforces via --forwarded-allow-ips (see entrypoint.sh)."""
 
+import asyncio
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -38,11 +40,27 @@ from app.services import (
 )
 
 
+async def _sweep_exports_forever() -> None:
+    """Export files go 24 h after they are ready, whether or not anyone opens the page
+    (specs/019 research R10)."""
+    from app.services import export_service
+
+    while True:
+        await asyncio.sleep(export_service.SWEEP_EVERY.total_seconds())
+        try:
+            await asyncio.to_thread(export_service.sweep_expired)
+        except Exception as exc:  # keep sweeping; no row data in the message
+            logging.getLogger("sijil.exports").error(
+                "export sweep failed error=%s", type(exc).__name__
+            )
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    sweeper: asyncio.Task | None = None
     # Card readings left running by a previous process become failed/timeout (specs/006 R5).
     if get_settings().app_env != "test":
-        from app.services import legacy_import_service, sas_import_service
+        from app.services import export_service, legacy_import_service, sas_import_service
         from app.services.card_reading_service import sweep_at_startup
 
         sweep_at_startup()
@@ -50,7 +68,13 @@ async def lifespan(_: FastAPI):
         legacy_import_service.sweep_at_startup()
         # SAS previews past their hour are removed (specs/015 R12).
         sas_import_service.sweep_at_startup()
+        # Exports left preparing become failed; expired files go (specs/019 R5, R10).
+        export_service.sweep_at_startup()
+        export_service.sweep_expired()
+        sweeper = asyncio.create_task(_sweep_exports_forever())
     yield
+    if sweeper is not None:
+        sweeper.cancel()
 
 
 def create_app() -> FastAPI:

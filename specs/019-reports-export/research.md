@@ -140,8 +140,10 @@ code as of `6c6c1d4`.
   - files go in a new Docker volume `exports`, mounted only on `api` at `/data/exports` (`EXPORTS_DIR`, default
     `/data/exports`);
   - `backup` does not mount it, and the backup snapshot already copies only image-named files from `uploads`;
-  - `sweep_expired()` removes the folders of `ready` rows past `expires_at` and of `failed` rows. It sets `removed` and
-    runs at startup, on every exports call, and every 15 minutes from a task started in `lifespan` (not in tests).
+  - `sweep_expired()` sets `removed` on `ready` rows past `expires_at` and on `failed` rows 24 hours after they
+    were asked for, and deletes any folder whose row is not `preparing` or `ready` (a failed build's folder goes at
+    once, so its owner still sees «فشل التجهيز» for a day). It runs at startup, on every exports call, and every
+    15 minutes from a task started in `lifespan` (not in tests).
 - **Rationale**: not in backups by construction; removal does not depend on someone opening the page.
 - **Alternatives**: a folder in `uploads`. Rejected: that volume is backed up and mounted read-only by `backup`.
 

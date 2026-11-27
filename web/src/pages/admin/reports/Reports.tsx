@@ -1,10 +1,13 @@
+import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
 import CardContent from '@mui/material/CardContent';
+import Checkbox from '@mui/material/Checkbox';
 import Chip from '@mui/material/Chip';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import Paper from '@mui/material/Paper';
 import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
@@ -12,7 +15,7 @@ import TextField from '@mui/material/TextField';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
@@ -24,7 +27,9 @@ import {
   type PeriodKind,
 } from '../../../lib/labels';
 import {
+  EXPORTS_QUERY_KEY,
   REPORT_PAGE_SIZE,
+  createExport,
   fetchOptions,
   fetchReport,
   type ReportFilters,
@@ -34,6 +39,7 @@ import {
 } from '../../../lib/reports';
 import { STATUS_COLORS, STATUS_LABELS } from '../../../lib/requestStatus';
 import { formatBaghdad } from '../../../lib/time';
+import ExportsList from './ExportsList';
 
 const STATUSES: ReportStatus[] = ['pending_review', 'approved', 'rejected', 'linked'];
 const TYPES: RequestType[] = ['new', 'additional', 'return'];
@@ -198,6 +204,60 @@ function SummaryList({
           </Typography>
         </Stack>
       ))}
+    </Paper>
+  );
+}
+
+/**
+ * «تصدير» for the current filters (specs/019 US2). The identity box shows only when the server
+ * allows it (`can_export_identity`: the main admin, or `reports` + `review`) and starts unticked
+ * (FR-008, FR-009); the server checks it again.
+ */
+function ExportControls({
+  filters,
+  allowIdentity,
+}: {
+  filters: ReportFilters | null;
+  allowIdentity: boolean;
+}) {
+  const [identity, setIdentity] = useState(false);
+  const queryClient = useQueryClient();
+  const create = useMutation({
+    mutationFn: () => createExport(filters!, allowIdentity && identity),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: EXPORTS_QUERY_KEY }),
+  });
+  return (
+    <Paper variant="outlined" sx={{ p: 1.5 }}>
+      <Stack
+        direction="row"
+        sx={{ gap: 1.5, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}
+      >
+        {allowIdentity ? (
+          <FormControlLabel
+            control={
+              <Checkbox checked={identity} onChange={(e) => setIdentity(e.target.checked)} />
+            }
+            label="تضمين الرقم الوطني والعائلي والصور"
+          />
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            الملف بدون الرقم الوطني والعائلي والصور.
+          </Typography>
+        )}
+        <Button
+          variant="contained"
+          startIcon={<FileDownloadOutlined />}
+          disabled={filters === null || create.isPending}
+          onClick={() => create.mutate()}
+        >
+          تصدير
+        </Button>
+      </Stack>
+      {create.isError && (
+        <Alert severity="error" sx={{ mt: 1 }}>
+          {create.error.message}
+        </Alert>
+      )}
     </Paper>
   );
 }
@@ -368,6 +428,7 @@ export default function Reports() {
           اختر يوم البداية ويوم النهاية.
         </Typography>
       )}
+      <ExportsList />
       {report.isPending && filters !== null && <Skeleton height={96} />}
       {report.isError && <Alert severity="error">{report.error.message}</Alert>}
       {data && !report.isError && (
@@ -379,6 +440,7 @@ export default function Reports() {
             <Typography color="text.secondary">لا توجد طلبات بهذه الفلاتر</Typography>
           ) : (
             <>
+              <ExportControls filters={filters} allowIdentity={data.can_export_identity} />
               <Box
                 data-testid="report-summary"
                 sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}
