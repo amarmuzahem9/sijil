@@ -3,6 +3,7 @@
 هذا الدليل لتشغيل سِجلّ على `https://sijil.t3cftth.net` في سيرفر عليه **Nginx Proxy Manager (NPM)** داخل Docker.
 نفس الخطوات للتجريبي (`APP_ENV=staging`) وللفعلي (`APP_ENV=production`)، والفرق في الخطوة 9.
 النسخ الاحتياطي والاسترجاع والهارد الخارجي في دليل منفصل: [backup.md](backup.md).
+سيرفر يعمل بـ 015 ولا نسخ عليه: الترقية لمرة واحدة في [upgrade-015-to-016.md](upgrade-015-to-016.md).
 
 ## كيف يعمل
 
