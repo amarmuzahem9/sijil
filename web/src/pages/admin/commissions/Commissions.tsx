@@ -1,3 +1,4 @@
+import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -8,10 +9,18 @@ import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
-import { amountText, getReport, listMonths, type ReportRow } from '../../../lib/commissions';
+import {
+  amountText,
+  exportFileName,
+  exportMonth,
+  getReport,
+  listMonths,
+  saveBlob,
+  type ReportRow,
+} from '../../../lib/commissions';
 import { UNLINK_REASON_LABELS } from '../../../lib/labels';
 import { formatMoney, formatNumber } from '../../../lib/money';
 import { formatBaghdad } from '../../../lib/time';
@@ -108,6 +117,10 @@ export default function Commissions() {
   const [detail, setDetail] = useState<ReportRow | null>(null);
   const [paying, setPaying] = useState<ReportRow | null>(null);
   const error = months.error ?? report.error;
+  const exporting = useMutation({
+    mutationFn: async (m: string) => ({ month: m, blob: await exportMonth(m) }),
+    onSuccess: ({ month: m, blob }) => saveBlob(blob, exportFileName(m)),
+  });
 
   return (
     <Stack spacing={2} sx={{ maxWidth: 720 }}>
@@ -115,21 +128,33 @@ export default function Commissions() {
         العمولات
       </Typography>
       {months.data && month && (
-        <TextField
-          select
-          label="الشهر"
-          value={month}
-          onChange={(e) => setPicked(e.target.value)}
-          sx={{ maxWidth: 220 }}
-          size="small"
-        >
-          {months.data.items.map((m) => (
-            <MenuItem key={m} value={m}>
-              {m}
-            </MenuItem>
-          ))}
-        </TextField>
+        <Stack direction="row" sx={{ gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
+          <TextField
+            select
+            label="الشهر"
+            value={month}
+            onChange={(e) => setPicked(e.target.value)}
+            sx={{ minWidth: 160, maxWidth: 220 }}
+            size="small"
+          >
+            {months.data.items.map((m) => (
+              <MenuItem key={m} value={m}>
+                {m}
+              </MenuItem>
+            ))}
+          </TextField>
+          {/* specs/019 US3: the month as a sheet, with 017's own figures. */}
+          <Button
+            variant="outlined"
+            startIcon={<FileDownloadOutlined />}
+            disabled={exporting.isPending}
+            onClick={() => exporting.mutate(month)}
+          >
+            تصدير
+          </Button>
+        </Stack>
       )}
+      {exporting.isError && <Alert severity="error">{exporting.error.message}</Alert>}
       {error && <Alert severity="error">{error.message}</Alert>}
       {(months.isPending || report.isPending) && !error && <Skeleton height={96} />}
       {report.data && (

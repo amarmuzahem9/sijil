@@ -100,5 +100,5 @@ count) and one `image_access_log` row (`purpose = 'export'`) per card image it w
   الدفع» notes, and a total row;
 - «الطلبات»: marketer, request number, name, type, tower, link date, «محسوب»/«بلا عمولة»/«مدفوع سابقاً (الشهر)».
 
-There is no national ID, family number, phone or image. The route writes `commissions.exported`. `422 month_invalid`
-reuses the 017 error.
+There is no national ID, family number, phone or image. The route writes `commissions.exported`. `422 validation_error`
+(a bad or future month) reuses the 017 error.

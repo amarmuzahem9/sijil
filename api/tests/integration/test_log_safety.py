@@ -480,10 +480,21 @@ def test_deletion_never_logs_personal_data(
 
     printed = capsys.readouterr()
     raw = "\n".join(r.getMessage() for r in caplog.records)
-    everything = raw + _formatted(list(caplog.records)) + printed.out + printed.err
+    # One line per message: joined without a line break, the last message and the first JSON
+    # line would run together and could match across the seam.
+    everything = "\n".join([raw, _formatted(list(caplog.records)), printed.out, printed.err])
     assert f"number={request.number}" in raw
     for secret in secrets:
-        assert secret not in everything, secret
+        # On a failure, show which value matched and every whole line it was found in, so a
+        # leak and a coincidence (for example "34.7" inside a timestamp) can be told apart
+        # (owner request, specs/019 batch 4).
+        assert secret not in everything, _matches(secret, everything)
+
+
+def _matches(secret: str, text: str) -> str:
+    lines = [line for line in text.splitlines() if secret in line]
+    shown = "\n".join(f"  {line}" for line in lines)
+    return f"value {secret!r} found in {len(lines)} line(s):\n{shown}"
 
 
 def test_notifications_and_link_message_never_log_personal_data(

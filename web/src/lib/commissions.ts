@@ -2,7 +2,7 @@
  * Commissions (docs/system.md v1.23 §4.2, §9; specs/017 contracts/api.md). The server computes
  * every count, tier and amount; the web only formats them.
  */
-import { apiFetch } from './api';
+import { apiFetch, apiFetchBlob } from './api';
 import { formatMoney, formatNumber } from './money';
 
 /** «باقيلك {remaining} وتصير {rate} للمشترك»; null in the top tier. */
@@ -115,3 +115,23 @@ export const getDetail = (month: string, marketerId: number) =>
   apiFetch<CommissionDetail>(
     `/api/admin/commissions/${encodeURIComponent(month)}/marketers/${marketerId}`,
   );
+
+// --- «تصدير» (docs/system.md v1.25 §9; specs/019 US3, FR-015) ----------------------------------
+
+/** The month as an .xlsx (tens of KB): the same figures as the page, no phone or identity data. */
+export const exportMonth = (month: string) =>
+  apiFetchBlob(`/api/admin/commissions/export?month=${encodeURIComponent(month)}`);
+
+export const exportFileName = (month: string) => `sijil-commissions-${month}.xlsx`;
+
+/** Hand a file to the browser to save. */
+export function saveBlob(blob: Blob, fileName: string): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}

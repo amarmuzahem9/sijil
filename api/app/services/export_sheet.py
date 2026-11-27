@@ -191,3 +191,109 @@ def request_workbook(
             else:
                 _put(ws, r, c, MISSING_IMAGE)
     return _bytes(wb)
+
+
+# --- «العمولات» (specs/019 US3, FR-015; research R11) --------------------------------------------
+
+
+@dataclass(frozen=True)
+class CommissionRow:
+    """One marketer row exactly as «العمولات» shows it (017's figures, never recomputed)."""
+
+    marketer: str
+    count: int
+    without_commission: int
+    paid_before: int
+    rate: int
+    amount: int
+    paid: bool
+    paid_by: str | None
+    paid_at: datetime | None
+    count_today: int | None
+    alerts: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class CommissionLine:
+    """One request behind a row: no phone, username, identity number or image (§9)."""
+
+    marketer: str
+    number_label: str
+    name: str | None
+    type: str
+    tower: str
+    linked_at: datetime | None
+    kind: str
+
+
+COMMISSION_HEADERS: tuple[str, ...] = (
+    "المسوّق",
+    "العدد",
+    "بلا عمولة",
+    "مدفوع سابقاً",
+    "سعر المشترك",
+    "المبلغ",
+    "الدفع",
+    "دفع بواسطة",
+    "وقت الدفع",
+    "العدد اليوم",
+    "تراجع بعد الدفع",
+)
+COMMISSION_LINE_HEADERS: tuple[str, ...] = (
+    "المسوّق",
+    "رقم الطلب",
+    "الاسم",
+    "النوع",
+    "البرج",
+    "تاريخ الربط",
+    "العمولة",
+)
+
+
+def alert_text(number_label: str, at: datetime, reason: str) -> str:
+    return f"{number_label} · {_when(at)} · {reason}"
+
+
+def commission_workbook(
+    rows: list[CommissionRow], lines: list[CommissionLine], total_amount: int
+) -> bytes:
+    wb = Workbook()
+    ws = _sheet(wb, "العمولات", first=True)
+    _header(ws, COMMISSION_HEADERS)
+    r = 1
+    for r, row in enumerate(rows, start=2):
+        values = (
+            row.marketer,
+            row.count,
+            row.without_commission,
+            row.paid_before,
+            row.rate,
+            row.amount,
+            "تم الدفع" if row.paid else "غير مدفوع",
+            row.paid_by if row.paid else None,
+            _when(row.paid_at) if row.paid else None,
+            row.count_today if row.paid else None,
+            "\n".join(row.alerts) or None,
+        )
+        for c, value in enumerate(values, start=1):
+            _put(ws, r, c, value)
+    total = r + 1
+    _put(ws, total, 1, "المجموع").font = Font(bold=True)
+    _put(ws, total, 2, sum(row.count for row in rows))
+    _put(ws, total, 6, total_amount).font = Font(bold=True)
+
+    lines_ws = _sheet(wb, "الطلبات", first=False)
+    _header(lines_ws, COMMISSION_LINE_HEADERS)
+    for r, line in enumerate(lines, start=2):
+        values = (
+            line.marketer,
+            line.number_label,
+            line.name,
+            TYPE_LABELS.get(line.type, line.type),
+            line.tower,
+            _when(line.linked_at),
+            line.kind,
+        )
+        for c, value in enumerate(values, start=1):
+            _put(lines_ws, r, c, value)
+    return _bytes(wb)

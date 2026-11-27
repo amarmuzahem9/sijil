@@ -271,7 +271,7 @@ images with working links, and one audit entry with the 3 numbers. A `reports`-o
 
 ### Tests (write first, run red)
 
-- [ ] T034 [P] [US3] New `api/tests/integration/test_commission_export.py` (research R11):
+- [x] T034 [P] [US3] New `api/tests/integration/test_commission_export.py` (research R11):
   - set up a paid October and an unpaid November with `pay_month`, then change the tiers;
   - each cell of «العمولات» equals `GET /api/admin/commissions` for that month, and «الطلبات» equals the detail
     lists (counted, «بلا عمولة», «مدفوع سابقاً» with month);
@@ -279,39 +279,44 @@ images with working links, and one audit entry with the 3 numbers. A `reports`-o
   - an archived marketer keeps their row;
   - no phone, national ID or family number appears in either sheet;
   - an `commissions.exported` audit row is written;
-  - `reports`-only and marketers get 403, and a bad month gives `month_invalid`.
-- [ ] T035 [P] [US3] New `web/src/__tests__/commissionsExport.test.tsx`: the «تصدير» button on `Commissions.tsx`
+  - `reports`-only and marketers get 403, and a bad or future month gives `validation_error` (the 017 error).
+- [x] T035 [P] [US3] New `web/src/__tests__/commissionsExport.test.tsx`: the «تصدير» button on `Commissions.tsx`
   calls the export for the chosen month and saves the file.
 
 ### Implementation
 
-- [ ] T036 [US3] Add `commission_workbook(rows, details)` by editing `api/app/services/export_sheet.py`: the two
+- [x] T036 [US3] Add `commission_workbook(rows, details)` by editing `api/app/services/export_sheet.py`: the two
   sheets of contracts/api.md, RTL, text cells forced to `s`.
-- [ ] T037 [US3] Add `GET /export` by editing `api/app/api/admin_commissions.py`, built from
+- [x] T037 [US3] Add `GET /export` by editing `api/app/api/admin_commissions.py`, built from
   `commission_service.report` and `detail`, with an `commissions.exported` audit row; T034 green.
-- [ ] T038 [US3] Add `exportMonth` by editing `web/src/lib/commissions.ts` (`apiFetchBlob`) and the button by editing
+- [x] T038 [US3] Add `exportMonth` by editing `web/src/lib/commissions.ts` (`apiFetchBlob`) and the button by editing
   `web/src/pages/admin/commissions/Commissions.tsx`; T035 green.
 
 ---
 
 ## Phase 6: User Story 4 — The marketer has no export, plus privacy and speed (cross-story)
 
-- [ ] T039 [P] [US4] In `api/tests/integration/test_reports_privacy.py` (edit):
+- [x] T039 [P] [US4] In `api/tests/integration/test_reports_privacy.py` (edit):
   - a marketer gets 403 on every report, export, ticket and commission-export route, including a ticket request for a
     real export id of an admin;
   - a download URL with a valid ticket opened while signed in as a marketer still serves only that ticket's export,
     and only once (the ticket, not the session, decides);
-  - the marketer app has no export entry: a new case in `web/src/__tests__/reports.test.tsx` renders the marketer
-    navigation and finds no «تصدير».
-- [ ] T040 [P] In `api/tests/integration/test_reports_privacy.py` (edit), the sheet headers of a non-identity export
+  - the marketer app has no export entry: new `web/src/__tests__/marketerNoExport.test.tsx` renders the marketer
+    navigation (phone and large screen) and finds no «تصدير».
+  - Built behavior already (batch 3), so each test was proven able to fail by a temporary change in the code
+    (marketer let through, ticket not spent, identity columns always on, an «تصدير» entry in the marketer nav):
+    red under each change, green once the files were restored byte for byte.
+- [x] T040 [P] In `api/tests/integration/test_reports_privacy.py` (edit), the sheet headers of a non-identity export
   never include an identity header, whoever asked (main admin without the box included) (SC-003).
-- [ ] T041 [P] New `api/tests/integration/test_report_performance.py` (`slow` marker):
+- [x] T041 [P] New `api/tests/integration/test_report_performance.py` (`slow` marker):
   - insert 20,000 synthetic requests in bulk;
   - the report with summaries answers in under 2 s (SC-001);
   - an export of 1,000 requests with synthetic images is ready in under 2 minutes, and a report call made meanwhile
     still answers in under 2 s (SC-002).
-- [ ] T042 If T041 fails, add the smallest index or query change that makes it pass, and record it in research.md R3.
-- [ ] T043 Run the full suites (api, web); fix only what this feature broke.
+- [x] T042 If T041 fails, add the smallest index or query change that makes it pass, and record it in research.md R3.
+  — Not needed. On the owner's machine: report over 20,000 requests 0.057 s; export of 1,000 with images ready in
+  0.74 s, the report meanwhile at most 0.157 s; the ZIP of 2,001 files streamed in 0.41 s.
+- [x] T043 Run the full suites (api, web); fix only what this feature broke.
 
 **Checkpoint**: batch 4 commit.
 
