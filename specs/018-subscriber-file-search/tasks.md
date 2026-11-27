@@ -173,24 +173,25 @@ No migration in this feature (data-model.md).
 
 ## Phase 5: User Story 3 — The marketer stays within their own requests (Priority: P1)
 
-- [ ] T029 [P] [US3] New integration test `api/tests/integration/test_subscriber_privacy.py`: as a marketer, both new
+- [x] T029 [P] [US3] New integration test `api/tests/integration/test_subscriber_privacy.py`: as a marketer, both new
   routes answer 403; the marketer's existing own search (`GET /api/requests?q=`) returns nothing for a phone that
   belongs to a SAS row and to another marketer's request (FR-002, US3).
 
 ## Phase 6: Privacy and speed (cross-story)
 
-- [ ] T030 [P] In `api/tests/integration/test_subscriber_privacy.py`: for `link`-only and `reports`-only admins, the
+- [x] T030 [P] In `api/tests/integration/test_subscriber_privacy.py`: for `link`-only and `reports`-only admins, the
   key sets of every result row and every file (record and linked rows, all three sources) contain no
   `national_id`, `family_number`, `card_fields` or `images`, and the pin history lines have no `field`; for `review`
   they are present (FR-009, SC-004).
-- [ ] T031 [P] In the same file: PUT, PATCH, POST and DELETE on both routes answer 405 (FR-010); file logs carry
+- [x] T031 [P] In the same file: PUT, PATCH, POST and DELETE on both routes answer 405 (FR-010); file logs carry
   `source:ref` only (FR-012).
-- [ ] T032 [P] New `api/tests/integration/test_subscriber_performance.py`: 20,000 SAS, 500 legacy, 5,000 requests
+- [x] T032 [P] New `api/tests/integration/test_subscriber_performance.py`: 20,000 SAS, 500 legacy, 5,000 requests
   inserted in bulk; a phone search, a name search and a family search each return their first page in under 1 s, and
   a file with 20 linked records opens in under 1 s (SC-001, SC-002).
-- [ ] T033 If T032 fails, add the smallest index that makes it pass (a migration only then), and record it in
-  research.md R3.
-- [ ] T034 Run the full suites (api, web); fix only what this feature broke.
+- [x] T033 If T032 fails, add the smallest index that makes it pass (a migration only then), and record it in
+  research.md R3. — Not needed: phone 0.08 s, name over all 20,000 SAS rows 0.18 s, family 0.02 s, file
+  with 20 linked records 0.02 s on the owner's machine; no index, no migration.
+- [x] T034 Run the full suites (api, web); fix only what this feature broke.
 
 **Checkpoint**: batch 4 commit.
 
