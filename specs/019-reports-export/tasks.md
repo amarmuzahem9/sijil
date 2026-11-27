@@ -123,7 +123,7 @@ code is written**. Report red and green for every test task.
 
 ### Tests (write first, run red)
 
-- [ ] T011 [P] [US1] New `api/tests/integration/test_reports_api.py` covering `GET /api/admin/reports/requests` and
+- [x] T011 [P] [US1] New `api/tests/integration/test_reports_api.py` covering `GET /api/admin/reports/requests` and
   `/options` (contracts/api.md):
   - the 31 October 23:30 / 2 November case under both date kinds;
   - `week` and `month` with `frozen_clock`;
@@ -134,13 +134,13 @@ code is written**. Report red and green for every test task.
   - each summary adds up to `total`;
   - the archived marketer is in options and keeps their name;
   - a renamed tower shows the stored name.
-- [ ] T012 [P] [US1] New `api/tests/integration/test_reports_privacy.py`, the report part:
+- [x] T012 [P] [US1] New `api/tests/integration/test_reports_privacy.py`, the report part:
   - main admin and `reports` get 200;
   - `review`-only, `commissions`-only and marketers get 403;
   - the JSON keys of rows and summaries never contain `national_id`, `family_number`, `card_fields`, `birth_date`,
     `images`, `amount`, `rate`, `paid` (R12);
   - `can_export_identity` is true only for the main admin and `reports` + `review`.
-- [ ] T013 [P] [US1] New `web/src/__tests__/reports.test.tsx`, the report part:
+- [x] T013 [P] [US1] New `web/src/__tests__/reports.test.tsx`, the report part:
   - the period presets and the range fields;
   - the date-kind switch;
   - filters sent as query parameters;
@@ -149,21 +149,22 @@ code is written**. Report red and green for every test task.
 
 ### Implementation
 
-- [ ] T014 [US1] New `api/app/schemas/reports.py`: `ReportFilters` (query model validating ids, `status`, `type`,
+- [x] T014 [US1] New `api/app/schemas/reports.py`: `ReportFilters` (query model validating ids, `status`, `type`,
   `date_kind`, period), `ReportRow`, `ReportSummary`, `ReportOut`, `ReportOptions`; allow-list fields only (R12).
-- [ ] T015 [US1] New `api/app/services/report_service.py` (research R3, R4, R13):
+- [x] T015 [US1] New `api/app/services/report_service.py` (research R3, R4, R13):
   - `filtered(db, filters)`, the one `select` that the export reuses;
   - `page(...)`, `summaries(...)`, `options(db)`;
   - no identity column selected.
-- [ ] T016 [US1] New router `api/app/api/admin_reports.py` with `GET /reports/options` and `GET /reports/requests`
+- [x] T016 [US1] New router `api/app/api/admin_reports.py` with `GET /reports/options` and `GET /reports/requests`
   under `require_permission("reports")`, and include it by editing `api/app/main.py`; T011 and T012 green.
-- [ ] T017 [P] [US1] New `web/src/lib/reports.ts` (types from contracts/api.md, `fetchReport`, `fetchOptions`).
-- [ ] T018 [US1] New page `web/src/pages/admin/reports/Reports.tsx` (Arabic, RTL, phone width first). Edit
+- [x] T017 [P] [US1] New `web/src/lib/reports.ts` (types from contracts/api.md, `fetchReport`, `fetchOptions`).
+- [x] T018 [US1] New page `web/src/pages/admin/reports/Reports.tsx` (Arabic, RTL, phone width first). Edit
   `web/src/router.tsx` to use it for `reports`, and remove `AdminReports` from `web/src/pages/admin/placeholders.tsx`
   (edit). A row opens `/admin/subscribers/request/<number>` (018 rules). T013 green.
-- [ ] T019 [US1] Quick local check of SC-001: time the report with summaries on 2,000 synthetic requests. If it takes
-  over 0.5 s, look at the query plan and fix the filter before going on. The full 20,000-row check is T041.
-- [ ] T020 [US1] Run the api and web suites; fix only what this batch broke.
+- [x] T019 [US1] Quick local check of SC-001: time the report with summaries on 2,000 synthetic requests. If it takes
+  over 0.5 s, look at the query plan and fix the filter before going on. The full 20,000-row check is T041. — 0.03 s on 2,000
+  requests with summaries; no change needed.
+- [x] T020 [US1] Run the api and web suites; fix only what this batch broke.
 
 **Checkpoint**: batch 2 commit.
 

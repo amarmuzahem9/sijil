@@ -26,7 +26,7 @@ The filter parameters plus `page` (default 1).
 
 ```json
 { "total": 132, "page": 1, "page_size": 50,
-  "rows": [{ "number": 1001, "number_label": "T3C-1001", "name": "…", "deleted": false,
+  "rows": [{ "id": 42, "number": 1001, "number_label": "T3C-1001", "name": "…", "deleted": false,
              "tower": "اسم البرج (A1)", "plan": "…", "marketer": "…", "status": "linked", "type": "new",
              "submitted_at": "2026-10-31T20:30:00Z", "linked_at": "2026-11-02T09:00:00Z" }],
   "summary": { "by_status": [{"status": "linked", "count": 90}],
@@ -35,7 +35,10 @@ The filter parameters plus `page` (default 1).
   "can_export_identity": true }
 ```
 
+- `id` opens the request's file (`/admin/subscribers/sijil/<id>`, 018 rules).
 - `name` is `null` for a deleted row.
+- `by_tower` names each tower as the catalog names it now; rows keep the names stored on the
+  request.
 - There is never an identity key, image key, amount, rate or payment key (R9, R12).
 
 ## POST /exports — `reports`

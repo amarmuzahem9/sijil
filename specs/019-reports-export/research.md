@@ -34,7 +34,8 @@ code as of `6c6c1d4`.
   - the total;
   - three `GROUP BY`s (status, tower, marketer) on the same filter.
 
-  Names come from the values stored on the request (`tower_name`, `tower_code`, `plan_name`, `area_name`) and the
+  The tower summary groups by tower id and names each tower as the catalog names it now.
+  Row names come from the values stored on the request (`tower_name`, `tower_code`, `plan_name`, `area_name`) and the
   marketer's user row (archived included).
   Migration 0021 adds `requests_submitted_at_idx (submitted_at DESC, id DESC)`; the link side already has
   `requests_linked_recent`.

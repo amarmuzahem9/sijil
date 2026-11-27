@@ -14,7 +14,7 @@ import RouteError from './components/RouteError';
 import AdminLayout from './layouts/AdminLayout';
 import MarketerLayout from './layouts/MarketerLayout';
 import AccountPanel from './pages/AccountPanel';
-import { AdminReports } from './pages/admin/placeholders';
+import Reports from './pages/admin/reports/Reports';
 import SubscriberFile from './pages/admin/subscribers/SubscriberFile';
 import SubscriberSearch from './pages/admin/subscribers/SubscriberSearch';
 import Backup from './pages/admin/Backup';
@@ -103,7 +103,7 @@ export const routes: RouteObject[] = [
                       page('marketers', { path: 'marketers', element: <Marketers /> }),
                       page('settings', { path: 'settings', element: <Settings /> }),
                       page('admins', { path: 'admins', element: <Admins /> }),
-                      page('reports', { path: 'reports', element: <AdminReports /> }),
+                      page('reports', { path: 'reports', element: <Reports /> }),
                       page('import', { path: 'import', element: <ImportPage /> }),
                       page('commissions', { path: 'commissions', element: <Commissions /> }),
                       page('backup', { path: 'backup', element: <Backup /> }),
