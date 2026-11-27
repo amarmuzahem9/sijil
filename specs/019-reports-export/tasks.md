@@ -324,23 +324,30 @@ images with working links, and one audit entry with the 3 numbers. A `reports`-o
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T044 [P] New `api/tests/e2e_reports_seed.py`:
+- [x] T044 [P] New `api/tests/e2e_reports_seed.py`:
   - synthetic requests with synthetic images over two months, one deleted, one named «=x»;
   - admins with `reports` and with `reports` + `review`;
   - run it by editing `scripts/e2e.sh` (append one line after the 018 seed).
-- [ ] T045 [P] New e2e `e2e/tests/reports-export.spec.ts` (local Docker only):
+- [x] T045 [P] New e2e `e2e/tests/reports-export.spec.ts` (local Docker only):
   - the main admin filters, exports with the box, downloads, and the test opens the ZIP: the sheet rows, `cards/`
     names and links are right;
   - the `reports`-only admin has no box;
   - the commission export downloads;
   - a marketer is refused.
-- [ ] T046 Run the whole suite: pytest, Vitest (PowerShell) and the full Playwright run (`bash scripts/e2e.sh`); all
-  green; note counts.
-- [ ] T047 `docker compose up` on the owner's machine: the app starts and the head is `0021`.
-- [ ] T048 New `specs/019-reports-export/manual-test-ar.md`: Arabic manual steps for the owner, local only.
-- [ ] T049 Check `docs/system.md` 1.25 §9, §11 and §13 against what was built; edit them only where the build
+  - Red first: run alone before the seed was wired into `scripts/e2e.sh` (sign-in failed: no account), and
+    again with the identity box shown to everyone (failed at «a `reports`-only admin has no box»); green
+    once the seed was wired and `Reports.tsx` restored byte for byte. The ZIP and the sheet are read by a
+    small reader in `e2e/tests/helpers/zip.ts` (no new library).
+- [x] T046 Run the whole suite: pytest, Vitest (PowerShell) and the full Playwright run (`bash scripts/e2e.sh`); all
+  green; note counts. — pytest 2,231 passed; Vitest 557 passed; Playwright 80 passed, 52 skipped (one-device
+  specs), 0 failed.
+- [x] T047 `docker compose up` on the owner's machine: the app starts and the head is `0021`.
+- [x] T048 New `specs/019-reports-export/manual-test-ar.md`: Arabic manual steps for the owner, local only.
+- [x] T049 Check `docs/system.md` 1.25 §9, §11 and §13 against what was built; edit them only where the build
   differs, and tell the owner.
-- [ ] T050 Mark the tasks done; batch 5 commit.
+  — 1.26 (after implementation): the one-use download link that ends after a minute, images read at download,
+  «تصديراتي» for 7 days with a failed export shown for 24 h, the tower summary under the tower's current name.
+- [x] T050 Mark the tasks done; batch 5 commit.
 
 ---
 

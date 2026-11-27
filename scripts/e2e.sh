@@ -22,4 +22,6 @@ export E2E_BACKUP_RECIPIENT
 "${DC[@]}" exec -T api python -m tests.e2e_commission_seed
 # Records of three sources for subscriber-file.spec.ts (feature 018).
 "${DC[@]}" exec -T api python -m tests.e2e_subscriber_seed
+# Requests with images and four accounts for reports-export.spec.ts (feature 019).
+"${DC[@]}" exec -T api python -m tests.e2e_reports_seed
 "${DC[@]}" --profile e2e run --rm --build e2e "$@"
