@@ -99,6 +99,15 @@ MESSAGES: dict[str, str] = {
     # «المشتركون» search (specs/018 contracts/api.md)
     "search_unclear": "اكتب اسماً (3 أحرف على الأقل) أو هاتفاً أو رقماً",
     "identity_search_forbidden": "البحث بالرقم الوطني أو العائلي يحتاج صلاحية المراجعة",
+    # Reports and export (specs/019 contracts/api.md)
+    "period_invalid": "الفترة غير صحيحة",
+    "no_rows": "لا توجد طلبات بهذه الفلاتر",
+    "export_too_large": "ضيّق الفلاتر، الحد 5,000 طلب",
+    "export_in_progress": "عندك تصدير قيد التجهيز",
+    "identity_export_forbidden": "تصدير الرقم الوطني والعائلي والصور يحتاج صلاحية المراجعة",
+    "export_not_ready": "الملف غير جاهز",
+    "export_removed": "انتهت صلاحية الملف، صدّره من جديد",
+    "ticket_invalid": "رابط التنزيل غير صالح أو منتهي",
     # Legacy subscribers import (specs/014 contracts/api.md)
     "import_file_unreadable": "تعذّرت قراءة الملف، ارفع ملف xlsx أو csv",
     "import_columns_missing": "الملف ينقصه عمود",

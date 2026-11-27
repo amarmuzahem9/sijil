@@ -165,8 +165,8 @@ export and download endpoints are refused.
 - **Deactivated or renamed tower, area or plan**: rows show what the request stored (§5.3, §6 item 6).
 - **Permission removed while an export is being built or before download**: the download checks again and is
   refused; a file built with identity data for someone who lost `review` is removed, not served.
-- **A request deleted after the export was built**: the file already made is not changed; it is removed at the
-  normal time (FR-013).
+- **A request deleted after the export was built**: its sheet row stays as built (removed at the normal time,
+  FR-013), but its erased images are no longer sent in a later download (§7.4; plan R6).
 - **Two admins export at the same time**: each gets only their own file.
 
 ## Requirements *(mandatory)*
@@ -207,8 +207,10 @@ export and download endpoints are refused.
   and the sheet MUST link to them by relative paths that work in the extracted folder.
 - **FR-011**: Every export MUST write one audit entry «تصدير طلبات» with who, when, the filters, the row count, the
   list of exported request numbers, whether identity data and images were included, and the number of missing
-  images; every download MUST write «تنزيل تصدير» with who and when. Neither MAY hold a name, phone, national ID,
-  family number or image (§13, Principle III).
+  images. The entry is written when the file becomes ready, which is when data leaves into a file; an export that
+  fails before that writes none, since no data left. Every download MUST write «تنزيل تصدير» with who and when, and
+  every card image sent in a download MUST be recorded in the image access log like any other image open (§13,
+  Principle II). No entry MAY hold a name, phone, national ID, family number or image (§13, Principle III).
 - **FR-012**: An export MUST contain only what its requester may see when it is built; its download MUST be refused
   to anyone but the requester and re-check the requester's permissions. Text from subscribers MUST open as plain
   text in the sheet, never as a formula.
@@ -267,6 +269,8 @@ export and download endpoints are refused.
   within that time (each download audited).
 - One export holds at most 5,000 requests; above that the admin narrows the filters.
 - An admin has at most one export being built at a time.
+- Each admin sees a list of their own exports from the last 7 days (state, row count, with or without identity
+  data); the list holds no subscriber data, and no admin sees another admin's exports.
 - The ZIP has no password; protection comes from who may export, the opt-in, the audit and the short keeping time.
 - Sheet dates are Baghdad time; money as whole numbers in IQD; the location as a map link from the stored pin.
 - Drafts, OTP codes, card reader readings and the audit log are never exported; legacy and SAS subscribers are not

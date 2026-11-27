@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     # Card images (specs/005 research.md R6, R7). Private storage, never under the web root.
     uploads_dir: str = "/data/uploads"
     max_image_bytes: int = 5 * 1024 * 1024
+    # Export files (specs/019 research.md R10): the `exports` volume, mounted on `api` only and
+    # never backed up. A file is removed 24 h after it is ready.
+    exports_dir: str = "/data/exports"
 
     # Google Maps (specs/005 research.md R10). Empty key → the form works without the map.
     google_maps_api_key: str = ""

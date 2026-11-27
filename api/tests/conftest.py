@@ -177,6 +177,17 @@ def make_user(db):
     return factory
 
 
+@pytest.fixture
+def exports_dir(tmp_path, monkeypatch) -> Path:
+    """Export files go to a per-test folder (specs/019 research.md R10)."""
+    from app.config import get_settings
+
+    directory = tmp_path / "exports"
+    directory.mkdir()
+    monkeypatch.setattr(get_settings(), "exports_dir", str(directory))
+    return directory
+
+
 def login(client: TestClient, phone: str, password: str = TEST_PASSWORD):
     return client.post("/api/auth/login", json={"phone": phone, "password": password})
 

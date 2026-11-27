@@ -175,6 +175,8 @@ class Request(Base):
         Index("requests_national_id_idx", "national_id"),
         Index("requests_family_key_idx", "family_key"),
         Index("requests_marketer_submitted_idx", "marketer_id", text("submitted_at DESC")),
+        # The submission-date filter of «التقارير والتصدير» (specs/019 research R3, migration 0021).
+        Index("requests_submitted_at_idx", text("submitted_at DESC"), text("id DESC")),
         # specs/013 data-model.md (migration 0016)
         CheckConstraint(
             "(status = 'linked') = (linked_at IS NOT NULL AND linked_by IS NOT NULL)",

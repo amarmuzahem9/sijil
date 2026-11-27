@@ -247,7 +247,8 @@ class ImageAccessLog(Base):
     side: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = _ts()
     # `view` = a person opened the image (005); `ocr` = the server sent it to the card reader
-    # (specs/006 data-model.md, analysis C1).
+    # (specs/006 data-model.md, analysis C1); `export` = it was sent in an export download
+    # (specs/019 research R6, migration 0021).
     purpose: Mapped[str] = mapped_column(
         Text, nullable=False, default="view", server_default=text("'view'")
     )

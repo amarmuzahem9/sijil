@@ -75,6 +75,10 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'legacy.imported': 'استيراد المشتركين القدامى',
   // specs/015
   'sas.imported': 'استيراد مشتركي SAS',
+  // specs/019
+  'requests.exported': 'تصدير طلبات',
+  'export.downloaded': 'تنزيل تصدير',
+  'commissions.exported': 'تصدير عمولات',
 };
 
 export const AUDIT_FIELD_LABELS: Record<string, string> = {
@@ -119,6 +123,13 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   reasons_added: 'أسباب أُضيفت',
   reasons_not_applicable: 'أسباب لم تعد تنطبق',
   numbers_edited_resolved: 'اكتمل تثبيت الأرقام',
+  // specs/019: an export entry holds request numbers and counts, never a name or phone
+  filters: 'الفلاتر',
+  row_count: 'عدد الطلبات',
+  numbers: 'أرقام الطلبات',
+  identity: 'مع الأرقام والصور',
+  missing_images: 'صور غير متوفرة',
+  images: 'صور مرسلة',
   // specs/011
   deleted: 'حُذفت البيانات',
   pin_count: 'عدد التثبيتات',
@@ -264,3 +275,25 @@ export const HISTORY_KIND_LABELS = {
   deleted: 'حُذف',
 } as const;
 export type HistoryKind = keyof typeof HISTORY_KIND_LABELS;
+
+// «التقارير والتصدير» (docs/system.md v1.25 §11, specs/019 contracts/api.md).
+export const EXPORT_STATE_LABELS = {
+  preparing: 'جارٍ التجهيز',
+  ready: 'جاهز',
+  failed: 'فشل التجهيز',
+  removed: 'انتهت صلاحية الملف',
+} as const;
+export type ExportState = keyof typeof EXPORT_STATE_LABELS;
+
+export const DATE_KIND_LABELS = {
+  submitted: 'تاريخ التقديم',
+  linked: 'تاريخ الربط',
+} as const;
+export type DateKind = keyof typeof DATE_KIND_LABELS;
+
+export const PERIOD_LABELS = {
+  week: 'هذا الأسبوع',
+  month: 'هذا الشهر',
+  range: 'مدة محددة',
+} as const;
+export type PeriodKind = keyof typeof PERIOD_LABELS;

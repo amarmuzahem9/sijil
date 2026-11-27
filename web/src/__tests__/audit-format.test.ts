@@ -291,3 +291,76 @@ describe('«تم الدفع» (specs/017 T013)', () => {
     expect(AUDIT_FIELD_LABELS.tier_min_count).toBe('الشريحة (أقل عدد)');
   });
 });
+
+describe('exports (specs/019 T010)', () => {
+  it('labels a requests export with its numbers and filters, never a name', async () => {
+    const { AUDIT_FIELD_LABELS } = await import('../lib/labels');
+    const e = entry({
+      action: 'requests.exported',
+      entity_type: 'export',
+      entity_id: '6f1c0c1e-0000-4000-8000-000000000001',
+      after: {
+        filters: { period: 'month', date_kind: 'linked', tower_id: 3, status: 'linked' },
+        row_count: 2,
+        numbers: [1001, 1002],
+        identity: true,
+        missing_images: 0,
+      },
+    });
+    expect(actionLabel(e)).toBe('تصدير طلبات');
+    expect(entryTargetLabel(e)).toBe('تصدير طلبات');
+    expect(formatAuditValue('numbers', [1001, 1002])).toBe('T3C-1001، T3C-1002');
+    expect(formatAuditValue('identity', true)).toBe('نعم');
+    const filters = formatAuditValue('filters', e.after?.filters);
+    expect(filters).toContain('هذا الشهر');
+    expect(filters).toContain('تاريخ الربط');
+    expect(filters).toContain('البرج 3');
+    expect(filters).toContain('تم الربط');
+    expect(filters).not.toContain('[object Object]');
+    expect(
+      formatAuditValue('filters', {
+        period: 'range',
+        from: '2026-10-01',
+        to: '2026-10-31',
+        date_kind: 'submitted',
+      }),
+    ).toContain('من 2026-10-01 إلى 2026-10-31');
+    expect(AUDIT_FIELD_LABELS.filters).toBe('الفلاتر');
+    expect(AUDIT_FIELD_LABELS.row_count).toBe('عدد الطلبات');
+    expect(AUDIT_FIELD_LABELS.numbers).toBe('أرقام الطلبات');
+    expect(AUDIT_FIELD_LABELS.identity).toBe('مع الأرقام والصور');
+    expect(AUDIT_FIELD_LABELS.missing_images).toBe('صور غير متوفرة');
+    expect(AUDIT_FIELD_LABELS.images).toBe('صور مرسلة');
+  });
+
+  it('labels a download and a commission export', () => {
+    const download = entry({
+      action: 'export.downloaded',
+      entity_type: 'export',
+      entity_id: 'x',
+      after: { images: 4 },
+    });
+    expect(actionLabel(download)).toBe('تنزيل تصدير');
+    expect(entryTargetLabel(download)).toBe('تصدير طلبات');
+    const commissions = entry({
+      action: 'commissions.exported',
+      entity_type: 'commission_month',
+      entity_id: '2026-10',
+      after: { month: '2026-10' },
+    });
+    expect(actionLabel(commissions)).toBe('تصدير عمولات');
+    expect(entryTargetLabel(commissions)).toBe('عمولات 2026-10');
+  });
+
+  it('has the export state, date kind and period labels', async () => {
+    const { EXPORT_STATE_LABELS, DATE_KIND_LABELS, PERIOD_LABELS } = await import('../lib/labels');
+    expect(EXPORT_STATE_LABELS).toEqual({
+      preparing: 'جارٍ التجهيز',
+      ready: 'جاهز',
+      failed: 'فشل التجهيز',
+      removed: 'انتهت صلاحية الملف',
+    });
+    expect(DATE_KIND_LABELS).toEqual({ submitted: 'تاريخ التقديم', linked: 'تاريخ الربط' });
+    expect(PERIOD_LABELS).toEqual({ week: 'هذا الأسبوع', month: 'هذا الشهر', range: 'مدة محددة' });
+  });
+});

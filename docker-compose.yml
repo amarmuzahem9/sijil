@@ -34,6 +34,9 @@ services:
       # Private card-image storage (specs/005 research.md R7). Only the api mounts it; it is
       # never served by the web container. Named sijil_uploads under the project name "sijil".
       - uploads:/data/uploads
+      # Export files (specs/019 research.md R10): api only. `backup` never mounts it, so exports
+      # are never in a backup; files are removed 24 h after they are ready.
+      - exports:/data/exports
     depends_on:
       db:
         condition: service_healthy
@@ -143,5 +146,7 @@ volumes:
   uploads:
   # Encrypted backups (feature 016). On the server the staging overlay binds BACKUP_DIR.
   backups:
+  # Export files (feature 019), api only.
+  exports:
   caddy_data:
   caddy_config:

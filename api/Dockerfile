@@ -36,10 +36,14 @@ open('/tmp/requirements.txt','w').write('\n'.join(deps))" \
 # /data/backups: the backup folder (specs/016), mounted only by the `backup` service. The restore
 # mount points (staging, live uploads during a restore, the drill's streamed snapshot) exist here
 # so a fresh volume mounted on them is owned by the app user.
+# /data/exports: export files (specs/019 research.md R10), mounted only by `api`, never backed up.
 RUN useradd --create-home --uid 10001 app \
     && mkdir -p /data/uploads /data/backups /data/restore-staging /data/live-uploads /data/src \
+        /data/exports \
     && chown app:app /data/uploads /data/backups /data/restore-staging /data/live-uploads /data/src \
-    && chmod 700 /data/uploads /data/backups /data/restore-staging /data/live-uploads /data/src
+        /data/exports \
+    && chmod 700 /data/uploads /data/backups /data/restore-staging /data/live-uploads /data/src \
+        /data/exports
 
 COPY --chown=app:app . .
 RUN chmod +x /app/entrypoint.sh

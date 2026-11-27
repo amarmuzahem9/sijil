@@ -5,8 +5,10 @@
 import { ROLE_LABELS } from '../auth/roles';
 import type { AuditEntry } from './audit';
 import {
+  DATE_KIND_LABELS,
   DELETION_REASON_LABELS,
   AUDIT_ACTION_LABELS,
+  PERIOD_LABELS,
   PERMISSION_LABELS,
   PIN_FIELD_LABELS,
   PIN_SOURCE_LABELS,
@@ -34,9 +36,42 @@ function formatTiers(value: unknown[]): string {
     .join('، ');
 }
 
+// specs/019: the filters of an export are ids and codes only (research R8), shown in Arabic.
+const FILTER_ID_LABELS: Record<string, string> = {
+  area_id: 'المنطقة',
+  tower_id: 'البرج',
+  plan_id: 'الفئة',
+  marketer_id: 'المسوّق',
+};
+
+function formatExportFilters(filters: Record<string, unknown>): string {
+  const parts: string[] = [];
+  const period = filters.period;
+  if (period === 'range' && typeof filters.from === 'string' && typeof filters.to === 'string')
+    parts.push(`من ${filters.from} إلى ${filters.to}`);
+  else if (typeof period === 'string' && period in PERIOD_LABELS)
+    parts.push(PERIOD_LABELS[period as keyof typeof PERIOD_LABELS]);
+  const kind = filters.date_kind;
+  if (typeof kind === 'string' && kind in DATE_KIND_LABELS)
+    parts.push(`حسب ${DATE_KIND_LABELS[kind as keyof typeof DATE_KIND_LABELS]}`);
+  for (const [key, label] of Object.entries(FILTER_ID_LABELS)) {
+    const id = filters[key];
+    if (typeof id === 'number') parts.push(`${label} ${id}`);
+  }
+  if (typeof filters.status === 'string') parts.push(formatAuditValue('status', filters.status));
+  if (typeof filters.type === 'string') parts.push(formatAuditValue('type', filters.type));
+  return parts.length === 0 ? '—' : parts.join('، ');
+}
+
 /** One before/after value in Arabic. */
 export function formatAuditValue(field: string, value: unknown): string {
   if (value === null || value === undefined) return '—';
+  if (field === 'numbers' && Array.isArray(value)) {
+    if (value.length === 0) return '—';
+    return value.map((n) => `T3C-${String(n)}`).join('، ');
+  }
+  if (field === 'filters' && typeof value === 'object' && !Array.isArray(value))
+    return formatExportFilters(value as Record<string, unknown>);
   if (MONEY_FIELDS.has(field) && typeof value === 'number') return formatMoney(value);
   if (field === 'tiers' && Array.isArray(value)) return formatTiers(value);
   if (field === 'permissions' && Array.isArray(value)) {
@@ -119,6 +154,9 @@ export function entryTargetLabel(entry: AuditEntry): string | null {
     const month = entry.after?.month;
     return typeof month === 'string' ? `عمولة ${month}` : 'عمولة';
   }
+  // specs/019: an export and its download; a commission export names its month.
+  if (entry.entity_type === 'export') return 'تصدير طلبات';
+  if (entry.entity_type === 'commission_month') return `عمولات ${entry.entity_id}`;
   if (entry.entity_type === 'app_setting') return 'الإعدادات العامة';
   if (entry.entity_type === 'draft') {
     const tower = entry.before?.tower_code;
