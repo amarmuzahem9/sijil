@@ -40,19 +40,59 @@ docker run --rm -v sijil_uploads:/u:ro alpine du -sh /u
 docker run --rm -v sijil_uploads:/u:ro alpine sh -c 'find /u -type f | wc -l'
 docker exec sijil-db psql -U sijil -d sijil -Atc "select (select count(*) from requests),(select count(*) from legacy_subscribers),(select count(*) from sas_subscribers),(select count(*) from users)"
 docker exec sijil-db psql -U sijil -d sijil -c "select phone, is_active from users where phone in ('07700000001','07700000002','07700000003')"
+git reflog -5 --date=iso
+docker inspect sijil-api --format '{{.Image}} {{.Created}}'
+docker images --format '{{.Repository}}:{{.Tag}}\t{{.ID}}\t{{.CreatedSince}}\t{{.Size}}' | grep -i sijil
+grep -E '^(BACKUP_|EXPORTS_DIR)' .env
+sudo ls -la /var/backups/sijil 2>&1 | head
 ```
 
 | المتوقع | إذا اختلف |
 |---|---|
-| الفرع `main`، الـ commit `af9155f`، `git status` فارغ | توقف |
-| `docker-compose.staging.yml` موجود | توقف |
-| حاويات `sijil-web` و`sijil-api` و`sijil-db` و`sijil-ocr` شغّالة | توقف |
+| الفرع `main`، `git status` فارغ | توقف |
+| الـ commit `af9155f`، **أو** commit أحدث سُحب بلا نشر (مثل `2816f63`) | انظر «كود أحدث على القرص» تحت |
+| حاوية `sijil-api` أُنشئت بعد سحب `af9155f` بدقيقة أو أقل (قارن `reflog` بـ `Created`) | توقف: الصورة الشغّالة ليست 015 الأخير |
+| حاويات `sijil-web` و`sijil-api` و`sijil-db` و`sijil-ocr` شغّالة، **بلا** `sijil-backup` | توقف |
 | `alembic current` = `0018 (head)` (أسطر `INFO` قبله طبيعية) | توقف |
 | `APP_ENV=staging`، شبكة NPM موجودة | توقف |
 | `POSTGRES_USER` و`POSTGRES_DB` = `sijil` | بدّل `-U sijil -d sijil` في كل الأوامر بالقيمة الصحيحة |
-| المساحة الفارغة ≥ 4 × (حجم القاعدة + حجم الصور) + 8 GB | توقف، ولا تحذف شيئاً لتوفيرها |
+| `grep BACKUP_` لا يطبع شيئاً | أرسل الأسطر قبل الخطوة 5: لا تضف مكرراً |
+| `/var/backups/sijil` غير موجود، **أو** موجود وفارغ (10001، 700) | إن كان فيه `key.age` أو أي ملف: توقف قبل الخطوة 7 |
+| المساحة تكفي (انظر «المساحة» تحت) | توقف، ولا تحذف شيئاً قبل قراءة القائمة الآمنة |
 
 **احفظ** الأعداد (الطلبات|القدامى|SAS|المستخدمين) وعدد ملفات الصور: تُقارن بها بعد كل خطوة.
+
+### كود أحدث على القرص
+
+إن كان أحدٌ قد سحب commit بعد `af9155f` بلا نشر (`git reflog` يُظهر `pull` بلا تغيّر في الحاويات)، فالتطبيق
+الشغّال ما زال 015، لكن:
+
+- `docker-compose.staging.yml` غير موجود على القرص. **حتى الخطوة 8 لا تستعمل `docker compose` لإعادة تشغيل
+  015**؛ عند الحاجة `docker restart sijil-api` فقط. بدون `-f` يحمّل compose وضع التطوير ويحاول فتح 80/443
+  التي يمسكها NPM. ولا تشغّل `deploy-staging.sh` (صار `deploy.sh`).
+- الرجوع (الخطوة 9) لا يتغيّر: `git checkout af9155f` يعيد `docker-compose.staging.yml`، وهو نفس الكود الشغّال
+  إن تحقق شرط وقت إنشاء `sijil-api` في الجدول.
+- `git pull` في الخطوة 4 يتقدّم من الـ commit الموجود (fast-forward).
+
+### المساحة
+
+بيانات سِجلّ صغيرة عادةً؛ المساحة تذهب للصور (images):
+
+| | تقريباً |
+|---|---|
+| النسخة اليدوية والنسخ المشفّرة وتجربة الاسترجاع | 3 × (القاعدة + الصور) |
+| صور `api` و`backup` و`web` الجديدة | 1–2 GB |
+| `ocr` إن أُعيد بناؤه من الصفر (build cache ممسوح) | 4.5 GB إضافية |
+| النسخ تحذّر تحت 4 GB فارغة وترفض تحت 2 GB | — |
+
+يكفي: **المجموع أعلاه + 6 GB هامش**. `docker system df` يُظهر حجم Build Cache؛ إن كان صفراً فاحسب `ocr`.
+القرص قد يكون مشتركاً مع مشاريع أخرى، وامتلاؤه يوقف قواعد بياناتها أيضاً.
+
+**ممنوع لتوفير المساحة:** `docker system prune`، `docker volume prune` (يحذف volumes مشاريع متوقفة)،
+`docker image prune -a`، `docker builder prune` (يمسح cache الـ `ocr` نفسه)، وحذف سجلات حاويات مشاريع أخرى.
+**آمن ولا يلمس أي مشروع:** `sudo apt-get clean`، `sudo journalctl --vacuum-size=200M`،
+`docker image prune --filter label=com.docker.compose.project=sijil` (صور سِجلّ القديمة بلا اسم فقط). وإن كان
+في الـ VG مساحة غير مستعملة (`sudo vgs`، عمود `VFree`): `sudo lvextend -r -l +100%FREE /dev/<vg>/<lv>`.
 
 ## 2) `staging` وليس `production`
 
@@ -122,6 +162,7 @@ git diff --stat 576fa6f HEAD          # ملفات deploy/*.md فقط، بلا �
 ```
 
 - الحاويات الشغّالة لا تتأثر بتغيّر الملفات.
+- الوسم `pre016` يحفظ الصورة الشغّالة فعلاً، فلا تضيع حين يُعاد البناء.
 - لا تشغّل `deploy-staging.sh` ولا `deploy.sh` قبل الخطوة 8.
 - إذا رفض `--ff-only`: لم يتغيّر شيء؛ توقف.
 
@@ -179,6 +220,8 @@ bash scripts/backup.sh init-key
   ولا صورة. **إن ضاعت لا تُفتح أي نسخة.**
 - ضع السطر المطبوع `BACKUP_AGE_RECIPIENT=age1…` مكان السطر الفارغ في `.env` (مفتاح عام، ليس سراً).
 - الآن فقط، قبل أي نسخة، يجوز حذف `key.age` وإعادة الأمر إن شككت بالورقة. بعد أول نسخة: أبداً.
+- إن كان المجلد موجوداً من قبل (الخطوة 1)، الأوامر الثلاثة الأولى لا تغيّر شيئاً. إن قال `init-key` إن المفتاح
+  موجود: توقف، فهذا مفتاح لا نعرف كلمة سره.
 
 ```bash
 sudo ls -l /var/backups/sijil/key.age                       # مالكه 10001
