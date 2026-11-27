@@ -199,19 +199,21 @@ No migration in this feature (data-model.md).
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T035 [P] New `api/tests/e2e_subscriber_seed.py` (synthetic: a request, a legacy row with its family number, a
-  SAS row with its phone, a deleted request; admins with `review` and with `link`), run by editing
+- [x] T035 [P] New `api/tests/e2e_subscriber_seed.py` (synthetic: a request with images, a rejected request of
+  another person with its phone, a legacy row with its family number, a deleted request; admins with `review` and
+  with `link`; no SAS row, because sas-import.spec.ts counts every stored SAS row missing from its re-import file;
+  SAS is covered by the api tests), run by editing
   `scripts/e2e.sh` (append one line after the 017 seed).
-- [ ] T036 [P] New e2e `e2e/tests/subscriber-file.spec.ts` (local Docker only): `review` admin searches by phone,
+- [x] T036 [P] New e2e `e2e/tests/subscriber-file.spec.ts` (local Docker only): `review` admin searches by phone,
   opens the file, sees the linked records and an image; `link` admin sees no identity data and is refused a
   national-ID search; the deleted request is found by number only.
-- [ ] T037 Run the whole suite: pytest, Vitest (PowerShell) and the full Playwright run (`bash scripts/e2e.sh`); all
+- [x] T037 Run the whole suite: pytest, Vitest (PowerShell) and the full Playwright run (`bash scripts/e2e.sh`); all
   green; note counts.
-- [ ] T038 `docker compose up` on the owner's machine: the app starts, head stays `0020` (or the T033 migration).
-- [ ] T039 New `specs/018-subscriber-file-search/manual-test-ar.md`: Arabic manual steps for the owner, local only.
-- [ ] T040 Check `docs/system.md` 1.24 §10 item 4 against what was built; edit it only where the build differs and
+- [x] T038 `docker compose up` on the owner's machine: the app starts, head stays `0020` (or the T033 migration).
+- [x] T039 New `specs/018-subscriber-file-search/manual-test-ar.md`: Arabic manual steps for the owner, local only.
+- [x] T040 Check `docs/system.md` 1.24 §10 item 4 against what was built; edit it only where the build differs and
   tell the owner.
-- [ ] T041 Mark the tasks done; batch 5 commit.
+- [x] T041 Mark the tasks done; batch 5 commit.
 
 ---
 
