@@ -9,6 +9,8 @@ import logging
 from dataclasses import asdict
 
 from fastapi import APIRouter, Depends, Query
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import AuthContext, require_permission
@@ -16,6 +18,7 @@ from app.core.subscriber_search import classify
 from app.db import get_db
 from app.errors import AppError
 from app.schemas.subscribers import ResultRow, SearchOut
+from app.services import subscriber_file as subscriber_file_service
 from app.services import subscriber_search
 from app.services.review_service import can_review
 
@@ -42,3 +45,18 @@ def search(
     # The kind and the count only: never the query text (FR-012).
     log.info("subscriber search kind=%s results=%s", term.kind, total)
     return SearchOut(kind=term.kind, items=[ResultRow(**asdict(r)) for r in rows], total=total)
+
+
+@router.get("/{source}/{ref}")
+def subscriber_file(
+    source: str,
+    ref: str,
+    ctx: AuthContext = Depends(readers),
+    db: Session = Depends(get_db),
+) -> JSONResponse:
+    """The file of one record and its linked records (FR-007, FR-008). Built as an allow-list per
+    caller: identity keys are absent, not null, without `review` (FR-009). 404 when unknown."""
+    body = subscriber_file_service.build(db, ctx.user, source, ref)
+    # The record reference only (FR-012).
+    log.info("subscriber file %s:%s", source, ref)
+    return JSONResponse(jsonable_encoder(body))

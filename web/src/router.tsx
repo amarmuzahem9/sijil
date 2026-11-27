@@ -15,6 +15,7 @@ import AdminLayout from './layouts/AdminLayout';
 import MarketerLayout from './layouts/MarketerLayout';
 import AccountPanel from './pages/AccountPanel';
 import { AdminReports } from './pages/admin/placeholders';
+import SubscriberFile from './pages/admin/subscribers/SubscriberFile';
 import SubscriberSearch from './pages/admin/subscribers/SubscriberSearch';
 import Backup from './pages/admin/Backup';
 import Commissions from './pages/admin/commissions/Commissions';
@@ -95,6 +96,10 @@ export const routes: RouteObject[] = [
                         element: <AwaitingLink />,
                       }),
                       page('subscribers', { path: 'subscribers', element: <SubscriberSearch /> }),
+                      page('subscribers', {
+                        path: 'subscribers/:source/:ref',
+                        element: <SubscriberFile />,
+                      }),
                       page('marketers', { path: 'marketers', element: <Marketers /> }),
                       page('settings', { path: 'settings', element: <Settings /> }),
                       page('admins', { path: 'admins', element: <Admins /> }),

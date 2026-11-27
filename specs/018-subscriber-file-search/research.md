@@ -62,8 +62,9 @@ decisions below map the rules onto the existing code; there are no open unknowns
   - linked records found with the record's own keys: same phone (any of its phones) → «نفس الهاتف»; same national
     ID **and** family key → «نفس الشخص»; same family key only → «نفس العائلة». A record found by two reasons keeps
     the strongest (نفس الشخص > نفس الهاتف > نفس العائلة). Rejected requests and non-counting legacy rows are
-    included (they are the same person's history); deleted requests are excluded except a deleted request linked
-    to a request by `request_reasons` refs, which shows «سجل محذوف» (011 R10), as in the review file.
+    included (they are the same person's history); deleted requests are never linked records: their phone and
+    numbers are erased (011), so no key reaches them. A deleted request is opened by its number (R6) and its own
+    file shows «سجل محذوف». (The review file of 010 still shows deleted refs of its reasons; that stays as is.)
   - capped at 50 linked records, with «و N سجلات أخرى» when more (a family number shared by a whole clan).
 - **Rationale**: the check engine (`match_service`) only finds *counting* records; the file needs every record of
   the person, so it runs its own lookups on the same keys and normalizations (§6.2). Link reasons are those of §6.4.

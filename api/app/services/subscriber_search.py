@@ -203,3 +203,9 @@ def search(db: Session, term: Term, offset: int, limit: int) -> tuple[list[Row],
 
     rows.sort(key=key, reverse=True)
     return rows[offset:cap], total
+
+
+# The row of each source, shared with the file's linked records (services/subscriber_file.py).
+request_row = _sijil_row
+legacy_row = _legacy_row
+sas_row = _sas_row

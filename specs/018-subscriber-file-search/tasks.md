@@ -136,34 +136,34 @@ No migration in this feature (data-model.md).
 
 ### Tests (write first, run red)
 
-- [ ] T019 [P] [US2] New integration test `api/tests/integration/test_subscriber_file.py` (research R5): a request
+- [x] T019 [P] [US2] New integration test `api/tests/integration/test_subscriber_file.py` (research R5): a request
   with an older rejected request of the same person («نفس الشخص»), a SAS row with its phone («نفس الهاتف»), a legacy
   row with its family number («نفس العائلة»), and a «ملغي» legacy row with its phone: all listed with their reasons;
   a record found by two reasons shows the strongest; more than 50 linked → 50 and `more_linked`; the file of a SAS
   row lists the request by phone; the file of a legacy row lists the request by family; 404 for an unknown record.
-- [ ] T020 [P] [US2] In the same file: history (research R9) of a request with submitted, accepted by an admin, a pin,
+- [x] T020 [P] [US2] In the same file: history (research R9) of a request with submitted, accepted by an admin, a pin,
   a link, an undo with its reason, in time order; an automatic acceptance has `by_name: null`; a rejected request
   shows its reason; the pin line has the field and never the value.
-- [ ] T021 [P] [US2] In the same file: legacy record fields (`legacy_number`, `status_text`, `extra`, «غير مكتمل»
+- [x] T021 [P] [US2] In the same file: legacy record fields (`legacy_number`, `status_text`, `extra`, «غير مكتمل»
   when an image is missing); SAS record fields (`expires_at`, `group_name`, `last_online_at`, `missing_since`,
   `username_phone`, `no_documents`); a deleted request's file has the kept fields only and `deleted: true`.
-- [ ] T022 [P] [US2] New Vitest `web/src/__tests__/subscriberFile.test.tsx`: the record header by source, the
+- [x] T022 [P] [US2] New Vitest `web/src/__tests__/subscriberFile.test.tsx`: the record header by source, the
   identity block and images only when present in the response, linked records with reason labels opening their own
   file, the history lines, «غير مكتمل», «بلا مستمسكات في سِجلّ», «غير موجود في آخر ملف», «سجل محذوف», no edit
   control anywhere (FR-010).
 
 ### Implementation
 
-- [ ] T023 [US2] New `api/app/services/subscriber_file.py`: `build(db, user, source, ref)` (research R5, R6, R9).
-- [ ] T024 [US2] Add the file schemas (record per source, `LinkedOut`, `HistoryEvent`, `FileOut`) by editing
+- [x] T023 [US2] New `api/app/services/subscriber_file.py`: `build(db, user, source, ref)` (research R5, R6, R9).
+- [x] T024 [US2] Add the file schemas (record per source, `LinkedOut`, `HistoryEvent`, `FileOut`) by editing
   `api/app/schemas/subscribers.py`; identity keys added only for entitled callers (research R7).
-- [ ] T025 [US2] Route `GET /api/admin/subscribers/{source}/{ref}` by editing `api/app/api/admin_subscribers.py`;
+- [x] T025 [US2] Route `GET /api/admin/subscribers/{source}/{ref}` by editing `api/app/api/admin_subscribers.py`;
   T019–T021 green.
-- [ ] T026 [P] [US2] New page `web/src/pages/admin/subscribers/SubscriberFile.tsx` (images through the existing
+- [x] T026 [P] [US2] New page `web/src/pages/admin/subscribers/SubscriberFile.tsx` (images through the existing
   `/api/admin/request-images/{id}` and `/api/admin/legacy-images/{id}` blob routes).
-- [ ] T027 [US2] Route `/admin/subscribers/:source/:ref` by editing `web/src/router.tsx`, and rows of the search page
+- [x] T027 [US2] Route `/admin/subscribers/:source/:ref` by editing `web/src/router.tsx`, and rows of the search page
   link to it; T022 green.
-- [ ] T028 [US2] Image log check in `api/tests/integration/test_subscriber_file.py`: as `review`, opening an image id
+- [x] T028 [US2] Image log check in `api/tests/integration/test_subscriber_file.py`: as `review`, opening an image id
   from the file through the existing routes writes an `image_access_log` row with `request_id` or
   `legacy_subscriber_id` (FR-011).
 

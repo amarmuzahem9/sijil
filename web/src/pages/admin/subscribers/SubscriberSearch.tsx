@@ -2,6 +2,7 @@ import SearchOutlined from '@mui/icons-material/SearchOutlined';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
+import CardActionArea from '@mui/material/CardActionArea';
 import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
 import Skeleton from '@mui/material/Skeleton';
@@ -10,6 +11,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useQuery } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 
 import { SUBSCRIBER_SOURCE_LABELS } from '../../../lib/labels';
 import { STATUS_COLORS, STATUS_LABELS, type RequestStatus } from '../../../lib/requestStatus';
@@ -52,44 +54,50 @@ function Row({ row }: { row: ResultRow }) {
   const number = row.number_label ?? row.legacy_number;
   return (
     <Card variant="outlined" data-testid="subscriber-row">
-      <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-        <Stack
-          direction="row"
-          sx={{ justifyContent: 'space-between', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}
-        >
-          <Stack spacing={0.25} sx={{ minWidth: 0 }}>
-            <Stack direction="row" sx={{ gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-              <Chip size="small" variant="outlined" label={SUBSCRIBER_SOURCE_LABELS[row.source]} />
-              {number && (
-                <Typography variant="body2" dir="ltr" component="span">
-                  {number}
-                </Typography>
+      <CardActionArea component={RouterLink} to={`/admin/subscribers/${row.source}/${row.ref}`}>
+        <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+          <Stack
+            direction="row"
+            sx={{ justifyContent: 'space-between', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}
+          >
+            <Stack spacing={0.25} sx={{ minWidth: 0 }}>
+              <Stack direction="row" sx={{ gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={SUBSCRIBER_SOURCE_LABELS[row.source]}
+                />
+                {number && (
+                  <Typography variant="body2" dir="ltr" component="span">
+                    {number}
+                  </Typography>
+                )}
+              </Stack>
+              {row.deleted ? (
+                <Typography color="text.secondary">سجل محذوف</Typography>
+              ) : (
+                <>
+                  <Typography sx={{ fontWeight: 700 }}>{row.full_name ?? '—'}</Typography>
+                  <Stack
+                    direction="row"
+                    divider={<span aria-hidden>·</span>}
+                    sx={{ gap: 0.75, color: 'text.secondary', flexWrap: 'wrap' }}
+                  >
+                    {[tower(row), row.phone, row.registered_at && formatBaghdad(row.registered_at)]
+                      .filter((part): part is string => Boolean(part))
+                      .map((part) => (
+                        <Typography key={part} variant="body2" component="span" dir="auto">
+                          {part}
+                        </Typography>
+                      ))}
+                  </Stack>
+                </>
               )}
             </Stack>
-            {row.deleted ? (
-              <Typography color="text.secondary">سجل محذوف</Typography>
-            ) : (
-              <>
-                <Typography sx={{ fontWeight: 700 }}>{row.full_name ?? '—'}</Typography>
-                <Stack
-                  direction="row"
-                  divider={<span aria-hidden>·</span>}
-                  sx={{ gap: 0.75, color: 'text.secondary', flexWrap: 'wrap' }}
-                >
-                  {[tower(row), row.phone, row.registered_at && formatBaghdad(row.registered_at)]
-                    .filter((part): part is string => Boolean(part))
-                    .map((part) => (
-                      <Typography key={part} variant="body2" component="span" dir="auto">
-                        {part}
-                      </Typography>
-                    ))}
-                </Stack>
-              </>
-            )}
+            <StatusText row={row} />
           </Stack>
-          <StatusText row={row} />
-        </Stack>
-      </CardContent>
+        </CardContent>
+      </CardActionArea>
     </Card>
   );
 }
