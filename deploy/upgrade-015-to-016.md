@@ -16,8 +16,8 @@
   التطبيق شغّالاً، ويرفض بدونها. خدمة `backup` غير موجودة في 015. لذلك، في هذا النشر فقط: نوقف `api`،
   ونأخذ نسخة `pg_dump` يدوية مع الصور، ثم نشغّل `deploy.sh` فيعامله كأول تثبيت. النسخة اليدوية هي نسخة
   «قبل النشر» لهذه المرة.
-- **الكود المنشور:** main بعد 576fa6f، وفوقه هذا الملف فقط. `git diff --stat 576fa6f HEAD` يجب ألا يُظهر
-  غير `deploy/upgrade-015-to-016.md`.
+- **الكود المنشور:** main بعد 576fa6f، وفوقه أدلة فقط بلا كود. `git diff --stat 576fa6f HEAD` يجب ألا يُظهر
+  غير ملفات داخل `deploy/` تنتهي بـ `.md` (هذا الملف وسطر الرابط في `server.md`).
 - الخطوات 3أ و4 و5 و7 تُنفَّذ **قبل يوم الصيانة** والتطبيق شغّال، ولا تغيّر شيئاً على المستخدمين. الخطوات
   3ب و8 و9 و10 في وقت الصيانة.
 
@@ -118,7 +118,7 @@ cd /opt/sijil
 docker tag sijil-api:latest sijil-api:pre016; docker tag sijil-web:latest sijil-web:pre016
 git pull --ff-only
 git log -1 --oneline
-git diff --stat 576fa6f HEAD          # deploy/upgrade-015-to-016.md فقط
+git diff --stat 576fa6f HEAD          # ملفات deploy/*.md فقط، بلا كود
 ```
 
 - الحاويات الشغّالة لا تتأثر بتغيّر الملفات.
